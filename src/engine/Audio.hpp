@@ -19,6 +19,7 @@ public:
     void update(float dt);
 
     void setMode(MusicMode m);        // switches only if the mode actually changes
+    // Player-initiated: after either of these, scenes no longer switch the music.
     void next();                      // skip to another random track
     void playTrack(int index);        // jump to a specific track (settings jukebox)
 
@@ -45,6 +46,7 @@ private:
     bool loaded_ = false;
     MusicMode mode_ = MusicMode::Title;
     bool modeSet_ = false;
+    bool userChoice_ = false;
     float volume_ = 0.6f;
     float fade_ = 1.0f;               // fade-in multiplier
     int pending_ = -1;                // track waiting for the fade-out to finish

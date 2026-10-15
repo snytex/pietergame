@@ -10,6 +10,8 @@ namespace {
 
 class ShopScene : public Scene {
 public:
+    Presence presence() const override { return {"Shopping at Kira's", "", "kira", "Kira's Shop", "logo"}; }
+
     MusicMode music() const override { return MusicMode::Title; }
 
     void enter() override { line_ = "Welcome to Kira's shop! No refunds. Ever."; }

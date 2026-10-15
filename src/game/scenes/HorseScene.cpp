@@ -123,6 +123,25 @@ constexpr int kEntryFee = 50;
 
 class HorseScene : public Scene {
 public:
+    Presence presence() const override {
+        Presence p{"Horse Racing"};
+        p.largeImage = "horse";
+        p.largeText = "JUHUH!";
+        p.smallImage = "logo";
+        switch (mode_) {
+            case Mode::Hub: p.state = "At the stables"; break;
+            case Mode::BetPick: p.state = "Picking a horse"; break;
+            case Mode::BetRace:
+            case Mode::BetResult: p.state = pick_ >= 0 ? "Betting on " + field_[pick_].name : "Watching a race"; break;
+            case Mode::RideCountdown:
+            case Mode::Ride:
+                p.state = "Riding Juhuh - " + std::to_string((int)std::max(0.0f, kRideLength - riders_[0].x)) + "m to go";
+                break;
+            case Mode::RideResult: p.state = "Finished a race in place " + std::to_string(ridePlace_); break;
+        }
+        return p;
+    }
+
     void enter() override { newField(); }
 
     void newField() {

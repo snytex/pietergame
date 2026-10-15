@@ -3,6 +3,7 @@
 #include "engine/Ui.hpp"
 
 #include <algorithm>
+#include <ctime>
 #include <filesystem>
 
 #include <rlgl.h>
@@ -86,6 +87,7 @@ bool Engine::init(const char* title, bool fullscreen, int resW, int resH) {
 void Engine::shutdown() {
     if (scene_) scene_->exit();
     scene_.reset();
+    discord.stop();
     music.shutdown();
     sfx.shutdown();
     for (auto& [k, t] : textures_) UnloadTexture(t);
@@ -201,6 +203,7 @@ void Engine::drawToasts() {
 
 void Engine::run(std::unique_ptr<Scene> first) {
     scene_ = std::move(first);
+    sessionStart_ = (long long)std::time(nullptr);
     music.setMode(scene_->music());
     scene_->enter();
     fade_ = 1;
@@ -220,6 +223,14 @@ void Engine::run(std::unique_ptr<Scene> first) {
         if (IsKeyPressed(KEY_F9)) music.next();
 
         music.update(dt);
+        presenceT_ -= dt;
+        if (discord.running() && presenceT_ <= 0 && fadeDir_ == 0) {
+            presenceT_ = 2;
+            Presence p = scene_->presence();
+            if (presenceHook) presenceHook(p);
+            p.startTimestamp = sessionStart_;
+            discord.setPresence(p);
+        }
         if (music.currentTrack() != lastTrack) {
             lastTrack = music.currentTrack();
             if (lastTrack >= 0) toast("Now playing: " + music.nowPlaying(), col::cyan);

@@ -70,6 +70,23 @@ struct Boss {
 
 class ClassicScene : public Scene {
 public:
+    Presence presence() const override {
+        Presence p;
+        p.details = wave_ > kFinalWave ? "Classic - endless wave " + std::to_string(wave_)
+                                       : "Classic - wave " + std::to_string(wave_) + " / " + std::to_string(kFinalWave);
+        if (phase_ == Phase::Dead) p.state = "Got rekt on wave " + std::to_string(wave_);
+        else if (phase_ == Phase::Victory) p.state = "Defeated The Horse!";
+        else if (boss_.alive()) p.state = "Fighting " + boss_.name + " (" + std::to_string(boss_.hp) + " HP left)";
+        else p.state = std::to_string(hearts_) + (hearts_ == 1 ? " heart left" : " hearts left");
+        if (boss_.alive()) {
+            p.largeImage = boss_.kind == BossKind::Davi ? "davi" : boss_.kind == BossKind::Kira ? "kira" : "horse";
+            p.largeText = boss_.name + " - " + boss_.title;
+            p.smallImage = "logo";
+            p.smallText = "PieterGame 3";
+        }
+        return p;
+    }
+
     void enter() override {
         P().stats.classicRuns++;
         P().save();

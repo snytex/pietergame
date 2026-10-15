@@ -10,6 +10,8 @@ namespace {
 
 class InventoryScene : public Scene {
 public:
+    Presence presence() const override { return {"Checking the inventory"}; }
+
     MusicMode music() const override { return MusicMode::Title; }
 
     void update(float dt) override {

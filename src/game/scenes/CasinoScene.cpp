@@ -8,6 +8,8 @@ namespace {
 
 class CasinoScene : public Scene {
 public:
+    Presence presence() const override { return {"Pieter Casino", "", "casino", "Pieter Casino", "logo"}; }
+
     void update(float dt) override {
         t_ += dt;
         fx_.update(dt);

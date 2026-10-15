@@ -30,6 +30,17 @@ enum class State { Ready, Playing, Over };
 
 class StroopwafelScene : public Scene {
 public:
+    Presence presence() const override {
+        Presence p{"Stroopwafel Stacker"};
+        int layers = (int)stack_.size() - 1;
+        p.state = state_ == State::Ready ? "Warming up the waffles"
+                  : std::to_string(layers) + " layers (best " + std::to_string(std::max(layers, P().stats.stroopBest)) + ")";
+        p.largeImage = "stroopwafel";
+        p.largeText = "Stroopwafel Stacker";
+        p.smallImage = "logo";
+        return p;
+    }
+
     void enter() override { reset(); }
 
     void reset() {

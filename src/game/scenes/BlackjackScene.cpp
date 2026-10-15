@@ -42,6 +42,8 @@ int handValue(const std::vector<Card>& h, bool countHidden = true, bool* soft = 
 
 class BlackjackScene : public Scene {
 public:
+    Presence presence() const override { return {"Casino - Blackjack vs Davi", "", "casino", "Pieter Casino", "logo"}; }
+
     void enter() override {
         newShoe();
         bet_ = std::clamp<long long>(25, 1, std::max<long long>(1, P().coins));

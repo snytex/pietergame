@@ -66,6 +66,7 @@ public:
     bool fullscreen = false;
     int resW = 0, resH = 0;  // 0 = pick automatically
     bool screenShake = true;
+    bool discordRpc = true;
 
     int count(const std::string& id) const;
     bool owns(const std::string& id) const { return count(id) > 0; }

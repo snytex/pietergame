@@ -37,6 +37,15 @@ const std::string& pick(const std::vector<std::string>& v) { return v[rndi(0, (i
 
 class PieterRoomScene : public Scene {
 public:
+    Presence presence() const override {
+        auto& n = P().pieter;
+        float m = n.mood();
+        const char* mood = m > 85 ? "ecstatic" : m > 65 ? "happy" : m > 45 ? "okay" : m > 25 ? "sad" : "miserable";
+        return {"Taking care of Pieter",
+                n.sleeping ? "Pieter is sleeping (lvl " + std::to_string(n.level) + ")"
+                           : "Pieter is " + std::string(mood) + " (lvl " + std::to_string(n.level) + ")"};
+    }
+
     void enter() override {
         auto& n = P().pieter;
         long long now = unixNow();

@@ -1,5 +1,6 @@
 // PieterGame 3 - entry point.
 #include "engine/Engine.hpp"
+#include "game/DiscordConfig.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
@@ -44,6 +45,12 @@ int main() {
         const char* frames = std::getenv("PG_SHOT_FRAMES");
         E().autoScreenshot(shot, frames ? std::atoi(frames) : 120);
     }
+
+    // Discord shows the coin balance when a scene has nothing more specific to say.
+    E().presenceHook = [](Presence& p) {
+        if (p.state.empty()) p.state = fmtNum(P().coins) + " Pietercoins";
+    };
+    if (P().discordRpc) E().discord.start(discordAppId());
 
     E().run(firstScene());
 

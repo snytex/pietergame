@@ -32,6 +32,8 @@ struct Spot {
 
 class RouletteScene : public Scene {
 public:
+    Presence presence() const override { return {"Casino - Roulette", "", "casino", "Pieter Casino", "logo"}; }
+
     RouletteScene() { buildTable(); }
 
     void buildTable() {

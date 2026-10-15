@@ -4,6 +4,7 @@
 
 #include "engine/Audio.hpp"
 #include "engine/Core.hpp"
+#include "engine/Discord.hpp"
 
 #include <functional>
 #include <memory>
@@ -21,6 +22,8 @@ public:
     virtual void update(float dt) = 0;
     virtual void draw() = 0;
     virtual MusicMode music() const { return MusicMode::Shuffle; }
+    // What Discord shows while this scene is active.
+    virtual Presence presence() const { return {"In the menus"}; }
 };
 
 using SceneFactory = std::function<std::unique_ptr<Scene>()>;
@@ -68,6 +71,9 @@ public:
 
     Jukebox music;
     SoundBank sfx;
+    Discord discord;
+    // Lets the game fill in defaults (e.g. the coin balance) before sending.
+    std::function<void(Presence&)> presenceHook;
     bool screenShake = true;
 
     // Display. Windowed: the resolution is the window size and the game renders
@@ -109,6 +115,8 @@ private:
     bool mousePressed_ = false;
     bool clickConsumed_ = false;
     float time_ = 0;
+    float presenceT_ = 0;
+    long long sessionStart_ = 0;
 
     float shake_ = 0;
     float flash_ = 0;

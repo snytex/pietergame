@@ -38,6 +38,8 @@ struct Reel {
 
 class SlotsScene : public Scene {
 public:
+    Presence presence() const override { return {"Casino - Slots", "", "casino", "Pieter Casino", "logo"}; }
+
     SlotsScene() {
         for (auto& r : reels_) {
             for (int s = 0; s < kSymCount; s++)

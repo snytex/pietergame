@@ -18,6 +18,7 @@ struct Hotspot {
 
 class MenuScene : public Scene {
 public:
+    Presence presence() const override { return {"Main Menu"}; }
     MusicMode music() const override { return MusicMode::Title; }
 
     void enter() override { P().save(); }

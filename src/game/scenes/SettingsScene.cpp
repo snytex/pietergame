@@ -1,6 +1,7 @@
 // SETTINGS: audio, display, the jukebox, controls, and save reset.
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
+#include "game/DiscordConfig.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
@@ -11,6 +12,8 @@ namespace {
 
 class SettingsScene : public Scene {
 public:
+    Presence presence() const override { return {"In the settings"}; }
+
     MusicMode music() const override { return MusicMode::Title; }
 
     void enter() override {
@@ -78,7 +81,17 @@ public:
                             (int)cs.x, (int)cs.y),
                  a.x + 24, a.y + 276, 15, col::muted);
 
-        if (ui::toggle({a.x + 24, a.y + 300, a.width - 48, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
+        if (ui::toggle({a.x + 24, a.y + 300, 236, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
+        if (ui::toggle({a.x + 290, a.y + 300, 246, 50}, "Discord status", P().discordRpc)) {
+            if (P().discordRpc) E().discord.start(discordAppId());
+            else E().discord.stop();
+            P().save();
+        }
+        if (P().discordRpc && discordAppId().empty())
+            ui::text("no Discord app id set (see DiscordConfig.hpp)", a.x + a.width - 20, a.y + 356, 13, col::muted, ui::Right);
+        else if (P().discordRpc)
+            ui::text(E().discord.connected() ? "connected to Discord" : "Discord not running", a.x + a.width - 20, a.y + 356, 13,
+                     E().discord.connected() ? col::green : col::muted, ui::Right);
 
         Rectangle c{40, 500, 560, 190};
         ui::panel(c);

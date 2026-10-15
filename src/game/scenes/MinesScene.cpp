@@ -27,6 +27,8 @@ double multiplierFor(int mines, int picks) {
 
 class MinesScene : public Scene {
 public:
+    Presence presence() const override { return {"Casino - Mines", "", "casino", "Pieter Casino", "logo"}; }
+
     void enter() override { bet_ = std::clamp<long long>(20, 1, std::max<long long>(1, P().coins)); }
 
     void start() {

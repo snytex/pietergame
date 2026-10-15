@@ -68,6 +68,9 @@ int Jukebox::pickShuffle() {
 }
 
 void Jukebox::setMode(MusicMode m) {
+    // Once the player picked music themselves, scenes stop overriding it:
+    // their choice keeps playing everywhere and the shuffle continues after it.
+    if (userChoice_ && modeSet_) return;
     if (modeSet_ && m == mode_) return;
     modeSet_ = true;
     mode_ = m;
@@ -77,6 +80,7 @@ void Jukebox::setMode(MusicMode m) {
 }
 
 void Jukebox::next() {
+    userChoice_ = true;
     pending_ = pickShuffle();
     pendingLoop_ = false;
     mode_ = MusicMode::Shuffle;
@@ -84,6 +88,7 @@ void Jukebox::next() {
 }
 
 void Jukebox::playTrack(int index) {
+    userChoice_ = true;
     pending_ = index;
     pendingLoop_ = false;
     mode_ = MusicMode::Shuffle;
