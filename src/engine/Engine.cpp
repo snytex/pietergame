@@ -43,19 +43,26 @@ static std::string findAssets() {
     return "assets";
 }
 
-bool Engine::init(const char* title, bool fullscreen, int resW, int resH) {
+bool Engine::init(const char* title, bool fullscreen, int resW, int resH, const std::string& monitorName) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_HIDDEN);
     InitWindow(VW, VH, title);
     if (!IsWindowReady()) return false;
     SetWindowMinSize(640, 360);
     SetExitKey(KEY_NULL);  // Esc is "back" in this game
-    SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()) > 0 ? GetMonitorRefreshRate(GetCurrentMonitor()) : 144);
     InitAudioDevice();
+
+    // Pick the monitor explicitly. The window is created wherever the OS puts it
+    // (on multi-monitor X11 that is often the left-most screen, not the primary),
+    // so never trust the window's initial position. Monitor 0 is the primary.
+    monitor_ = 0;
+    for (int i = 0; i < GetMonitorCount(); i++)
+        if (!monitorName.empty() && this->monitorName(i) == monitorName) monitor_ = i;
+    int rate = GetMonitorRefreshRate(monitor_);
+    SetTargetFPS(rate > 0 ? rate : 144);
 
     if (resW <= 0 || resH <= 0) {
         // first launch: the biggest preset that leaves some room on the monitor
-        int mon = GetCurrentMonitor();
-        int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
+        int mw = GetMonitorWidth(monitor_), mh = GetMonitorHeight(monitor_);
         resW = VW, resH = VH;
         for (auto [w, h] : resolutions())
             if (w <= mw * 0.85f && h <= mh * 0.85f) resW = w, resH = h;
@@ -127,12 +134,40 @@ void Engine::toast(const std::string& text, Color color) {
     if (toasts_.size() > 4) toasts_.erase(toasts_.begin());
 }
 
-bool Engine::fullscreen() const { return IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE); }
+bool Engine::fullscreen() const { return fullscreen_; }
+
+int Engine::monitor() const { return std::clamp(monitor_, 0, std::max(0, GetMonitorCount() - 1)); }
+
+void Engine::trackMonitor(float dt) {
+    // Windowed: if the player drags the window to another screen, the game now
+    // lives there. Skipped right after we placed the window ourselves, because
+    // window managers apply moves asynchronously and the old position would
+    // otherwise be read back.
+    placeCooldown_ -= dt;
+    monitorPoll_ -= dt;
+    if (placeCooldown_ > 0 || monitorPoll_ > 0 || fullscreen()) return;
+    monitorPoll_ = 0.5f;
+    int cur = GetCurrentMonitor();
+    if (cur >= 0 && cur < GetMonitorCount()) monitor_ = cur;
+}
+
+std::string Engine::monitorName(int index) const {
+    const char* n = (index >= 0 && index < GetMonitorCount()) ? GetMonitorName(index) : nullptr;
+    return n ? n : "";
+}
+
+void Engine::setMonitor(int index) {
+    if (index < 0 || index >= GetMonitorCount()) return;
+    monitor_ = index;
+    setDisplay(fullscreen(), resW_, resH_);
+    int rate = GetMonitorRefreshRate(index);
+    SetTargetFPS(rate > 0 ? rate : 144);
+}
 
 std::vector<std::pair<int, int>> Engine::resolutions() const {
     static const std::pair<int, int> presets[] = {{1280, 720},  {1366, 768},  {1600, 900},  {1920, 1080},
                                                   {2560, 1440}, {3200, 1800}, {3840, 2160}};
-    int mon = GetCurrentMonitor();
+    int mon = monitor();
     int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
     std::vector<std::pair<int, int>> out;
     for (auto p : presets)
@@ -145,16 +180,23 @@ std::vector<std::pair<int, int>> Engine::resolutions() const {
 void Engine::setDisplay(bool fs, int w, int h) {
     resW_ = w;
     resH_ = h;
-    if (fs != fullscreen()) ToggleBorderlessWindowed();
-    if (!fs) {
-        int mon = GetCurrentMonitor();
-        int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
-        w = std::min(w, mw);
-        h = std::min(h, mh);
-        SetWindowSize(w, h);
-        Vector2 mp = GetMonitorPosition(mon);
-        SetWindowPosition((int)mp.x + (mw - w) / 2, (int)mp.y + (mh - h) / 2);
+    // Borderless fullscreen done by hand: an undecorated window covering exactly
+    // the target monitor. (raylib's toggle picks the monitor from the window's
+    // current position, which on X11 may not have caught up with a move yet.)
+    int mw = GetMonitorWidth(monitor_), mh = GetMonitorHeight(monitor_);
+    Vector2 mp = GetMonitorPosition(monitor_);
+    fullscreen_ = fs;
+    if (fs) {
+        SetWindowState(FLAG_WINDOW_UNDECORATED);
+        SetWindowPosition((int)mp.x, (int)mp.y);
+        SetWindowSize(mw, mh);
+    } else {
+        ClearWindowState(FLAG_WINDOW_UNDECORATED);
+        int ww = std::min(w, mw), wh = std::min(h, mh);
+        SetWindowSize(ww, wh);
+        SetWindowPosition((int)mp.x + (mw - ww) / 2, (int)mp.y + (mh - wh) / 2);
     }
+    placeCooldown_ = 1.5f;
 }
 
 void Engine::resizeCanvas() {
@@ -223,6 +265,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
         if (IsKeyPressed(KEY_F9)) music.next();
 
         music.update(dt);
+        trackMonitor(dt);
         presenceT_ -= dt;
         if (discord.running() && presenceT_ <= 0 && fadeDir_ == 0) {
             presenceT_ = 2;

@@ -120,7 +120,7 @@ void Profile::save() const {
       << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\n";
     f << "lastPity=" << lastPity << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
-      << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nresW=" << resW << "\nresH=" << resH << "\n";
+      << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
     std::error_code ec;
     fs::rename(path() + ".tmp", path(), ec);
@@ -173,6 +173,7 @@ void Profile::load() {
         else if (k == "fullscreen") fullscreen = L() != 0;
         else if (k == "screenShake") screenShake = L() != 0;
         else if (k == "discordRpc") discordRpc = L() != 0;
+        else if (k == "monitor") monitor = v;
         else if (k == "resW") resW = (int)L();
         else if (k == "resH") resH = (int)L();
     }
@@ -183,11 +184,12 @@ void Profile::resetAll() {
     float mv = musicVolume, sv = sfxVolume;
     bool fsOn = fullscreen, sh = screenShake;
     int rw = resW, rh = resH;
+    std::string mon = monitor;
     std::error_code ec;
     fs::remove(path(), ec);
     *this = Profile{};
     musicVolume = mv; sfxVolume = sv; fullscreen = fsOn; screenShake = sh;
-    resW = rw; resH = rh;
+    resW = rw; resH = rh; monitor = mon;
     load();
     save();
 }

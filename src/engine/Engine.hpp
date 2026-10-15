@@ -37,8 +37,9 @@ struct Toast {
 
 class Engine {
 public:
-    // `resW/resH` = 0 picks a size that fits the monitor.
-    bool init(const char* title, bool fullscreen, int resW, int resH);
+    // `resW/resH` = 0 picks a size that fits the monitor. `monitor` is a monitor
+    // name from a previous session; empty or unplugged = the primary monitor.
+    bool init(const char* title, bool fullscreen, int resW, int resH, const std::string& monitor);
     void run(std::unique_ptr<Scene> first);
     void shutdown();
 
@@ -85,7 +86,14 @@ public:
     int resWidth() const { return resW_; }
     int resHeight() const { return resH_; }
     Vector2 canvasSize() const { return {(float)canvas_.texture.width, (float)canvas_.texture.height}; }
-    std::vector<std::pair<int, int>> resolutions() const;  // presets that fit the current monitor
+    std::vector<std::pair<int, int>> resolutions() const;  // presets that fit the game's monitor
+
+    // Multi-monitor: which monitor the game lives on (windowed: the one the
+    // window was dragged to; fullscreen: the one it fills).
+    int monitor() const;
+    void setMonitor(int index);  // moves the game there, keeping mode + resolution
+    int monitorCount() const { return GetMonitorCount(); }
+    std::string monitorName(int index) const;
 
     // Clip drawing to a rectangle given in virtual (1280x720) coordinates.
     void beginClip(Rectangle r);
@@ -99,10 +107,14 @@ private:
     void drawToasts();
 
     void resizeCanvas();
+    void trackMonitor(float dt);
 
     RenderTexture2D canvas_{};
     float canvasScale_ = 1;  // canvas pixels per virtual unit
     int resW_ = 0, resH_ = 0;
+    int monitor_ = 0;
+    bool fullscreen_ = false;
+    float placeCooldown_ = 0, monitorPoll_ = 0;
     std::unique_ptr<Scene> scene_;
     SceneFactory pending_;
     int fadeDir_ = 0;           // -1 fading out, +1 fading in

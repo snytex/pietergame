@@ -35,7 +35,7 @@ int main() {
     using namespace pg;
     SetTraceLogLevel(LOG_WARNING);
     P().load();
-    if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH)) return 1;
+    if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
 
     bool mute = std::getenv("PG_MUTE") != nullptr;
     E().music.setVolume(mute ? 0 : P().musicVolume);
@@ -55,6 +55,7 @@ int main() {
     E().run(firstScene());
 
     P().fullscreen = E().fullscreen();
+    P().monitor = E().monitorName(E().monitor());
     P().resW = E().resWidth();
     P().resH = E().resHeight();
     P().save();

@@ -65,6 +65,7 @@ public:
     float sfxVolume = 0.7f;
     bool fullscreen = false;
     int resW = 0, resH = 0;  // 0 = pick automatically
+    std::string monitor;     // monitor name, empty = primary
     bool screenShake = true;
     bool discordRpc = true;
 

@@ -25,6 +25,13 @@ public:
 
     void exit() override { P().save(); }
 
+    void changeMonitor(int index) {
+        E().setMonitor(index);
+        P().monitor = E().monitorName(index);
+        P().save();
+        enter();  // the new monitor may offer different resolutions
+    }
+
     void applyDisplay(bool fullscreen) {
         auto res = E().resolutions();
         auto [w, h] = res[std::clamp(pick_, 0, (int)res.size() - 1)];
@@ -32,6 +39,7 @@ public:
         P().fullscreen = fullscreen;
         P().resW = w;
         P().resH = h;
+        P().monitor = E().monitorName(E().monitor());
         P().save();
     }
 
@@ -46,7 +54,7 @@ public:
         ui::titleBar("SETTINGS", col::violet);
         if (ui::backButton()) E().go(makeMenu);
 
-        Rectangle a{40, 100, 560, 380};
+        Rectangle a{40, 90, 560, 440};
         ui::panel(a);
         ui::text("AUDIO & DISPLAY", a.x + 24, a.y + 32, 24, col::text, ui::Left, true);
         ui::text("Music", a.x + 24, a.y + 80, 22, col::text);
@@ -65,45 +73,52 @@ public:
         if (ui::button({a.x + 170, a.y + 156, 160, 44}, "WINDOWED", fs ? col::panelHi : col::purple, 18) && fs) applyDisplay(false);
         if (ui::button({a.x + 342, a.y + 156, 194, 44}, "FULLSCREEN", fs ? col::purple : col::panelHi, 18) && !fs) applyDisplay(true);
 
+        // monitor: applies immediately
+        int mon = E().monitor(), monCount = E().monitorCount();
+        ui::text("Monitor", a.x + 24, a.y + 230, 22, col::text);
+        if (ui::button({a.x + 170, a.y + 208, 44, 44}, "<", col::panelHi, 22, monCount > 1)) changeMonitor((mon + monCount - 1) % monCount);
+        std::string mname = E().monitorName(mon);
+        if (mname.size() > 14) mname = mname.substr(0, 13) + "..";
+        ui::text(TextFormat("%d: %s (%dx%d)%s", mon + 1, mname.c_str(), GetMonitorWidth(mon), GetMonitorHeight(mon), mon == 0 ? " *" : ""),
+                 a.x + 340, a.y + 230, 17, col::text, ui::Center, true);
+        if (ui::button({a.x + 492, a.y + 208, 44, 44}, ">", col::panelHi, 22, monCount > 1)) changeMonitor((mon + 1) % monCount);
+
         // resolution: pick with arrows, then APPLY
         auto res = E().resolutions();
         pick_ = std::clamp(pick_, 0, (int)res.size() - 1);
-        ui::text("Resolution", a.x + 24, a.y + 234, 22, col::text);
-        if (ui::button({a.x + 170, a.y + 212, 44, 44}, "<", col::panelHi, 22, pick_ > 0)) pick_--;
+        ui::text("Resolution", a.x + 24, a.y + 284, 22, col::text);
+        if (ui::button({a.x + 170, a.y + 262, 44, 44}, "<", col::panelHi, 22, pick_ > 0)) pick_--;
         auto [pw, ph] = res[pick_];
-        bool native = pick_ == (int)res.size() - 1 && pw == GetMonitorWidth(GetCurrentMonitor());
-        ui::text(TextFormat("%d x %d%s", pw, ph, native ? "*" : ""), a.x + 312, a.y + 234, 22, col::gold, ui::Center, true);
-        if (ui::button({a.x + 410, a.y + 212, 44, 44}, ">", col::panelHi, 22, pick_ + 1 < (int)res.size())) pick_++;
+        bool native = pw == GetMonitorWidth(mon) && ph == GetMonitorHeight(mon);
+        ui::text(TextFormat("%d x %d%s", pw, ph, native ? " (native)" : ""), a.x + 312, a.y + 284, 20, col::gold, ui::Center, true);
+        if (ui::button({a.x + 410, a.y + 262, 44, 44}, ">", col::panelHi, 22, pick_ + 1 < (int)res.size())) pick_++;
         bool changed = pw != E().resWidth() || ph != E().resHeight();
-        if (ui::button({a.x + 464, a.y + 212, 72, 44}, "APPLY", changed ? col::green : col::panelHi, 16, changed)) applyDisplay(fs);
+        if (ui::button({a.x + 464, a.y + 262, 72, 44}, "APPLY", changed ? col::green : col::panelHi, 16, changed)) applyDisplay(fs);
         Vector2 cs = E().canvasSize();
-        ui::text(TextFormat("%s  -  rendering at %d x %d   (* = native)", fs ? "fullscreen scales to the monitor" : "window size",
-                            (int)cs.x, (int)cs.y),
-                 a.x + 24, a.y + 276, 15, col::muted);
+        ui::text(TextFormat("%s  -  rendering at %d x %d   (* = primary monitor)",
+                            fs ? "fullscreen scales to the monitor" : "window size", (int)cs.x, (int)cs.y),
+                 a.x + 24, a.y + 324, 15, col::muted);
 
-        if (ui::toggle({a.x + 24, a.y + 300, 236, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
-        if (ui::toggle({a.x + 290, a.y + 300, 246, 50}, "Discord status", P().discordRpc)) {
+        if (ui::toggle({a.x + 24, a.y + 344, 236, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
+        if (ui::toggle({a.x + 290, a.y + 344, 246, 50}, "Discord status", P().discordRpc)) {
             if (P().discordRpc) E().discord.start(discordAppId());
             else E().discord.stop();
             P().save();
         }
         if (P().discordRpc && discordAppId().empty())
-            ui::text("no Discord app id set (see DiscordConfig.hpp)", a.x + a.width - 20, a.y + 356, 13, col::muted, ui::Right);
+            ui::text("no Discord app id set (see DiscordConfig.hpp)", a.x + a.width - 20, a.y + 404, 13, col::muted, ui::Right);
         else if (P().discordRpc)
-            ui::text(E().discord.connected() ? "connected to Discord" : "Discord not running", a.x + a.width - 20, a.y + 356, 13,
+            ui::text(E().discord.connected() ? "connected to Discord" : "Discord not running", a.x + a.width - 20, a.y + 404, 13,
                      E().discord.connected() ? col::green : col::muted, ui::Right);
 
-        Rectangle c{40, 500, 560, 190};
+        Rectangle c{40, 550, 560, 140};
         ui::panel(c);
-        ui::text("CONTROLS", c.x + 24, c.y + 28, 22, col::text, ui::Left, true);
+        ui::text("CONTROLS", c.x + 24, c.y + 24, 20, col::text, ui::Left, true);
         const char* lines[] = {"Classic: WASD / arrows move, SPACE dash, 1-3 powerups",
                                "Horses (ride): alternate LEFT/RIGHT, SPACE jump",
                                "Stroopwafel: SPACE or click to drop",
                                "Esc: back / pause      F9: next song      F11: fullscreen"};
-        for (int i = 0; i < 4; i++) ui::text(lines[i], c.x + 24, c.y + 60 + i * 26, 17, col::muted);
-        std::string path = P().path();
-        if (path.size() > 52) path = "..." + path.substr(path.size() - 49);
-        ui::text(path, c.x + 24, c.y + 60 + 4 * 26 + 4, 15, alpha(col::muted, 0.7f));
+        for (int i = 0; i < 4; i++) ui::text(lines[i], c.x + 24, c.y + 52 + i * 22, 15, col::muted);
 
         // jukebox
         Rectangle j{630, 100, 610, 520};
