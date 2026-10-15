@@ -290,7 +290,7 @@ public:
         for (int x = 0; x < VW; x += 80) DrawRectangle(x, 0, 40, 540, alpha(WHITE, 0.015f));
         // floor
         DrawRectangle(0, 520, VW, VH - 520, rgba(0x2a1a14ff));
-        for (int i = 0; i < 9; i++) DrawLine(0, 520 + i * 26, VW, 520 + i * 26, rgba(0x1e120dff));
+        for (int i = 0; i < 9; i++) DrawLineEx({0, 520.0f + i * 26}, {(float)VW, 520.0f + i * 26}, 1.5f, rgba(0x1e120dff));
         DrawRectangle(0, 512, VW, 10, rgba(0x1a0f2eff));
         // rug
         DrawEllipse(640, 600, 330, 60, rgba(0x6b3fd1ff));
@@ -488,7 +488,7 @@ public:
         ui::text("CHAT WITH PIETER", r.x + 18, r.y + 26, 20, col::violet, ui::Left, true);
         // messages bottom-up
         float y = r.y + r.height - 78;
-        BeginScissorMode((int)r.x, (int)r.y + 48, (int)r.width, (int)r.height - 112);
+        E().beginClip({r.x, r.y + 48, r.width, r.height - 112});
         for (int i = (int)chat_.size() - 1; i >= 0 && y > r.y + 40; i--) {
             auto& m = chat_[i];
             float maxW = 270;
@@ -506,7 +506,7 @@ public:
             DrawRectangleRounded(b, 0.5f, 8, col::panelHi);
             for (int i = 0; i < 3; i++) DrawCircleV({b.x + 20 + i * 15.0f, b.y + 13 + std::sin(t_ * 10 + i) * 3}, 4, col::muted);
         }
-        EndScissorMode();
+        E().endClip();
         Rectangle in{r.x + 14, r.y + r.height - 58, r.width - 28, 44};
         DrawRectangleRounded(in, 0.4f, 10, col::bgDeep);
         DrawRectangleRoundedLinesEx(in, 0.4f, 10, 2, col::violet);

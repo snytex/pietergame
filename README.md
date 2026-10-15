@@ -40,6 +40,8 @@ cmake --build build -j
 
 The build copies `assets/` next to the executable, so you can zip and share the `build/` folder.
 
+**Display:** in Settings you can choose Windowed or Fullscreen (borderless) and a resolution from 720p up to your monitor's native resolution. In windowed mode the game renders at the window's real size, so it stays sharp when you resize it. In fullscreen it renders at the resolution you picked and scales that to the monitor. On first launch it opens a window that fits your screen.
+
 Saves go to `~/.local/share/PieterGame3/save.txt` on Linux (`$XDG_DATA_HOME` is respected) and `%APPDATA%/PieterGame3/` on Windows.
 
 ## Project layout

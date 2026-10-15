@@ -180,7 +180,7 @@ public:
         DrawCircleV(p, r, c);
         for (int i = 0; i < 6; i++) DrawCircleSector(p, r, i * 60.0f, i * 60.0f + 20, 3, WHITE);
         DrawCircleV(p, r * 0.7f, c);
-        DrawCircleLinesV(p, r, col::outline);
+        ui::circleOutline(p, r, col::outline);
         std::string s = amount >= 1000 ? std::to_string(amount / 1000) + "k" : std::to_string(amount);
         ui::text(s, p.x, p.y, r * 0.75f, v >= 5 && v < 25 ? WHITE : (v < 5 ? col::outline : WHITE), ui::Center, true);
     }

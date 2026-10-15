@@ -32,6 +32,7 @@ bool toggle(Rectangle r, const std::string& label, bool& value);
 void panel(Rectangle r, Color c = col::panel, float round = 0.12f, Color border = col::outline);
 void bar(Rectangle r, float frac, Color fill, Color back = col::bgDeep);
 void coin(Vector2 c, float radius);
+void circleOutline(Vector2 c, float radius, Color color, float thick = 2);  // resolution-independent
 void heart(Vector2 c, float size, Color color);
 void coinCounter(float rightX, float y, long long amount);  // top-right wallet
 void titleBar(const std::string& title, Color accent = col::violet);

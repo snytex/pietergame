@@ -166,7 +166,7 @@ public:
         // reels
         DrawRectangleRec(shrink(kWindow, -6), col::outline);
         float rw = kWindow.width / 3;
-        BeginScissorMode((int)kWindow.x, (int)kWindow.y, (int)kWindow.width, (int)kWindow.height);
+        E().beginClip(kWindow);
         for (int i = 0; i < 3; i++) {
             Reel& r = reels_[i];
             Rectangle col{kWindow.x + i * rw, kWindow.y, rw - 4, kWindow.height};
@@ -183,7 +183,7 @@ public:
             DrawRectangleGradientV((int)col.x, (int)col.y, (int)col.width, 50, alpha(BLACK, 0.45f), alpha(BLACK, 0));
             DrawRectangleGradientV((int)col.x, (int)(col.y + col.height - 50), (int)col.width, 50, alpha(BLACK, 0), alpha(BLACK, 0.45f));
         }
-        EndScissorMode();
+        E().endClip();
         // payline
         float ly = kWindow.y + kWindow.height / 2;
         bool won = lastWin_ > 0 && !spinning();

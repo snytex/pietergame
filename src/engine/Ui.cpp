@@ -153,7 +153,7 @@ bool slider(Rectangle r, float& value, Color c) {
     DrawRectangleRounded(r, 1, 8, col::bgDeep);
     DrawRectangleRounded({r.x, r.y, r.width * value, r.height}, 1, 8, c);
     DrawCircleV({r.x + r.width * value, r.y + r.height / 2}, r.height * 1.1f, WHITE);
-    DrawCircleLinesV({r.x + r.width * value, r.y + r.height / 2}, r.height * 1.1f, col::outline);
+    ui::circleOutline({r.x + r.width * value, r.y + r.height / 2}, r.height * 1.1f, col::outline);
     return old != value;
 }
 
@@ -191,8 +191,12 @@ void coin(Vector2 c, float radius) {
     DrawCircleV({c.x, c.y + radius * 0.15f}, radius, col::goldDark);
     DrawCircleV(c, radius, col::gold);
     DrawCircleV(c, radius * 0.72f, lighten(col::gold, 0.15f));
-    DrawCircleLinesV(c, radius, col::outline);
+    ui::circleOutline(c, radius, col::outline);
     text("P", c.x, c.y, radius * 1.2f, col::goldDark, Center, true);
+}
+
+void circleOutline(Vector2 c, float radius, Color color, float thick) {
+    DrawRing(c, radius - thick / 2, radius + thick / 2, 0, 360, std::max(16, (int)radius), color);
 }
 
 void heart(Vector2 c, float s, Color color) {

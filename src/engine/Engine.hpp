@@ -34,7 +34,8 @@ struct Toast {
 
 class Engine {
 public:
-    bool init(const char* title);
+    // `resW/resH` = 0 picks a size that fits the monitor.
+    bool init(const char* title, bool fullscreen, int resW, int resH);
     void run(std::unique_ptr<Scene> first);
     void shutdown();
 
@@ -69,8 +70,20 @@ public:
     SoundBank sfx;
     bool screenShake = true;
 
-    void setFullscreen(bool on);
+    // Display. Windowed: the resolution is the window size and the game renders
+    // at whatever size the window is. Fullscreen (borderless): the game renders
+    // at the chosen resolution and scales it to the monitor.
+    void setDisplay(bool fullscreen, int resW, int resH);
+    void setFullscreen(bool on) { setDisplay(on, resW_, resH_); }
     bool fullscreen() const;
+    int resWidth() const { return resW_; }
+    int resHeight() const { return resH_; }
+    Vector2 canvasSize() const { return {(float)canvas_.texture.width, (float)canvas_.texture.height}; }
+    std::vector<std::pair<int, int>> resolutions() const;  // presets that fit the current monitor
+
+    // Clip drawing to a rectangle given in virtual (1280x720) coordinates.
+    void beginClip(Rectangle r);
+    void endClip() { EndScissorMode(); }
 
     // Dev helper: save the canvas to `path` after `frames` frames, then quit.
     void autoScreenshot(const std::string& path, int frames) { shotPath_ = path; shotFrames_ = frames; }
@@ -79,7 +92,11 @@ private:
     void updateCanvasTransform();
     void drawToasts();
 
+    void resizeCanvas();
+
     RenderTexture2D canvas_{};
+    float canvasScale_ = 1;  // canvas pixels per virtual unit
+    int resW_ = 0, resH_ = 0;
     std::unique_ptr<Scene> scene_;
     SceneFactory pending_;
     int fadeDir_ = 0;           // -1 fading out, +1 fading in

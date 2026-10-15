@@ -257,7 +257,7 @@ void horse(Vector2 feet, float s, float phase, Color body, Color mane, Color sil
     } else {
         DrawCircleV({16 * s, -138 * s + bob}, 11 * s, rgba(0xe8b48aff));
         DrawCircleSector({16 * s, -140 * s + bob}, 12 * s, 180, 360, 16, silk);
-        DrawCircleLinesV({16 * s, -138 * s + bob}, 11 * s, o);
+        ui::circleOutline({16 * s, -138 * s + bob}, 11 * s, o);
     }
 }
 

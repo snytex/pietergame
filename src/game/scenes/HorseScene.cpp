@@ -505,7 +505,7 @@ public:
         for (auto& r : riders_) {
             float px = prog.x + prog.width * std::min(1.0f, r.x / kRideLength);
             DrawCircleV({px, prog.y + 8}, 9, r.silk);
-            DrawCircleLinesV({px, prog.y + 8}, 9, col::outline);
+            ui::circleOutline({px, prog.y + 8}, 9, col::outline);
         }
         ui::text("SPEED", 40, 140, 16, col::muted);
         ui::bar({40, 152, 220, 16}, me.speed / kRideMax, col::orange);

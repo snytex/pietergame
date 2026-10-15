@@ -4,6 +4,8 @@
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
+#include <algorithm>
+
 namespace pg {
 namespace {
 
@@ -11,7 +13,24 @@ class SettingsScene : public Scene {
 public:
     MusicMode music() const override { return MusicMode::Title; }
 
+    void enter() override {
+        // preselect the current resolution
+        auto res = E().resolutions();
+        for (int i = 0; i < (int)res.size(); i++)
+            if (res[i].first <= E().resWidth()) pick_ = i;
+    }
+
     void exit() override { P().save(); }
+
+    void applyDisplay(bool fullscreen) {
+        auto res = E().resolutions();
+        auto [w, h] = res[std::clamp(pick_, 0, (int)res.size() - 1)];
+        E().setDisplay(fullscreen, w, h);
+        P().fullscreen = fullscreen;
+        P().resW = w;
+        P().resH = h;
+        P().save();
+    }
 
     void update(float dt) override {
         t_ += dt;
@@ -24,36 +43,54 @@ public:
         ui::titleBar("SETTINGS", col::violet);
         if (ui::backButton()) E().go(makeMenu);
 
-        Rectangle a{40, 100, 560, 330};
+        Rectangle a{40, 100, 560, 380};
         ui::panel(a);
         ui::text("AUDIO & DISPLAY", a.x + 24, a.y + 32, 24, col::text, ui::Left, true);
-        ui::text("Music", a.x + 24, a.y + 84, 22, col::text);
-        if (ui::slider({a.x + 170, a.y + 76, 340, 16}, P().musicVolume)) E().music.setVolume(P().musicVolume);
-        ui::text(std::to_string((int)(P().musicVolume * 100)) + "%", a.x + a.width - 24, a.y + 84, 18, col::muted, ui::Right);
-        ui::text("Sound FX", a.x + 24, a.y + 134, 22, col::text);
-        if (ui::slider({a.x + 170, a.y + 126, 340, 16}, P().sfxVolume)) {
+        ui::text("Music", a.x + 24, a.y + 80, 22, col::text);
+        if (ui::slider({a.x + 170, a.y + 72, 320, 16}, P().musicVolume)) E().music.setVolume(P().musicVolume);
+        ui::text(std::to_string((int)(P().musicVolume * 100)) + "%", a.x + a.width - 20, a.y + 80, 18, col::muted, ui::Right);
+        ui::text("Sound FX", a.x + 24, a.y + 124, 22, col::text);
+        if (ui::slider({a.x + 170, a.y + 116, 320, 16}, P().sfxVolume)) {
             E().sfx.setVolume(P().sfxVolume);
             if (std::fmod(t_, 0.15f) < GetFrameTime()) E().sfx.play(Sfx::Coin, 0.6f);
         }
-        ui::text(std::to_string((int)(P().sfxVolume * 100)) + "%", a.x + a.width - 24, a.y + 134, 18, col::muted, ui::Right);
-        bool fs = E().fullscreen();
-        if (ui::toggle({a.x + 24, a.y + 170, a.width - 48, 50}, "Fullscreen  (F11)", fs)) {
-            E().setFullscreen(fs);
-            P().fullscreen = fs;
-        }
-        if (ui::toggle({a.x + 24, a.y + 225, a.width - 48, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
+        ui::text(std::to_string((int)(P().sfxVolume * 100)) + "%", a.x + a.width - 20, a.y + 124, 18, col::muted, ui::Right);
 
-        Rectangle c{40, 450, 560, 240};
+        // display mode applies immediately
+        bool fs = E().fullscreen();
+        ui::text("Display", a.x + 24, a.y + 178, 22, col::text);
+        if (ui::button({a.x + 170, a.y + 156, 160, 44}, "WINDOWED", fs ? col::panelHi : col::purple, 18) && fs) applyDisplay(false);
+        if (ui::button({a.x + 342, a.y + 156, 194, 44}, "FULLSCREEN", fs ? col::purple : col::panelHi, 18) && !fs) applyDisplay(true);
+
+        // resolution: pick with arrows, then APPLY
+        auto res = E().resolutions();
+        pick_ = std::clamp(pick_, 0, (int)res.size() - 1);
+        ui::text("Resolution", a.x + 24, a.y + 234, 22, col::text);
+        if (ui::button({a.x + 170, a.y + 212, 44, 44}, "<", col::panelHi, 22, pick_ > 0)) pick_--;
+        auto [pw, ph] = res[pick_];
+        bool native = pick_ == (int)res.size() - 1 && pw == GetMonitorWidth(GetCurrentMonitor());
+        ui::text(TextFormat("%d x %d%s", pw, ph, native ? "*" : ""), a.x + 312, a.y + 234, 22, col::gold, ui::Center, true);
+        if (ui::button({a.x + 410, a.y + 212, 44, 44}, ">", col::panelHi, 22, pick_ + 1 < (int)res.size())) pick_++;
+        bool changed = pw != E().resWidth() || ph != E().resHeight();
+        if (ui::button({a.x + 464, a.y + 212, 72, 44}, "APPLY", changed ? col::green : col::panelHi, 16, changed)) applyDisplay(fs);
+        Vector2 cs = E().canvasSize();
+        ui::text(TextFormat("%s  -  rendering at %d x %d   (* = native)", fs ? "fullscreen scales to the monitor" : "window size",
+                            (int)cs.x, (int)cs.y),
+                 a.x + 24, a.y + 276, 15, col::muted);
+
+        if (ui::toggle({a.x + 24, a.y + 300, a.width - 48, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
+
+        Rectangle c{40, 500, 560, 190};
         ui::panel(c);
-        ui::text("CONTROLS", c.x + 24, c.y + 32, 24, col::text, ui::Left, true);
+        ui::text("CONTROLS", c.x + 24, c.y + 28, 22, col::text, ui::Left, true);
         const char* lines[] = {"Classic: WASD / arrows move, SPACE dash, 1-3 powerups",
                                "Horses (ride): alternate LEFT/RIGHT, SPACE jump",
                                "Stroopwafel: SPACE or click to drop",
                                "Esc: back / pause      F9: next song      F11: fullscreen"};
-        for (int i = 0; i < 4; i++) ui::text(lines[i], c.x + 24, c.y + 72 + i * 32, 18, col::muted);
+        for (int i = 0; i < 4; i++) ui::text(lines[i], c.x + 24, c.y + 60 + i * 26, 17, col::muted);
         std::string path = P().path();
         if (path.size() > 52) path = "..." + path.substr(path.size() - 49);
-        ui::text(path, c.x + 24, c.y + 72 + 4 * 32, 15, alpha(col::muted, 0.7f));
+        ui::text(path, c.x + 24, c.y + 60 + 4 * 26 + 4, 15, alpha(col::muted, 0.7f));
 
         // jukebox
         Rectangle j{630, 100, 610, 520};
@@ -97,6 +134,7 @@ public:
 
 private:
     float t_ = 0, resetArm_ = 0;
+    int pick_ = 0;
 };
 
 }  // namespace

@@ -41,7 +41,7 @@ void Particles::draw() const {
             case PShape::Star: drawStar(p.pos, s, p.rot, c); break;
             case PShape::Heart: ui::heart(p.pos, s * 2, c); break;
             case PShape::Bubble:
-                DrawCircleLinesV(p.pos, s, c);
+                ui::circleOutline(p.pos, s, c);
                 DrawCircleV({p.pos.x - s * 0.35f, p.pos.y - s * 0.35f}, s * 0.25f, c);
                 break;
             case PShape::Spark: {

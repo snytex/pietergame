@@ -33,14 +33,13 @@ std::unique_ptr<pg::Scene> firstScene() {
 int main() {
     using namespace pg;
     SetTraceLogLevel(LOG_WARNING);
-    if (!E().init("PieterGame 3")) return 1;
-
     P().load();
+    if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH)) return 1;
+
     bool mute = std::getenv("PG_MUTE") != nullptr;
     E().music.setVolume(mute ? 0 : P().musicVolume);
     E().sfx.setVolume(mute ? 0 : P().sfxVolume);
     E().screenShake = P().screenShake;
-    if (P().fullscreen) E().setFullscreen(true);
     if (const char* shot = std::getenv("PG_SHOT")) {
         const char* frames = std::getenv("PG_SHOT_FRAMES");
         E().autoScreenshot(shot, frames ? std::atoi(frames) : 120);
@@ -49,6 +48,8 @@ int main() {
     E().run(firstScene());
 
     P().fullscreen = E().fullscreen();
+    P().resW = E().resWidth();
+    P().resH = E().resHeight();
     P().save();
     E().shutdown();
     return 0;

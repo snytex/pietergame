@@ -64,6 +64,7 @@ public:
     float musicVolume = 0.55f;
     float sfxVolume = 0.7f;
     bool fullscreen = false;
+    int resW = 0, resH = 0;  // 0 = pick automatically
     bool screenShake = true;
 
     int count(const std::string& id) const;

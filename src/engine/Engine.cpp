@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <filesystem>
 
+#include <rlgl.h>
+
 namespace fs = std::filesystem;
 
 namespace pg {
@@ -40,23 +42,34 @@ static std::string findAssets() {
     return "assets";
 }
 
-bool Engine::init(const char* title) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
+bool Engine::init(const char* title, bool fullscreen, int resW, int resH) {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_HIDDEN);
     InitWindow(VW, VH, title);
     if (!IsWindowReady()) return false;
     SetWindowMinSize(640, 360);
     SetExitKey(KEY_NULL);  // Esc is "back" in this game
-    SetTargetFPS(144);
+    SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()) > 0 ? GetMonitorRefreshRate(GetCurrentMonitor()) : 144);
     InitAudioDevice();
+
+    if (resW <= 0 || resH <= 0) {
+        // first launch: the biggest preset that leaves some room on the monitor
+        int mon = GetCurrentMonitor();
+        int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
+        resW = VW, resH = VH;
+        for (auto [w, h] : resolutions())
+            if (w <= mw * 0.85f && h <= mh * 0.85f) resW = w, resH = h;
+    }
+    ClearWindowState(FLAG_WINDOW_HIDDEN);
+    setDisplay(fullscreen, resW, resH);
 
     assetDir_ = findAssets();
     TraceLog(LOG_INFO, "PIETER: assets at %s", assetDir_.c_str());
 
-    canvas_ = LoadRenderTexture(VW, VH);
-    SetTextureFilter(canvas_.texture, TEXTURE_FILTER_BILINEAR);
+    resizeCanvas();
 
-    fontSmall_ = LoadFontEx(assetPath("fonts/NotoSans-Bold.ttf").c_str(), 40, nullptr, 0);
-    fontBig_ = LoadFontEx(assetPath("fonts/NotoSans-Black.ttf").c_str(), 112, nullptr, 0);
+    // big atlases so text stays sharp at 1440p / 4K
+    fontSmall_ = LoadFontEx(assetPath("fonts/NotoSans-Bold.ttf").c_str(), 72, nullptr, 0);
+    fontBig_ = LoadFontEx(assetPath("fonts/NotoSans-Black.ttf").c_str(), 160, nullptr, 0);
     for (Font* f : {&fontSmall_, &fontBig_}) {
         GenTextureMipmaps(&f->texture);
         SetTextureFilter(f->texture, TEXTURE_FILTER_TRILINEAR);
@@ -112,12 +125,57 @@ void Engine::toast(const std::string& text, Color color) {
     if (toasts_.size() > 4) toasts_.erase(toasts_.begin());
 }
 
-void Engine::setFullscreen(bool on) {
-    if (on != fullscreen()) ToggleBorderlessWindowed();
-}
 bool Engine::fullscreen() const { return IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE); }
 
+std::vector<std::pair<int, int>> Engine::resolutions() const {
+    static const std::pair<int, int> presets[] = {{1280, 720},  {1366, 768},  {1600, 900},  {1920, 1080},
+                                                  {2560, 1440}, {3200, 1800}, {3840, 2160}};
+    int mon = GetCurrentMonitor();
+    int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
+    std::vector<std::pair<int, int>> out;
+    for (auto p : presets)
+        if (p.first <= mw && p.second <= mh) out.push_back(p);
+    if (out.empty()) out.push_back(presets[0]);
+    if (mw > 0 && mh > 0 && out.back() != std::pair{mw, mh}) out.push_back({mw, mh});  // native
+    return out;
+}
+
+void Engine::setDisplay(bool fs, int w, int h) {
+    resW_ = w;
+    resH_ = h;
+    if (fs != fullscreen()) ToggleBorderlessWindowed();
+    if (!fs) {
+        int mon = GetCurrentMonitor();
+        int mw = GetMonitorWidth(mon), mh = GetMonitorHeight(mon);
+        w = std::min(w, mw);
+        h = std::min(h, mh);
+        SetWindowSize(w, h);
+        Vector2 mp = GetMonitorPosition(mon);
+        SetWindowPosition((int)mp.x + (mw - w) / 2, (int)mp.y + (mh - h) / 2);
+    }
+}
+
+void Engine::resizeCanvas() {
+    // render at the real output size (or the chosen fullscreen resolution), 16:9
+    int bw = GetRenderWidth(), bh = GetRenderHeight();
+    if (fullscreen() && resW_ > 0) bw = resW_, bh = resH_;
+    int cw = std::min(bw, bh * VW / VH), ch = cw * VH / VW;
+    cw = std::max(cw, 320);
+    ch = std::max(ch, 180);
+    if (canvas_.id && canvas_.texture.width == cw && canvas_.texture.height == ch) return;
+    if (canvas_.id) UnloadRenderTexture(canvas_);
+    canvas_ = LoadRenderTexture(cw, ch);
+    SetTextureFilter(canvas_.texture, TEXTURE_FILTER_BILINEAR);
+    canvasScale_ = (float)cw / VW;
+}
+
+void Engine::beginClip(Rectangle r) {
+    BeginScissorMode((int)(r.x * canvasScale_), (int)(r.y * canvasScale_), (int)std::ceil(r.width * canvasScale_),
+                     (int)std::ceil(r.height * canvasScale_));
+}
+
 void Engine::updateCanvasTransform() {
+    resizeCanvas();
     float sw = (float)GetScreenWidth(), sh = (float)GetScreenHeight();
     scale_ = std::min(sw / VW, sh / VH);
     offset_ = {(sw - VW * scale_) / 2, (sh - VH * scale_) / 2};
@@ -194,10 +252,13 @@ void Engine::run(std::unique_ptr<Scene> first) {
 
         BeginTextureMode(canvas_);
         ClearBackground(col::bg);
+        rlPushMatrix();
+        rlScalef(canvasScale_, canvasScale_, 1);  // scenes draw in 1280x720 virtual units
         scene_->draw();
         if (flash_ > 0) DrawRectangle(0, 0, VW, VH, alpha(flashColor_, flash_));
         drawToasts();
         if (fade_ > 0) DrawRectangle(0, 0, VW, VH, alpha(BLACK, easeInOutSine(fade_)));
+        rlPopMatrix();
         EndTextureMode();
 
         if (!shotPath_.empty() && --shotFrames_ <= 0) {
@@ -211,7 +272,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
         BeginDrawing();
         ClearBackground(BLACK);
         Vector2 sh{shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0, shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0};
-        DrawTexturePro(canvas_.texture, {0, 0, (float)VW, -(float)VH},
+        DrawTexturePro(canvas_.texture, {0, 0, (float)canvas_.texture.width, -(float)canvas_.texture.height},
                        {offset_.x + sh.x, offset_.y + sh.y, VW * scale_, VH * scale_}, {0, 0}, 0, WHITE);
         EndDrawing();
     }

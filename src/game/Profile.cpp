@@ -120,7 +120,7 @@ void Profile::save() const {
       << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\n";
     f << "lastPity=" << lastPity << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
-      << "\nscreenShake=" << screenShake << "\n";
+      << "\nscreenShake=" << screenShake << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
     std::error_code ec;
     fs::rename(path() + ".tmp", path(), ec);
@@ -172,6 +172,8 @@ void Profile::load() {
         else if (k == "sfxVolume") sfxVolume = F();
         else if (k == "fullscreen") fullscreen = L() != 0;
         else if (k == "screenShake") screenShake = L() != 0;
+        else if (k == "resW") resW = (int)L();
+        else if (k == "resH") resH = (int)L();
     }
     if (pieter.lastUpdate == 0) pieter.lastUpdate = unixNow();
 }
@@ -179,10 +181,12 @@ void Profile::load() {
 void Profile::resetAll() {
     float mv = musicVolume, sv = sfxVolume;
     bool fsOn = fullscreen, sh = screenShake;
+    int rw = resW, rh = resH;
     std::error_code ec;
     fs::remove(path(), ec);
     *this = Profile{};
     musicVolume = mv; sfxVolume = sv; fullscreen = fsOn; screenShake = sh;
+    resW = rw; resH = rh;
     load();
     save();
 }
