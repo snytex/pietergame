@@ -68,6 +68,16 @@ int Jukebox::pickShuffle() {
 }
 
 void Jukebox::setMode(MusicMode m) {
+    // Silence (a video playing): pause, and resume afterwards where we were.
+    if (m == MusicMode::None) {
+        paused_ = true;
+        if (loaded_) PauseMusicStream(music_);
+        return;
+    }
+    if (paused_) {
+        paused_ = false;
+        if (loaded_) ResumeMusicStream(music_);
+    }
     // Once the player picked music themselves, scenes stop overriding it:
     // their choice keeps playing everywhere and the shuffle continues after it.
     if (userChoice_ && modeSet_) return;
@@ -96,6 +106,7 @@ void Jukebox::playTrack(int index) {
 }
 
 void Jukebox::update(float dt) {
+    if (paused_) return;
     if (pending_ >= 0) {
         if (fadeOut_ > 0) {
             fadeOut_ -= dt;

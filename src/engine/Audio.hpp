@@ -10,7 +10,7 @@
 
 namespace pg {
 
-enum class MusicMode { Title, Shuffle };
+enum class MusicMode { Title, Shuffle, None };  // None = paused (e.g. a video with its own audio)
 
 class Jukebox {
 public:
@@ -47,6 +47,7 @@ private:
     MusicMode mode_ = MusicMode::Title;
     bool modeSet_ = false;
     bool userChoice_ = false;
+    bool paused_ = false;
     float volume_ = 0.6f;
     float fade_ = 1.0f;               // fade-in multiplier
     int pending_ = -1;                // track waiting for the fade-out to finish

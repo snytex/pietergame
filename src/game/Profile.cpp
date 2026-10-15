@@ -118,7 +118,7 @@ void Profile::save() const {
       << stats.classicRuns << "\ns.totalEarned=" << stats.totalEarned << "\ns.totalWagered=" << stats.totalWagered
       << "\ns.biggestWin=" << stats.biggestWin << "\ns.horseWins=" << stats.horseWins << "\ns.rideWins="
       << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\n";
-    f << "lastPity=" << lastPity << "\n";
+    f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
       << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
@@ -168,6 +168,7 @@ void Profile::load() {
         else if (k == "s.rideWins") stats.rideWins = (int)L();
         else if (k == "s.stroopBest") stats.stroopBest = (int)L();
         else if (k == "lastPity") lastPity = L();
+        else if (k == "introSeen") introSeen = L() != 0;
         else if (k == "musicVolume") musicVolume = F();
         else if (k == "sfxVolume") sfxVolume = F();
         else if (k == "fullscreen") fullscreen = L() != 0;

@@ -59,6 +59,7 @@ public:
     PieterNeeds pieter;
     Stats stats;
     long long lastPity = 0;
+    bool introSeen = false;
 
     // settings
     float musicVolume = 0.55f;

@@ -21,4 +21,10 @@ std::unique_ptr<Scene> makeShop();
 std::unique_ptr<Scene> makeInventory();
 std::unique_ptr<Scene> makeSettings();
 
+// Intro: the animation itself (rendered offline to a video) and the player that
+// shows assets/video/intro.mpg, then continues to the main menu.
+std::unique_ptr<Scene> makeIntroAnimation();
+float introDuration();
+std::unique_ptr<Scene> makeIntroVideo();
+
 }  // namespace pg

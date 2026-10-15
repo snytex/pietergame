@@ -4,7 +4,9 @@
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
+#include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -15,6 +17,7 @@ namespace {
 //   PG_SHOT=out.png PG_SHOT_FRAMES=120   save a screenshot after N frames and quit
 //   PG_SHOT_TIME=6.5                     ...or after N seconds of game time
 //   PG_GOD=1 PG_WAVE=10                  Classic: invincible / start at a wave
+//   PG_RENDER_INTRO=1                    re-render assets/video/intro.{mpg,ogg} (+ media/*.mp4), needs ffmpeg
 //   PG_MUTE=1                            silence all audio
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -25,10 +28,46 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"settings", makeSettings},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
+        if (std::string(s) == "intro") return makeIntroVideo();
+        if (std::string(s) == "introanim") return makeIntroAnimation();
         auto it = scenes.find(s);
         if (it != scenes.end()) return it->second();
     }
-    return makeMenu();
+    // first launch: the intro, then the menu
+    return P().introSeen ? makeMenu() : makeIntroVideo();
+}
+
+// Renders the intro animation frame by frame and pipes it into ffmpeg together
+// with the theme song (the animation is keyed to its beats).
+int renderIntroVideo() {
+    using namespace pg;
+    const int w = 1280, h = 720;
+    const float fps = 30, dur = introDuration();
+    std::string song = E().assetPath("music/Stroopwafel_Rush.mp3");
+    std::string outDir = E().assetPath("video");
+    std::filesystem::create_directories("media");
+    char fade[64];
+    std::snprintf(fade, sizeof fade, "afade=t=out:st=%.2f:d=1.5", dur - 1.5f);
+    std::string cmd = "ffmpeg -y -v error -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) +
+                      " -r 30 -i - -t " + std::to_string(dur) + " -i \"" + song + "\" -filter_complex \"[1:a]" + fade +
+                      ",asplit=3[a1][a2][a3]\"" +
+                      // the game plays this (MPEG-1 + MP2, decoded by pl_mpeg)
+                      " -map 0:v -map [a1] -c:v mpeg1video -r 30 -b:v 6M -maxrate 9M -bufsize 6M -c:a mp2 -b:a 224k \"" + outDir + "/intro.mpg\"" +
+                      // its soundtrack as a separate stream for playback
+                      " -map [a2] -c:a libvorbis -q:a 6 \"" + outDir + "/intro.ogg\"" +
+                      // a shareable copy
+                      " -map 0:v -map [a3] -c:v libx264 -crf 16 -preset slow -pix_fmt yuv420p -c:a aac -b:a 256k -movflags +faststart"
+                      " media/PieterGame3_intro.mp4";
+    FILE* pipe = popen(cmd.c_str(), "w");
+    if (!pipe) return 1;
+    int frames = (int)(dur * fps);
+    int written = 0;
+    E().renderOffline(makeIntroAnimation(), w, h, fps, frames, [&](const Image& img) {
+        fwrite(img.data, 1, (size_t)w * h * 4, pipe);
+        if (++written % 30 == 0) std::fprintf(stderr, "\rrendering intro: %d / %d frames", written, frames);
+    });
+    std::fprintf(stderr, "\n");
+    return pclose(pipe) == 0 ? 0 : 1;
 }
 
 }  // namespace
@@ -54,6 +93,12 @@ int main() {
         if (p.state.empty()) p.state = fmtNum(P().coins) + " Pietercoins";
     };
     if (P().discordRpc) E().discord.start(discordAppId());
+
+    if (std::getenv("PG_RENDER_INTRO")) {
+        int rc = renderIntroVideo();
+        E().shutdown();
+        return rc;
+    }
 
     E().run(firstScene());
 

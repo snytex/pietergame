@@ -248,6 +248,41 @@ void Engine::resizeCanvas() {
     canvasScale_ = (float)cw / VW;
 }
 
+void Engine::renderOffline(std::unique_ptr<Scene> scene, int w, int h, float fps, int frames,
+                           const std::function<void(const Image&)>& sink) {
+    RenderTexture2D target = LoadRenderTexture(w, h);
+    RenderTexture2D saved = canvas_;
+    float savedScale = canvasScale_;
+    canvas_ = target;  // beginClip() and friends work against the canvas
+    canvasScale_ = (float)w / VW;
+    scene->enter();
+    float dt = 1.0f / fps;
+    for (int i = 0; i < frames && !WindowShouldClose(); i++) {
+        time_ += dt;
+        scene->update(dt);
+        BeginTextureMode(target);
+        ClearBackground(BLACK);
+        rlPushMatrix();
+        rlScalef(canvasScale_, canvasScale_, 1);
+        scene->draw();
+        rlPopMatrix();
+        EndTextureMode();
+        Image img = LoadImageFromTexture(target.texture);
+        ImageFlipVertical(&img);
+        sink(img);
+        UnloadImage(img);
+        // keep the window responsive and show progress
+        BeginDrawing();
+        ClearBackground(BLACK);
+        DrawTexturePro(target.texture, {0, 0, (float)w, -(float)h}, {0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()}, {0, 0}, 0, WHITE);
+        EndDrawing();
+    }
+    scene->exit();
+    canvas_ = saved;
+    canvasScale_ = savedScale;
+    UnloadRenderTexture(target);
+}
+
 void Engine::beginClip(Rectangle r) {
     BeginScissorMode((int)(r.x * canvasScale_), (int)(r.y * canvasScale_), (int)std::ceil(r.width * canvasScale_),
                      (int)std::ceil(r.height * canvasScale_));

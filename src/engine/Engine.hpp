@@ -100,6 +100,11 @@ public:
     void beginClip(Rectangle r);
     void endClip() { EndScissorMode(); }
 
+    // Render a scene offline at a fixed frame rate (e.g. to encode a video).
+    // `sink` receives every frame as an RGBA image of size w x h.
+    void renderOffline(std::unique_ptr<Scene> scene, int w, int h, float fps, int frames,
+                       const std::function<void(const Image&)>& sink);
+
     // Dev helper: save the canvas to `path` after `frames` frames, then quit.
     void autoScreenshot(const std::string& path, int frames) { shotPath_ = path; shotFrames_ = frames; }
     void autoScreenshotAt(const std::string& path, float seconds) { shotPath_ = path; shotFrames_ = 1 << 30; shotTime_ = seconds; }

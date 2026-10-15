@@ -4,6 +4,8 @@
 #include "engine/Ui.hpp"
 
 #include <algorithm>
+
+#include <rlgl.h>
 #include <unordered_map>
 
 namespace pg::fx {
@@ -89,20 +91,29 @@ void dashedRing(Vector2 c, float r, float thick, int dashes, float rot, Color co
 }
 
 void gradientText(const std::string& s, float x, float y, float size, Color top, Color bottom, float outline) {
-    // outline + drop shadow, then the text twice with a clip to fake a vertical gradient
+    // outline + drop shadow
     for (int i = 0; i < 16; i++) {
         Vector2 o = fromAngle(i * PI / 8, outline);
         ui::text(s, x + o.x, y + o.y + outline * 0.8f, size, col::outline, ui::Center, true);
     }
     ui::text(s, x, y, size, bottom, ui::Center, true);
+    // The gradient is faked by redrawing the top half through a scissor rect.
+    // Scissor works in canvas pixels, so map the rect through the current rlgl
+    // transform; rotated text just keeps the solid colour.
+    Matrix m = rlGetMatrixTransform();
+    if (std::abs(m.m1) > 1e-4f || std::abs(m.m4) > 1e-4f) return;
     float w = ui::measure(s, size, true);
-    E().beginClip({x - w / 2 - 4, y - size * 0.62f, w + 8, size * 0.6f});
+    auto clip = [&](float top0, float h) {
+        Vector3 a = Vector3Transform({x - w / 2 - 4, top0, 0}, m), b = Vector3Transform({x + w / 2 + 4, top0 + h, 0}, m);
+        BeginScissorMode((int)std::floor(std::min(a.x, b.x)), (int)std::floor(std::min(a.y, b.y)), (int)std::ceil(std::abs(b.x - a.x)),
+                         (int)std::ceil(std::abs(b.y - a.y)));
+    };
+    clip(y - size * 0.62f, size * 0.6f);
     ui::text(s, x, y, size, top, ui::Center, true);
-    E().endClip();
-    // glossy shine line
-    E().beginClip({x - w / 2 - 4, y - size * 0.62f, w + 8, size * 0.14f});
+    EndScissorMode();
+    clip(y - size * 0.62f, size * 0.14f);
     ui::text(s, x, y, size, lighten(top, 0.6f), ui::Center, true);
-    E().endClip();
+    EndScissorMode();
 }
 
 Texture2D& blurred(const std::string& name) {

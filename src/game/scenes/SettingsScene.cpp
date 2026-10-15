@@ -146,6 +146,7 @@ public:
             for (int i = 0; i < n; i++)
                 if (E().music.trackName(i) == "PieterGame OST") E().music.playTrack(i);
         }
+        if (ui::button({j.x + 416, j.y + j.height - 64, 170, 46}, "WATCH INTRO", col::pink, 18)) E().go(makeIntroVideo);
 
         // reset save
         Rectangle rb{j.x, 640, j.width, 50};

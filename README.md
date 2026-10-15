@@ -5,6 +5,14 @@ This one is offline, open source and written in C++20 on a small custom engine (
 
 ![menu](assets/images/menu_bg.png)
 
+## Intro
+
+The first time you launch the game it plays an intro video set to the PieterGame 3 theme, *Stroopwafel Rush*. You can watch it again from Settings. The animation is an engine scene (`src/game/scenes/IntroScene.cpp`) timed to the song's beats (100 BPM, drop at 6.66s). It's rendered offline into `assets/video/intro.mpg` (MPEG-1, decoded in game by [pl_mpeg](https://github.com/phoboslab/pl_mpeg)) plus `intro.ogg`. A shareable `media/PieterGame3_intro.mp4` is written alongside. To re-render (needs ffmpeg; use `xvfb-run` on a headless machine):
+
+```sh
+PG_RENDER_INTRO=1 ./build/pietergame3
+```
+
 ## Game modes
 
 | Mode | What you do |
