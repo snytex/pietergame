@@ -1,0 +1,92 @@
+// Player profile: wallet, inventory, cosmetics, settings, stats and Pieter's
+// needs. Persisted as a simple key=value text file.
+#pragma once
+
+#include "engine/Core.hpp"
+
+#include <array>
+#include <map>
+#include <string>
+#include <vector>
+
+namespace pg {
+
+enum class ItemKind { Powerup, Food, Hat, Trail };
+
+struct ItemDef {
+    std::string id;
+    std::string name;
+    std::string desc;
+    long long price;
+    ItemKind kind;
+    Color color;
+    // food only
+    int hunger = 0, fun = 0, energy = 0;
+};
+
+const std::vector<ItemDef>& itemDb();
+const ItemDef* findItem(const std::string& id);
+
+struct PieterNeeds {
+    float hunger = 80, fun = 80, energy = 80, hygiene = 80;  // 0..100
+    bool sleeping = false;
+    long long xp = 0;
+    int level = 1;
+    long long lastUpdate = 0;  // unix seconds
+    float mood() const { return (hunger + fun + energy + hygiene) / 4; }
+    static long long xpForLevel(int lvl) { return 100 + (lvl - 1) * 60; }
+};
+
+struct Stats {
+    int bestWave = 0;
+    int classicWins = 0;
+    int classicRuns = 0;
+    long long totalEarned = 0;
+    long long totalWagered = 0;
+    long long biggestWin = 0;
+    int horseWins = 0;
+    int rideWins = 0;
+    int stroopBest = 0;
+};
+
+class Profile {
+public:
+    long long coins = 500;
+    std::map<std::string, int> inventory;
+    std::array<std::string, 3> loadout{"shield", "speed", "slowmo"};
+    std::string hat;     // equipped hat item id ("" = none)
+    std::string trail;   // equipped trail item id
+    PieterNeeds pieter;
+    Stats stats;
+    long long lastPity = 0;
+
+    // settings
+    float musicVolume = 0.55f;
+    float sfxVolume = 0.7f;
+    bool fullscreen = false;
+    bool screenShake = true;
+
+    int count(const std::string& id) const;
+    bool owns(const std::string& id) const { return count(id) > 0; }
+    void give(const std::string& id, int n = 1);
+    bool take(const std::string& id, int n = 1);
+
+    bool spend(long long amount);          // false if broke
+    void earn(long long amount, bool fromGambling = false);
+    void wager(long long amount) { stats.totalWagered += amount; }
+
+    // Pieter gives a handout when you are broke (cooldown).
+    bool canPity() const;
+    long long pitySecondsLeft() const;
+    void takePity();
+
+    void load();
+    void save() const;
+    void resetAll();
+    std::string path() const;
+};
+
+Profile& P();
+long long unixNow();
+
+}  // namespace pg

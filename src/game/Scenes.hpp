@@ -1,0 +1,24 @@
+// Factories for every scene in the game.
+#pragma once
+
+#include "engine/Engine.hpp"
+
+#include <memory>
+
+namespace pg {
+
+std::unique_ptr<Scene> makeMenu();
+std::unique_ptr<Scene> makeClassic();
+std::unique_ptr<Scene> makePieterRoom();
+std::unique_ptr<Scene> makeHorses();
+std::unique_ptr<Scene> makeStroopwafel();
+std::unique_ptr<Scene> makeCasino();
+std::unique_ptr<Scene> makeRoulette();
+std::unique_ptr<Scene> makeBlackjack();
+std::unique_ptr<Scene> makeMines();
+std::unique_ptr<Scene> makeSlots();
+std::unique_ptr<Scene> makeShop();
+std::unique_ptr<Scene> makeInventory();
+std::unique_ptr<Scene> makeSettings();
+
+}  // namespace pg
