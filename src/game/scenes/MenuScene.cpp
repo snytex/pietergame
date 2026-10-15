@@ -10,6 +10,7 @@ namespace pg {
 namespace {
 
 struct Hotspot {
+    const char* who;
     Vector2 pos;
     float radius;
     const char* line;
@@ -52,6 +53,7 @@ public:
                     fx_.floatText(h.line, {hp.x, hp.y - h.radius * 0.6f}, h.color, 30);
                     fx_.burst(hp, 16, h.color, 260, 7, 0.7f, h.sound == Sfx::Kiss ? PShape::Heart : PShape::Star);
                     if (h.sound == Sfx::Neigh) E().shake(5);
+                    secretClick(h.who);
                 }
             }
         }
@@ -95,6 +97,22 @@ public:
     }
 
 private:
+    // Secret: Pieter, Pieter, Kira, Pieter, Davi opens the admin panel.
+    void secretClick(const char* who) {
+        if (t_ - lastSecret_ > 4) secret_.clear();
+        lastSecret_ = t_;
+        secret_.push_back(who);
+        if (secret_.size() > 5) secret_.erase(secret_.begin());
+        static const std::vector<std::string> code = {"pieter", "pieter", "kira", "pieter", "davi"};
+        if (secret_ == code) {
+            secret_.clear();
+            E().sfx.play(Sfx::Win);
+            E().flash(col::green, 0.4f);
+            E().toast("ADMIN PANEL UNLOCKED", col::green);
+            E().go(makeAdmin);
+        }
+    }
+
     void drawTitle() {
         float cx = VW / 2.0f, y = 92 + std::sin(t_ * 2) * 4;
         float rot = std::sin(t_ * 1.3f) * 2;
@@ -132,15 +150,16 @@ private:
         if (ui::button({r.x + 230, r.y + 125, 180, 52}, "QUIT", col::red)) E().quit();
     }
 
-    float t_ = 0, spawn_ = 0;
+    float t_ = 0, spawn_ = 0, lastSecret_ = -10;
+    std::vector<std::string> secret_;
     Vector2 parallax_{};
     bool confirmQuit_ = false;
     Particles fx_;
     std::vector<Hotspot> hotspots_ = {
-        {{172, 287}, 75, "Ik ben Pieter!", Sfx::Power, col::gold},
-        {{1001, 125}, 95, "JUHUH!", Sfx::Neigh, col::orange},
-        {{980, 380}, 70, "PRO since 2010 (claims)", Sfx::Error, col::cyan},
-        {{1192, 423}, 70, "hihi <3", Sfx::Kiss, col::pink},
+        {"pieter", {172, 287}, 75, "Ik ben Pieter!", Sfx::Power, col::gold},
+        {"horse", {1001, 125}, 95, "JUHUH!", Sfx::Neigh, col::orange},
+        {"davi", {980, 380}, 70, "PRO since 2010 (claims)", Sfx::Error, col::cyan},
+        {"kira", {1192, 423}, 70, "hihi <3", Sfx::Kiss, col::pink},
     };
 };
 

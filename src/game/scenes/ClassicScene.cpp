@@ -4,6 +4,7 @@
 #include "engine/Fx.hpp"
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
+#include "game/Admin.hpp"
 #include "game/Art.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
@@ -91,16 +92,24 @@ public:
     }
 
     void enter() override {
-        P().stats.classicRuns++;
-        P().save();
+        practice_ = Admin().practicePending;
+        Admin().practicePending = false;
+        if (!practice_) {
+            P().stats.classicRuns++;
+            P().save();
+        } else {
+            hearts_ = Admin().hearts;
+        }
         player_ = {kArena.x + kArena.width / 2, kArena.y + kArena.height / 2};
         god_ = std::getenv("PG_GOD") != nullptr;  // dev hook
         int first = 1;
         if (const char* w = std::getenv("PG_WAVE")) first = std::max(1, std::atoi(w));  // dev hook
+        if (practice_) first = Admin().startWave;
         startWave(first);
     }
 
     void exit() override {
+        if (practice_) return;  // practice runs don't count
         P().stats.bestWave = std::max(P().stats.bestWave, wave_ - (phase_ == Phase::Dead ? 1 : 0));
         P().save();
     }
@@ -110,10 +119,11 @@ public:
         t_ += dt;
         totalT_ += dt;
         if (E().backPressed()) {
-            if (phase_ == Phase::Dead || phase_ == Phase::Victory) E().go(makeMenu);
+            if (phase_ == Phase::Dead || phase_ == Phase::Victory) toMenu();
             else paused_ = !paused_;
         }
         if (paused_) return;
+        dt *= Admin().speed;  // practice speed (1 normally)
 
         // presentation state keeps animating even during hit-stop
         worldZoom_ = damp(worldZoom_, 1.0f, 6, dt);
@@ -152,7 +162,7 @@ public:
         coinT_ = 1.0f;
         bobaT_ = 2.0f;
         powerT_ = rnd(8, 14);
-        waveLen_ = 22 + std::min(w, 12) * 2.0f;
+        waveLen_ = 18 + std::min(w, 12) * 1.5f;
         boss_ = Boss{};
         BossKind bk = BossKind::None;
         if (w == 5) bk = BossKind::Davi;
@@ -177,6 +187,7 @@ public:
         }
         b.maxHp = (int)(b.maxHp * extra);
         b.hp = b.maxHp;
+        if (practice_ && Admin().enragedBoss) b.hp = b.maxHp / 2;  // practice the second phase
         bossChip_ = (float)b.hp;
         b.pos = {kArena.x + kArena.width / 2, kArena.y - 120};
         b.attackT = 2.5f;
@@ -191,12 +202,12 @@ public:
 
         float edt = dt * enemyTimeScale();
         bool bossWave = boss_.kind != BossKind::None;
-        float diff = 1 + (wave_ - 1) * 0.07f;
+        float diff = 1 + (wave_ - 1) * 0.045f;
 
         // spawn regular enemies (fewer during boss fights)
         spawnT_ -= dt;
-        int maxEnemies = bossWave ? 2 + wave_ / 4 : 5 + wave_ * 2;
-        float interval = std::max(0.35f, 1.5f - wave_ * 0.11f) * (bossWave ? 2.4f : 1.0f);
+        int maxEnemies = bossWave ? 1 + wave_ / 5 : 3 + wave_;
+        float interval = std::max(0.75f, 2.0f - wave_ * 0.11f) * (bossWave ? 2.6f : 1.0f);
         if (spawnT_ <= 0 && (int)(enemies_.size() + warnings_.size()) < maxEnemies) {
             spawnT_ = interval * rnd(0.7f, 1.3f);
             queueEnemy(pickType());
@@ -266,9 +277,9 @@ public:
 
     EType pickType() {
         std::vector<std::pair<EType, float>> pool = {{EType::Chaser, 3}, {EType::Bouncer, 2.5f}};
-        if (wave_ >= 2) pool.push_back({EType::Shooter, 1.6f});
-        if (wave_ >= 3) pool.push_back({EType::Charger, 1.4f});
-        if (wave_ >= 6) pool.push_back({EType::Spinner, 1.0f});
+        if (wave_ >= 2) pool.push_back({EType::Shooter, 1.2f});
+        if (wave_ >= 4) pool.push_back({EType::Charger, 1.1f});
+        if (wave_ >= 7) pool.push_back({EType::Spinner, 0.8f});
         float total = 0;
         for (auto& p : pool) total += p.second;
         float r = rnd(0, total);
@@ -291,10 +302,10 @@ public:
 
     void spawnEnemy(EType t, Vector2 at, float diff) {
         Enemy e{t, at};
-        e.life = rnd(11, 16);
+        e.life = rnd(8, 12);
         switch (t) {
             case EType::Chaser: e.r = 18; break;
-            case EType::Bouncer: e.r = 15; e.vel = rndDir() * 250 * diff; break;
+            case EType::Bouncer: e.r = 15; e.vel = rndDir() * 210 * diff; break;
             case EType::Shooter: e.r = 21; e.timer = rnd(1.0f, 2.0f); e.vel = rndDir() * 40; break;
             case EType::Charger: e.r = 19; e.timer = rnd(0.8f, 1.6f); break;
             case EType::Spinner: e.r = 20; e.timer = 2.0f; e.vel = rndDir() * 60; break;
@@ -336,7 +347,7 @@ public:
         Vector2 toP = Vector2Normalize(player_ - e.pos);
         switch (e.type) {
             case EType::Chaser: {
-                float sp = 145 * diff;
+                float sp = 120 * diff;
                 e.vel = damp(e.vel, toP * sp, 2.2f, dt);
                 break;
             }
@@ -345,11 +356,11 @@ public:
                 e.timer -= dt;
                 e.vel = damp(e.vel, toP * -30 + fromAngle(e.t) * 40, 1, dt);
                 if (e.timer <= 0) {
-                    e.timer = std::max(1.1f, 2.4f - wave_ * 0.1f);
-                    fire(e.pos, toP, 250 * diff, col::green);
-                    if (wave_ >= 7) {
-                        fire(e.pos, Vector2Rotate(toP, 0.25f), 250 * diff, col::green);
-                        fire(e.pos, Vector2Rotate(toP, -0.25f), 250 * diff, col::green);
+                    e.timer = std::max(1.8f, 3.0f - wave_ * 0.1f);
+                    fire(e.pos, toP, 215 * diff, col::green);
+                    if (wave_ >= 9) {
+                        fire(e.pos, Vector2Rotate(toP, 0.3f), 215 * diff, col::green);
+                        fire(e.pos, Vector2Rotate(toP, -0.3f), 215 * diff, col::green);
                     }
                     E().sfx.play(Sfx::Shoot, 0.4f);
                 }
@@ -358,14 +369,14 @@ public:
                 e.timer -= dt;
                 if (e.state == 0) {  // drifting
                     e.vel = damp(e.vel, toP * 50, 2, dt);
-                    if (e.timer <= 0) { e.state = 1; e.timer = 0.75f; e.aim = toP; }
+                    if (e.timer <= 0) { e.state = 1; e.timer = 0.95f; e.aim = toP; }
                 } else if (e.state == 1) {  // telegraph
                     e.vel = damp(e.vel, {0, 0}, 8, dt);
                     e.aim = Vector2Normalize(damp(e.aim, toP, 1.5f, dt));
                     if (e.timer <= 0) {
                         e.state = 2;
                         e.timer = 0.55f;
-                        e.vel = e.aim * 700 * diff;
+                        e.vel = e.aim * 600 * diff;
                         E().sfx.play(Sfx::Dash, 0.4f);
                         shocks_.add(e.pos, 10, 50, col::pink, 0.3f, 6);
                     }
@@ -376,8 +387,8 @@ public:
             case EType::Spinner:
                 e.timer -= dt;
                 if (e.timer <= 0) {
-                    e.timer = 2.8f;
-                    ring(e.pos, 8, 170 * diff, col::cyan, 0, e.t);
+                    e.timer = 3.4f;
+                    ring(e.pos, 6, 150 * diff, col::cyan, 0, e.t);
                     shocks_.add(e.pos, e.r, e.r + 40, col::cyan, 0.35f, 6);
                     E().sfx.play(Sfx::Shoot, 0.35f, 0.7f);
                 }
@@ -411,19 +422,19 @@ public:
 
         switch (b.kind) {
             case BossKind::Davi: {
-                b.vel = damp(b.vel, toP * 85 * rage, 1.2f, dt);
+                b.vel = damp(b.vel, toP * 70 * rage, 1.2f, dt);
                 if (b.attackT <= 0) {
                     b.pattern++;
                     if (b.enraged() && b.pattern % 3 == 0) {
-                        ring(b.pos, 16, 210, col::violet, 1, b.t);
+                        ring(b.pos, 12, 190, col::violet, 1, b.t);
                         shocks_.add(b.pos, b.r, b.r + 160, col::violet, 0.6f, 14);
                         say(chance(0.5f) ? "RAGE QUIT MODE" : "my controller is broken!!");
                         E().shake(6);
                     } else {
-                        for (int i = -2; i <= 2; i++) fire(b.pos, Vector2Rotate(toP, i * 0.22f), 290 * rage, col::violet, 1, 11);
+                        for (int i = -1; i <= 1; i++) fire(b.pos, Vector2Rotate(toP, i * 0.28f), 250 * rage, col::violet, 1, 11);
                         if (chance(0.3f)) say(chance(0.5f) ? "PRO SINCE 2010" : "lag!! that was lag");
                     }
-                    b.attackT = 1.9f / rage;
+                    b.attackT = 2.3f / rage;
                     E().sfx.play(Sfx::Shoot, 0.6f, 0.8f);
                 }
                 break;
@@ -433,7 +444,7 @@ public:
                 Vector2 target{c.x + std::sin(b.t * 0.7f) * 380, c.y + std::sin(b.t * 1.1f) * 170};
                 b.vel = damp(b.vel, (target - b.pos) * 2.0f, 2, dt);
                 b.spiral += dt;
-                float rate = b.enraged() ? 0.09f : 0.13f;
+                float rate = b.enraged() ? 0.13f : 0.19f;
                 while (b.spiral > rate) {
                     b.spiral -= rate;
                     float a = b.t * 2.2f;
@@ -443,7 +454,7 @@ public:
                 if (b.attackT <= 0) {
                     b.attackT = 6.0f;
                     say(chance(0.5f) ? "*wink*" : "Brother sister rivals FOREVER");
-                    for (int i = 0; i < 2; i++) queueEnemy(EType::Chaser);
+                    queueEnemy(EType::Chaser);
                     E().sfx.play(Sfx::Kiss);
                 }
                 break;
@@ -451,7 +462,7 @@ public:
             case BossKind::Horse: {
                 // state 0 roam, 1 charge telegraph, 2 charging, 3 rain
                 if (b.state == 0) {
-                    b.vel = damp(b.vel, toP * 70 * rage, 1.5f, dt);
+                    b.vel = damp(b.vel, toP * 60 * rage, 1.5f, dt);
                     if (b.attackT <= 0) {
                         b.pattern++;
                         if (b.pattern % 3 == 2) {
@@ -460,7 +471,7 @@ public:
                             say("HORSESHOE RAIN!");
                         } else {
                             b.state = 1;
-                            b.attackT = 0.9f / rage;
+                            b.attackT = 1.15f / rage;
                             b.dir = toP;
                             E().sfx.play(Sfx::Neigh, 0.8f);
                             say("JUHUH!");
@@ -469,7 +480,7 @@ public:
                 } else if (b.state == 1) {
                     b.vel = damp(b.vel, {0, 0}, 10, dt);
                     b.dir = Vector2Normalize(damp(b.dir, toP, 2.5f, dt));
-                    if (b.attackT <= 0) { b.state = 2; b.vel = b.dir * 820 * rage; E().sfx.play(Sfx::Dash); }
+                    if (b.attackT <= 0) { b.state = 2; b.vel = b.dir * 720 * rage; E().sfx.play(Sfx::Dash); }
                 } else if (b.state == 2) {
                     Vector2 before = b.vel;
                     b.pos += b.vel * dt;
@@ -477,7 +488,7 @@ public:
                     if (before.x != b.vel.x || before.y != b.vel.y) {
                         E().shake(12);
                         E().sfx.play(Sfx::Boom, 0.7f);
-                        ring(b.pos, b.enraged() ? 18 : 12, 220, col::orange, 3, rnd(0, 6.28f));
+                        ring(b.pos, b.enraged() ? 12 : 8, 200, col::orange, 3, rnd(0, 6.28f));
                         fx_.burst(b.pos, 30, col::orange, 400, 8, 0.6f);
                         fx_.burst(b.pos, 20, rgba(0xc8a070ff), 250, 10, 0.9f, PShape::Circle, 200);
                         shocks_.add(b.pos, b.r, b.r + 220, col::orange, 0.6f, 18);
@@ -493,7 +504,7 @@ public:
                 } else if (b.state == 3) {
                     b.vel = damp(b.vel, {0, 0}, 3, dt);
                     b.spiral += dt;
-                    float rate = b.enraged() ? 0.1f : 0.16f;
+                    float rate = b.enraged() ? 0.16f : 0.24f;
                     while (b.spiral > rate) {
                         b.spiral -= rate;
                         Vector2 from{rnd(kArena.x + 20, kArena.x + kArena.width - 20), kArena.y - 20};
@@ -600,7 +611,7 @@ public:
 
     // returns true if the player actually took the hit (or a shield ate it)
     bool hitPlayer(Vector2 from) {
-        if (invuln_ > 0 || dashT_ > 0 || phase_ != Phase::Playing || god_) return false;
+        if (invuln_ > 0 || dashT_ > 0 || phase_ != Phase::Playing || god_ || Admin().god) return false;
         if (shield_) {
             shield_ = false;
             invuln_ = 1.0f;
@@ -612,7 +623,7 @@ public:
             return true;
         }
         hearts_--;
-        invuln_ = 1.5f;
+        invuln_ = 2.0f;
         pvel_ = Vector2Normalize(player_ - from) * 500;
         E().sfx.play(Sfx::Hurt);
         E().shake(9);
@@ -633,7 +644,7 @@ public:
         phaseT_ = 0;
         E().sfx.play(Sfx::Lose);
         fx_.burst(player_, 60, col::gold, 500, 8, 1.0f, PShape::Star);
-        P().stats.bestWave = std::max(P().stats.bestWave, wave_ - 1);
+        if (!practice_) P().stats.bestWave = std::max(P().stats.bestWave, wave_ - 1);
         P().save();
     }
 
@@ -767,11 +778,11 @@ public:
         homing_.clear();
         int bonus = 15 * wave_;
         addCoins(bonus, {VW / 2.0f, VH / 2.0f + 60});
-        P().stats.bestWave = std::max(P().stats.bestWave, wave_);
+        if (!practice_) P().stats.bestWave = std::max(P().stats.bestWave, wave_);
         if (wave_ == kFinalWave) {
             phase_ = Phase::Victory;
             phaseT_ = 0;
-            P().stats.classicWins++;
+            if (!practice_) P().stats.classicWins++;
             addCoins(1000, {VW / 2.0f, VH / 2.0f});
             fx_.confetti({VW / 2.0f, VH / 2.0f}, 200, 800);
             E().sfx.play(Sfx::Win);
@@ -949,7 +960,7 @@ public:
         Color c = enemyColor(e.type);
         fx::glow(e.pos, e.r * 3.8f, alpha(c, 0.42f * easeOutCubic(e.spawn)));
         if (e.type == EType::Charger && e.state == 1) {
-            float k = 1 - e.timer / 0.75f;
+            float k = 1 - e.timer / 0.95f;
             Vector2 end = e.pos + e.aim * 900;
             fx::glowLine(e.pos, end, 14 + 20 * k, alpha(col::red, 0.08f + 0.2f * k));
         }
@@ -961,7 +972,7 @@ public:
 
     void drawChargerTelegraph(const Enemy& e) {
         if (e.type != EType::Charger || e.state != 1) return;
-        float k = 1 - e.timer / 0.75f;
+        float k = 1 - e.timer / 0.95f;
         float a = angleOf(e.aim);
         // marching chevrons along the charge lane
         for (int i = 0; i < 9; i++) {
@@ -1064,7 +1075,7 @@ public:
         Color bc = b.enraged() ? col::red : bossColor(b.kind);
         if (b.kind == BossKind::Horse && b.state == 1) {
             // charge lane
-            float k = 1 - b.attackT / 0.9f;
+            float k = 1 - b.attackT / 1.15f;
             Vector2 n{-b.dir.y, b.dir.x};
             Vector2 a0 = b.pos + n * b.r, a1 = b.pos - n * b.r, e0 = a0 + b.dir * 1600, e1 = a1 + b.dir * 1600;
             DrawTriangle(a0, e1, e0, alpha(col::red, 0.08f + 0.12f * k));
@@ -1339,6 +1350,17 @@ public:
             ui::text(std::to_string(i + 1), r.x + 5, r.y + 3, 15, col::outline, ui::Center, true);
             ui::text("x" + std::to_string(n), r.x + r.width - 5, r.y + r.height - 9, 14, ready ? WHITE : col::muted, ui::Right, true);
         }
+        // cheats / practice badge
+        std::string badge;
+        if (practice_) badge += "PRACTICE  ";
+        if (Admin().god || god_) badge += "GOD MODE  ";
+        if (Admin().speed != 1) badge += TextFormat("%.2gx SPEED", Admin().speed);
+        if (!badge.empty()) {
+            float bw = ui::measure(badge, 16, true) + 24;
+            Rectangle br{VW - 20 - bw, 86, bw, 26};
+            DrawRectangleRounded(br, 1, 8, alpha(col::red, 0.85f));
+            ui::text(badge, br.x + bw / 2, br.y + 13, 16, WHITE, ui::Center, true);
+        }
         float hintA = clamp01(1.5f - totalT_ / 8);
         if (hintA > 0)
             ui::text("WASD move   SPACE dash   1-3 powerups   ESC pause", VW - 30, VH - 14, 15, alpha(col::text, 0.6f * hintA), ui::Right);
@@ -1438,6 +1460,7 @@ public:
         fx_.draw();
         shocks_.draw();
         drawArenaBorder();
+        if (Admin().hitboxes) drawHitboxes();
         rlPopMatrix();
 
         // screen-space mood: slow-mo tint, low health heartbeat, damage
@@ -1473,6 +1496,22 @@ public:
         if (paused_) drawPause();
     }
 
+    void drawHitboxes() {
+        Color c = alpha(col::green, 0.9f);
+        // the radii here are the ones the collision checks use
+        ui::circleOutline(player_, kPlayerR - 6, alpha(WHITE, 0.9f), 2);
+        for (auto& e : enemies_) ui::circleOutline(e.pos, e.r, c, 2);
+        for (auto& b : bullets_) ui::circleOutline(b.pos, b.r, alpha(col::red, 0.9f), 2);
+        if (boss_.alive()) ui::circleOutline(boss_.pos, boss_.r - 10, alpha(col::red, 0.9f), 2);
+    }
+
+    void restart() {
+        if (practice_) Admin().practicePending = true;  // same practice setup again
+        E().go(makeClassic);
+    }
+
+    void toMenu() { E().go(practice_ ? makeAdmin : makeMenu); }
+
     void drawEndScreen(bool won) {
         float a = clamp01(phaseT_ / 0.6f);
         DrawRectangle(0, 0, VW, VH, alpha(BLACK, 0.65f * a));
@@ -1500,13 +1539,13 @@ public:
         float by = r.y + r.height - 100;
         if (won) {
             if (ui::button({r.x + 40, by, 170, 60}, "ENDLESS", col::violet)) { phase_ = Phase::Cleared; phaseT_ = 2.0f; }
-            if (ui::button({r.x + 225, by, 170, 60}, "AGAIN", col::purple)) E().go(makeClassic);
-            if (ui::button({r.x + 410, by, 170, 60}, "MENU", col::panelHi)) E().go(makeMenu);
+            if (ui::button({r.x + 225, by, 170, 60}, "AGAIN", col::purple)) restart();
+            if (ui::button({r.x + 410, by, 170, 60}, practice_ ? "ADMIN" : "MENU", col::panelHi)) toMenu();
         } else {
-            if (ui::button({r.x + 60, by, 240, 60}, "RETRY", col::purple, 28)) E().go(makeClassic);
-            if (ui::button({r.x + 320, by, 240, 60}, "MENU", col::panelHi, 28)) E().go(makeMenu);
+            if (ui::button({r.x + 60, by, 240, 60}, "RETRY", col::purple, 28)) restart();
+            if (ui::button({r.x + 320, by, 240, 60}, practice_ ? "ADMIN" : "MENU", col::panelHi, 28)) toMenu();
         }
-        if (IsKeyPressed(KEY_ENTER)) E().go(makeClassic);
+        if (IsKeyPressed(KEY_ENTER)) restart();
     }
 
     void drawPause() {
@@ -1515,7 +1554,7 @@ public:
         ui::panel(r, rgba(0x1d1236f5), 0.1f);
         fx::gradientText("PAUSED", r.x + r.width / 2, r.y + 62, 56, WHITE, col::violet, 4);
         if (ui::button({r.x + 50, r.y + 120, 320, 60}, "RESUME", col::purple, 26)) paused_ = false;
-        if (ui::button({r.x + 50, r.y + 196, 320, 60}, "QUIT TO MENU", col::red, 24)) E().go(makeMenu);
+        if (ui::button({r.x + 50, r.y + 196, 320, 60}, practice_ ? "BACK TO ADMIN" : "QUIT TO MENU", col::red, 24)) toMenu();
     }
 
     static constexpr float kPlayerR = 26;
@@ -1542,7 +1581,7 @@ public:
     Boss boss_;
     Particles fx_, motes_;
     fx::Shocks shocks_;
-    bool god_ = false;
+    bool god_ = false, practice_ = false;
     float hitStop_ = 0, worldZoom_ = 1, heartAnim_ = 0, hurtGlow_ = 0, bossChip_ = 0, moteT_ = 0, totalT_ = 0;
 };
 

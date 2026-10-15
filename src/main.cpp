@@ -25,7 +25,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings},
+        {"settings", makeSettings}, {"admin", makeAdmin},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();
