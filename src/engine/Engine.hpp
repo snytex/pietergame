@@ -78,8 +78,8 @@ public:
     bool screenShake = true;
 
     // Display. Windowed: the resolution is the window size and the game renders
-    // at whatever size the window is. Fullscreen (borderless): the game renders
-    // at the chosen resolution and scales it to the monitor.
+    // at whatever size the window is. Fullscreen: the window covers the monitor
+    // (above taskbars) and the game renders at the chosen resolution, scaled up.
     void setDisplay(bool fullscreen, int resW, int resH);
     void setFullscreen(bool on) { setDisplay(on, resW_, resH_); }
     bool fullscreen() const;
@@ -113,7 +113,6 @@ private:
     float canvasScale_ = 1;  // canvas pixels per virtual unit
     int resW_ = 0, resH_ = 0;
     int monitor_ = 0;
-    bool fullscreen_ = false;
     float placeCooldown_ = 0, monitorPoll_ = 0;
     std::unique_ptr<Scene> scene_;
     SceneFactory pending_;

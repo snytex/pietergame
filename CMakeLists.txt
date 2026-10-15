@@ -10,12 +10,13 @@ endif()
 
 # raylib is the platform layer (window, input, GL, audio decoding).
 # Use the system package when available, otherwise download it.
-find_package(raylib 5.0 QUIET)
+# raylib >= 6.0 is needed: its fullscreen keeps the monitor's video mode.
+find_package(raylib 6.0 QUIET)
 if(NOT raylib_FOUND)
   include(FetchContent)
   FetchContent_Declare(raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 5.5
+    GIT_TAG 6.0
     GIT_SHALLOW TRUE)
   set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(raylib)

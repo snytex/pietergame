@@ -134,7 +134,7 @@ void Engine::toast(const std::string& text, Color color) {
     if (toasts_.size() > 4) toasts_.erase(toasts_.begin());
 }
 
-bool Engine::fullscreen() const { return fullscreen_; }
+bool Engine::fullscreen() const { return IsWindowFullscreen(); }
 
 int Engine::monitor() const { return std::clamp(monitor_, 0, std::max(0, GetMonitorCount() - 1)); }
 
@@ -180,23 +180,27 @@ std::vector<std::pair<int, int>> Engine::resolutions() const {
 void Engine::setDisplay(bool fs, int w, int h) {
     resW_ = w;
     resH_ = h;
-    // Borderless fullscreen done by hand: an undecorated window covering exactly
-    // the target monitor. (raylib's toggle picks the monitor from the window's
-    // current position, which on X11 may not have caught up with a move yet.)
+    // Fullscreen is a real fullscreen request (EWMH / xdg fullscreen state), so
+    // compositors put the game above taskbars and panels. raylib 6 keeps the
+    // monitor's current video mode, so no mode switch happens; resolution only
+    // changes the size of the canvas we render into.
+    placeCooldown_ = 1.5f;
+    if (fs && fullscreen()) {
+        SetWindowMonitor(monitor_);  // already fullscreen: just make sure it's on the right screen
+        return;
+    }
+    if (fullscreen()) ToggleFullscreen();  // back to a normal window first
     int mw = GetMonitorWidth(monitor_), mh = GetMonitorHeight(monitor_);
     Vector2 mp = GetMonitorPosition(monitor_);
-    fullscreen_ = fs;
+    int ww = std::min(w, mw), wh = std::min(h, mh);
+    SetWindowSize(ww, wh);
+    SetWindowPosition((int)mp.x + (mw - ww) / 2, (int)mp.y + (mh - wh) / 2);
     if (fs) {
-        SetWindowState(FLAG_WINDOW_UNDECORATED);
-        SetWindowPosition((int)mp.x, (int)mp.y);
-        SetWindowSize(mw, mh);
-    } else {
-        ClearWindowState(FLAG_WINDOW_UNDECORATED);
-        int ww = std::min(w, mw), wh = std::min(h, mh);
-        SetWindowSize(ww, wh);
-        SetWindowPosition((int)mp.x + (mw - ww) / 2, (int)mp.y + (mh - wh) / 2);
+        // raylib picks the monitor from the window position, which the window
+        // manager may not have applied yet; SetWindowMonitor moves it to ours.
+        ToggleFullscreen();
+        SetWindowMonitor(monitor_);
     }
-    placeCooldown_ = 1.5f;
 }
 
 void Engine::resizeCanvas() {
