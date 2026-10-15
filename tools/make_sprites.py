@@ -12,7 +12,7 @@ CROPS = {
     "davi":   (1050, 425, 1270, 645),
     "kira":   (1295, 475, 1515, 695),
 }
-SIZE = 256
+SIZE = 512
 
 im = Image.open(SRC).convert("RGBA")
 for name, box in CROPS.items():

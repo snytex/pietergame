@@ -1,6 +1,7 @@
 #include "engine/Ui.hpp"
 
 #include "engine/Engine.hpp"
+#include "engine/Fx.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -175,8 +176,13 @@ bool toggle(Rectangle r, const std::string& label, bool& value) {
 }
 
 void panel(Rectangle r, Color c, float round, Color border) {
-    DrawRectangleRounded({r.x + 4, r.y + 6, r.width, r.height}, round, 12, alpha(BLACK, 0.35f));
+    // glassy card: soft drop shadow, lit top edge, subtle inner rim
+    fx::softShadow({r.x + r.width / 2, r.y + r.height / 2 + 14}, r.width * 0.62f, r.height * 0.62f, 0.45f * c.a / 255.0f);
     DrawRectangleRounded(r, round, 12, c);
+    float rr = round * std::min(r.width, r.height);
+    Rectangle top{r.x + 3, r.y + 3, r.width - 6, std::min(r.height * 0.45f, 160.0f)};
+    DrawRectangleRounded(top, std::min(1.0f, rr / std::min(top.width, top.height)), 12, alpha(WHITE, 0.045f));
+    DrawRectangleRoundedLinesEx(shrink(r, 3), round, 12, 1.5f, alpha(WHITE, 0.07f));
     DrawRectangleRoundedLinesEx(r, round, 12, 3, border);
 }
 

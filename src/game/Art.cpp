@@ -1,6 +1,7 @@
 #include "game/Art.hpp"
 
 #include "engine/Engine.hpp"
+#include "engine/Fx.hpp"
 #include "engine/Ui.hpp"
 #include "game/Profile.hpp"
 
@@ -417,13 +418,15 @@ void menuBackground(float px, float py, float dim) {
 }
 
 void purpleBackdrop(float t, bool grid) {
-    DrawRectangleGradientV(0, 0, VW, VH, rgba(0x2a1650ff), col::bgDeep);
-    DrawCircleGradient({VW * 0.2f + std::sin(t * 0.3f) * 60, VH * 0.3f}, 420, alpha(col::purple, 0.18f), alpha(col::purple, 0));
-    DrawCircleGradient({VW * 0.8f + std::cos(t * 0.25f) * 60, VH * 0.75f}, 380, alpha(col::pink, 0.08f), alpha(col::pink, 0));
+    // the menu artwork, blurred and dimmed, with drifting bokeh lights
+    fx::blurredBackdrop("menu_bg", 0.62f, t);
+    DrawRectangleGradientV(0, 0, VW, VH, alpha(rgba(0x2a1650ff), 0.35f), alpha(col::bgDeep, 0.55f));
+    fx::bokeh(t, 16, col::violet, 1);
+    fx::bokeh(t * 0.8f, 8, col::pink, 2);
     if (grid) {
         float off = std::fmod(t * 12, 48.0f);
-        for (float x = -48 + off; x < VW; x += 48) DrawLineEx({x, 0}, {x, (float)VH}, 1, alpha(col::violet, 0.06f));
-        for (float y = -48 + off; y < VH; y += 48) DrawLineEx({0, y}, {(float)VW, y}, 1, alpha(col::violet, 0.06f));
+        for (float x = -48 + off; x < VW; x += 48) DrawLineEx({x, 0}, {x, (float)VH}, 1, alpha(col::violet, 0.05f));
+        for (float y = -48 + off; y < VH; y += 48) DrawLineEx({0, y}, {(float)VW, y}, 1, alpha(col::violet, 0.05f));
     }
 }
 

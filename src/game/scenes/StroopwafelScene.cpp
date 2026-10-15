@@ -1,5 +1,6 @@
 // STROOPWAFEL STACKER: stack warm stroopwafels on a coffee cup. Drop the
 // sliding waffle with SPACE / click; anything hanging over gets sliced off.
+#include "engine/Fx.hpp"
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
@@ -184,24 +185,71 @@ public:
         if (E().backPressed()) E().go(makeMenu);
     }
 
+    // Delft-blue tiled kitchen wall with little windmills, fading into the sky
+    // and then space as the tower grows.
+    void drawKitchen(float h) {
+        const float tile = 72;
+        float wallFade = clamp01(1 - h * 3);
+        if (wallFade <= 0) return;
+        float oy = std::fmod(-camY_, tile);
+        for (float y = -tile + oy; y < VH; y += tile)
+            for (float x = 0; x < VW; x += tile) {
+                int ix = (int)(x / tile), iy = (int)std::floor((y - oy - camY_) / tile);
+                Rectangle t{x + 2, y + 2, tile - 4, tile - 4};
+                DrawRectangleRec(t, alpha(rgba(0xe9eef8ff), wallFade));
+                Color blue = alpha(rgba(0x2f5aa8ff), 0.55f * wallFade);
+                Vector2 c = center(t);
+                // corner ornaments
+                for (int k = 0; k < 4; k++)
+                    DrawCircleSector({k % 2 ? t.x + t.width : t.x, k / 2 ? t.y + t.height : t.y}, 9, 0, 360, 8, alpha(blue, 0.5f * wallFade));
+                if ((ix + iy) % 2 == 0) {
+                    // tiny windmill
+                    DrawTriangle({c.x - 7, c.y + 16}, {c.x + 7, c.y + 16}, {c.x, c.y - 4}, blue);
+                    float rot = t_ * 0.6f + ix;
+                    for (int b = 0; b < 4; b++) DrawLineEx(c + Vector2{0, -4}, c + Vector2{0, -4} + fromAngle(rot + b * PI / 2, 14), 3, blue);
+                } else {
+                    DrawPoly(c, 4, 10, 45, alpha(blue, 0.8f));
+                    DrawPoly(c, 4, 5, 45, alpha(rgba(0xe9eef8ff), wallFade));
+                }
+            }
+        // mood: purple wash over the tiles so the game still feels like PieterGame
+        DrawRectangleGradientV(0, 0, VW, VH, alpha(rgba(0x241245ff), 0.82f * wallFade), alpha(rgba(0x3b2470ff), 0.62f * wallFade));
+        // wooden counter under the cup
+        float ct = kCupTop + 168 - camY_;
+        if (ct < VH) {
+            DrawRectangleGradientV(0, (int)ct, VW, VH - (int)ct, rgba(0x8a5a32ff), rgba(0x4a2c16ff));
+            DrawRectangle(0, (int)ct, VW, 6, rgba(0xb07a48ff));
+            for (int k = 0; k < 6; k++) DrawLineEx({0, ct + 22 + k * 18}, {(float)VW, ct + 26 + k * 18}, 1.5f, alpha(rgba(0x3a2010ff), 0.35f));
+        }
+    }
+
     void drawCup() {
         float top = kCupTop - camY_;
         float cx = VW / 2.0f;
+        fx::softShadow({cx + 20, top + 190}, 320, 34, 0.6f);
         // saucer
-        DrawEllipse((int)cx, (int)(top + 175), 260, 28, col::outline);
-        DrawEllipse((int)cx, (int)(top + 172), 250, 24, rgba(0xf2ecf8ff));
-        // cup body
+        DrawEllipse((int)cx, (int)(top + 175), 262, 30, col::outline);
+        DrawEllipse((int)cx, (int)(top + 172), 252, 25, rgba(0xdcd4ecff));
+        DrawEllipse((int)cx, (int)(top + 168), 230, 18, rgba(0xf6f2fcff));
+        // handle (behind the body)
+        DrawRing({cx + 185, top + 75}, 30, 48, -90, 90, 24, col::outline);
+        DrawRing({cx + 185, top + 75}, 34, 44, -90, 90, 24, rgba(0xe6e0f2ff));
+        // cup body with a soft cylindrical shading
         Rectangle body{cx - 175, top, 350, 170};
         DrawRectangleRounded(shrink(body, -4), 0.35f, 12, col::outline);
         DrawRectangleRounded(body, 0.35f, 12, rgba(0xfdfbffff));
         DrawRectangleRec({body.x, body.y, body.width, 40}, rgba(0xfdfbffff));
-        DrawRectangleRec({body.x + 20, body.y + 70, body.width - 40, 30}, col::purple);
-        ui::text("PIETER", cx, body.y + 85, 24, WHITE, ui::Center, true);
-        // handle
-        DrawRing({body.x + body.width + 10, top + 70}, 30, 46, -90, 90, 20, col::outline);
-        DrawRing({body.x + body.width + 10, top + 70}, 34, 42, -90, 90, 20, rgba(0xfdfbffff));
-        // coffee surface
-        DrawEllipse((int)cx, (int)top + 4, 172, 14, rgba(0x4a2a16ff));
+        DrawRectangleGradientH((int)(body.x + body.width * 0.55f), (int)body.y, (int)(body.width * 0.45f), (int)body.height - 30,
+                               alpha(rgba(0xb8a8d8ff), 0), alpha(rgba(0xb8a8d8ff), 0.55f));
+        DrawRectangleRounded({body.x + 30, body.y + 18, 26, body.height - 50}, 1, 8, alpha(WHITE, 0.9f));
+        // label band with the logo
+        DrawRectangleRec({body.x, body.y + 66, body.width, 38}, col::purple);
+        DrawRectangleRec({body.x, body.y + 66, body.width, 6}, lighten(col::purple, 0.25f));
+        ui::text("PIETER", cx, body.y + 86, 26, WHITE, ui::Center, true);
+        // coffee surface with a crema ring
+        DrawEllipse((int)cx, (int)top + 4, 174, 15, rgba(0x2a160aff));
+        DrawEllipse((int)cx, (int)top + 4, 160, 11, rgba(0x6a3a1aff));
+        DrawEllipse((int)cx - 30, (int)top + 2, 60, 4, alpha(rgba(0xd9a066ff), 0.6f));
     }
 
     void draw() override {
@@ -209,6 +257,12 @@ public:
         float h = clamp01(-camY_ / 3000);
         Color top = mix(rgba(0x3b2470ff), rgba(0x05031aff), h), bot = mix(rgba(0x8f5cffff), rgba(0x1a0f2eff), h);
         DrawRectangleGradientV(0, 0, VW, VH, top, bot);
+        drawKitchen(h);
+        fx::bokeh(t_, 18, mix(col::gold, col::violet, h), 5);
+        fx::beginAdd();
+        fx::glow({VW / 2.0f, waffleY((int)stack_.size() - 1) - camY_}, 420, alpha(col::gold, 0.22f));
+        fx::glow({VW / 2.0f, -100}, 700, alpha(rgba(0xffd59aff), 0.15f * (1 - h)));
+        fx::endAdd();
         if (h > 0.2f)
             for (int i = 0; i < 60; i++)
                 DrawCircleV({(float)(i * 211 % VW), (float)((i * 97 + (int)(-camY_ * 0.2f)) % VH)}, 1.5f, alpha(WHITE, (h - 0.2f) * (0.5f + 0.5f * std::sin(t_ * 2 + i))));
@@ -254,6 +308,7 @@ public:
         ui::text(reaction_, b.x + b.width / 2, b.y + 18, 20, col::outline, ui::Center);
 
         if (state_ == State::Ready) {
+            DrawRectangleRounded({VW / 2.0f - 470, 290, 940, 140}, 0.3f, 10, alpha(col::bgDeep, 0.75f));
             ui::textOutline("PRESS SPACE", VW / 2.0f, 330, 54, col::gold, col::outline, 4);
             ui::text("drop the waffle when it lines up. perfect drops build a combo and grow it back.", VW / 2.0f, 380, 20, WHITE, ui::Center);
             ui::text("every 10 layers = a free stroopwafel for Pieter", VW / 2.0f, 408, 18, col::wafel, ui::Center);

@@ -1,4 +1,5 @@
 // Title screen: the Bec IT Room artwork, mode select, and character easter eggs.
+#include "engine/Fx.hpp"
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
@@ -60,7 +61,12 @@ public:
     void draw() override {
         art::menuBackground(parallax_.x, parallax_.y);
         // soft spotlight behind the menu column
-        DrawCircleGradient({VW / 2.0f, VH / 2.0f + 20}, 430, alpha(col::bgDeep, 0.55f), alpha(col::bgDeep, 0));
+        DrawCircleGradient({VW / 2.0f, VH / 2.0f + 20}, 460, alpha(col::bgDeep, 0.6f), alpha(col::bgDeep, 0));
+        fx::beginAdd();
+        fx::glow({VW / 2.0f, 95}, 420, alpha(col::violet, 0.35f));
+        fx::glow({VW / 2.0f + 230, 90}, 160, alpha(col::gold, 0.35f + 0.1f * std::sin(t_ * 4)));
+        fx::endAdd();
+        fx::bokeh(t_, 12, col::pink, 7);
         fx_.draw();
 
         drawTitle();
@@ -92,8 +98,7 @@ private:
     void drawTitle() {
         float cx = VW / 2.0f, y = 92 + std::sin(t_ * 2) * 4;
         float rot = std::sin(t_ * 1.3f) * 2;
-        ui::textOutline("PIETERGAME", cx - 46, y + 6, 84, darken(col::purple, 0.4f), darken(col::purple, 0.4f), 5);
-        ui::textOutline("PIETERGAME", cx - 46, y, 84, col::text, col::outline, 5);
+        fx::gradientText("PIETERGAME", cx - 46, y, 84, WHITE, rgba(0xc9b2ffff), 6);
         float s = 1 + std::sin(t_ * 4) * 0.06f;
         Vector2 p{cx + 230, y - 6};
         ui::textRotated("3", {p.x + 5, p.y + 8}, 130 * s, rot * 4 - 8, col::outline, true);

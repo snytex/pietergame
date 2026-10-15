@@ -13,6 +13,8 @@ namespace {
 // Dev/testing hooks (all optional):
 //   PG_SCENE=classic|room|horses|stroop|casino|roulette|blackjack|mines|slots|shop|inventory|settings
 //   PG_SHOT=out.png PG_SHOT_FRAMES=120   save a screenshot after N frames and quit
+//   PG_SHOT_TIME=6.5                     ...or after N seconds of game time
+//   PG_GOD=1 PG_WAVE=10                  Classic: invincible / start at a wave
 //   PG_MUTE=1                            silence all audio
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -43,7 +45,8 @@ int main() {
     E().screenShake = P().screenShake;
     if (const char* shot = std::getenv("PG_SHOT")) {
         const char* frames = std::getenv("PG_SHOT_FRAMES");
-        E().autoScreenshot(shot, frames ? std::atoi(frames) : 120);
+        if (const char* secs = std::getenv("PG_SHOT_TIME")) E().autoScreenshotAt(shot, (float)std::atof(secs));
+        else E().autoScreenshot(shot, frames ? std::atoi(frames) : 120);
     }
 
     // Discord shows the coin balance when a scene has nothing more specific to say.

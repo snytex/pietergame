@@ -1,5 +1,6 @@
 // PIETER ROOM: take care of Pieter. Feed him, play, shower, sleep, and talk.
 // Needs decay in real time (also while the game is closed, capped).
+#include "engine/Fx.hpp"
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
@@ -361,6 +362,26 @@ public:
         if (dark > 0) DrawRectangle(0, 0, VW, VH, alpha(rgba(0x05031aff), dark));
     }
 
+    // additive light sources: window, monitor, RGB keyboard, neon sign
+    void drawLights() {
+        bool sleeping = P().pieter.sleeping;
+        fx::beginAdd();
+        Color sky = isNight() ? rgba(0x6a7cffff) : rgba(0xffd59aff);
+        fx::glow({1075, 155}, 330, alpha(sky, sleeping ? 0.25f : 0.35f));
+        fx::glow({1075, 600}, 260, alpha(sky, 0.12f));
+        if (!sleeping) {
+            Color screen = playT_ > 0 ? ColorFromHSV(std::fmod(t_ * 120, 360), 0.6f, 1) : col::violet;
+            fx::glow({1055, 356}, 300, alpha(screen, 0.4f));
+            for (int i = 0; i < 5; i++) fx::glow({975 + i * 36.0f, 412}, 40, alpha(ColorFromHSV(std::fmod(t_ * 90 + i * 60, 360), 0.8f, 1), 0.35f));
+            bool flick = std::fmod(t_, 4.0f) < 0.08f;
+            if (!flick) fx::glow({425, 130}, 220, alpha(col::red, 0.3f));
+        } else {
+            fx::glow({kPieter.x, kPieter.y}, 380, alpha(rgba(0x3a4cffff), 0.18f));
+        }
+        fx::glow({kPieter.x, kPieter.y + 40}, 340, alpha(col::pink, 0.12f));
+        fx::endAdd();
+    }
+
     bool isNight() const {
         std::time_t now = std::time(nullptr);
         std::tm* lt = std::localtime(&now);
@@ -528,6 +549,8 @@ public:
     void draw() override {
         auto& n = P().pieter;
         drawRoom();
+        drawLights();
+        fx::softShadow({kPieter.x, kPieter.y + 245}, 190, 26, 0.6f);
         drawPieter();
         for (auto& f : flying_) {
             Vector2 to{kPieter.x, kPieter.y + 40};

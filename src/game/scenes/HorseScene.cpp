@@ -1,6 +1,7 @@
 // HORSES: Pieter LOOOVES horses. Two ways to play:
 //  - BET: six horses, odds from a Monte Carlo simulation of the same race model.
 //  - RIDE: you are the jockey. Alternate LEFT/RIGHT to gallop, SPACE to jump hurdles.
+#include "engine/Fx.hpp"
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
@@ -374,23 +375,68 @@ public:
     }
 
     void drawSky(float scroll) {
-        DrawRectangleGradientV(0, 0, VW, 360, rgba(0x5b3fa8ff), rgba(0xf0a0b8ff));
-        DrawCircleV({1040, 150}, 60, alpha(rgba(0xfff0c0ff), 0.9f));
-        for (int layer = 0; layer < 2; layer++) {
-            float par = layer == 0 ? 0.1f : 0.25f;
-            Color c = layer == 0 ? rgba(0x7a5aa8ff) : rgba(0x4a6a3aff);
-            float base = layer == 0 ? 300 : 340;
-            for (int x = 0; x <= VW; x += 8) {
-                float wx = x + scroll * par;
-                float h = std::sin(wx * 0.004f + layer) * 30 + std::sin(wx * 0.011f) * 14;
-                DrawRectangle(x, (int)(base + h), 8, (int)(VH - base - h), c);
+        DrawRectangleGradientV(0, 0, VW, 200, rgba(0x3b2470ff), rgba(0x8f5cc8ff));
+        DrawRectangleGradientV(0, 200, VW, 180, rgba(0x8f5cc8ff), rgba(0xffb08aff));
+        Vector2 sun{1040, 200};
+        fx::beginAdd();
+        fx::glow(sun, 420, alpha(rgba(0xffb36bff), 0.55f));
+        fx::glow(sun, 160, alpha(rgba(0xfff0c0ff), 0.6f));
+        fx::endAdd();
+        DrawCircleV(sun, 64, rgba(0xfff3d0ff));
+        // drifting clouds
+        for (int i = 0; i < 7; i++) {
+            float x = std::fmod(i * 260.0f - scroll * 0.05f - t_ * (8 + i * 2), VW + 400.0f);
+            if (x < 0) x += VW + 400;
+            x -= 200;
+            float y = 60 + (i * 53 % 160);
+            Color c = alpha(i % 2 ? rgba(0xffd6e8ff) : rgba(0xf3e6ffff), 0.75f);
+            for (int k = 0; k < 4; k++) DrawCircleV({x + k * 34.0f, y - (k % 2) * 16.0f}, 30.0f + (k % 2) * 10, c);
+            DrawRectangleRounded({x - 20, y, 150, 32}, 1, 10, c);
+        }
+        // three hill layers, back to front, each lit from the sun side
+        const Color tops[] = {rgba(0x9a6ab8ff), rgba(0x6a5a9aff), rgba(0x4f7a46ff)};
+        const Color bots[] = {rgba(0x7a4f9aff), rgba(0x47386eff), rgba(0x2f5a2eff)};
+        const float bases[] = {270, 310, 360}, pars[] = {0.05f, 0.12f, 0.3f};
+        for (int layer = 0; layer < 3; layer++)
+            for (int x = 0; x <= VW; x += 6) {
+                float wx = x + scroll * pars[layer];
+                float h = std::sin(wx * 0.004f + layer * 2) * 30 + std::sin(wx * 0.011f + layer) * 14;
+                float top = bases[layer] + h;
+                DrawRectangleGradientV(x, (int)top, 6, (int)(VH - top), tops[layer], bots[layer]);
             }
+        // grandstand with a bouncing crowd
+        float gx = std::fmod(-scroll * 0.3f, 1600.0f);
+        for (int s = 0; s < 3; s++) {
+            float x0 = gx + s * 1600 - 200;
+            if (x0 > VW || x0 + 700 < 0) continue;
+            DrawRectangle((int)x0, 300, 700, 80, rgba(0x2a1a40ff));
+            DrawRectangle((int)x0 - 10, 290, 720, 12, rgba(0x1a0f2eff));
+            for (int k = 0; k < 70; k++) {
+                float hx = x0 + 10 + k * 10, hy = 318 + (k % 3) * 18 - std::abs(std::sin(t_ * 6 + k)) * 4;
+                DrawCircleV({hx, hy}, 5, ColorFromHSV((float)(k * 47 % 360), 0.5f, 0.85f));
+            }
+            for (int f = 0; f < 5; f++) {
+                float fx0 = x0 + 40 + f * 150;
+                DrawLineEx({fx0, 290}, {fx0, 250}, 3, rgba(0x1a0f2eff));
+                float wave = std::sin(t_ * 5 + f) * 4;
+                DrawTriangle({fx0, 250}, {fx0, 266}, {fx0 + 26, 258 + wave}, f % 2 ? col::pink : col::gold);
+            }
+        }
+    }
+
+    void drawDirt(float top, float scroll) {
+        DrawRectangleGradientV(0, (int)top, VW, VH - (int)top, rgba(0x9a6a3eff), rgba(0x6e4526ff));
+        for (int i = 0; i < 60; i++) {
+            float x = std::fmod(i * 97.0f - scroll, (float)VW + 40);
+            if (x < 0) x += VW + 40;
+            float y = top + 12 + (i * 37 % (int)(VH - top - 20));
+            DrawEllipse((int)x, (int)y, 6 + i % 5, 2, alpha(rgba(0x5a3820ff), 0.6f));
         }
     }
 
     void drawBetTrack() {
         drawSky(0);
-        DrawRectangle(0, 180, VW, 470, rgba(0x8a5a32ff));
+        drawDirt(180, 0);
         for (int i = 0; i <= 6; i++) DrawRectangle(0, (int)laneY(i) - 40 + 6, VW, 2, alpha(WHITE, 0.15f));
         DrawRectangle(0, 176, VW, 8, WHITE);
         DrawRectangle(0, 644, VW, 8, WHITE);
@@ -407,6 +453,7 @@ public:
             Runner& r = field_[i];
             float y = laneY(i);
             ui::text(std::to_string(i + 1), 24, y - 20, 22, r.silk, ui::Left, true);
+            fx::softShadow({screenX(r.dist) - 40, y + 6}, 40, 8, 0.5f);
             art::horse({screenX(r.dist) - 40, y + 4}, 0.5f, r.phase, r.body, r.mane, r.silk);
             if (i == pick_) {
                 DrawTriangle({screenX(r.dist) - 22, y - 86}, {screenX(r.dist) - 38, y - 102}, {screenX(r.dist) - 6, y - 102}, col::gold);
@@ -418,7 +465,7 @@ public:
 
     void drawHub() {
         drawSky(t_ * 60);
-        DrawRectangle(0, 470, VW, 250, rgba(0x8a5a32ff));
+        drawDirt(470, t_ * 260);
         DrawRectangle(0, 466, VW, 8, WHITE);
         art::horse({std::fmod(t_ * 260, VW + 400.0f) - 200, 600}, 1.1f, t_ * 14, rgba(0x8b5a2bff), rgba(0x3a2010ff), col::violet, "pieter");
         art::portrait("horse", {200, 290}, 120, col::gold, std::sin(t_ * 2) * 6);
@@ -477,7 +524,7 @@ public:
     void drawRide() {
         drawSky(cam_);
         float ground = 340;
-        DrawRectangle(0, (int)ground, VW, VH - (int)ground, rgba(0x8a5a32ff));
+        drawDirt(ground, cam_);
         // rail posts
         for (float wx = std::floor(cam_ / 120) * 120; wx < cam_ + VW + 120; wx += 120) {
             float x = wx - cam_;

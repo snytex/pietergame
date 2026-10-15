@@ -64,6 +64,7 @@ public:
     void shake(float amount);
     void toast(const std::string& text, Color color = col::text);
     void flash(Color c, float strength = 0.6f) { flashColor_ = c; flash_ = strength; }
+    void aberrate(float amount) { aberration_ = std::max(aberration_, amount); }  // RGB split punch
 
     // Assets
     Font& font(bool big);
@@ -101,6 +102,7 @@ public:
 
     // Dev helper: save the canvas to `path` after `frames` frames, then quit.
     void autoScreenshot(const std::string& path, int frames) { shotPath_ = path; shotFrames_ = frames; }
+    void autoScreenshotAt(const std::string& path, float seconds) { shotPath_ = path; shotFrames_ = 1 << 30; shotTime_ = seconds; }
 
 private:
     void updateCanvasTransform();
@@ -129,6 +131,10 @@ private:
     float presenceT_ = 0;
     long long sessionStart_ = 0;
 
+    Shader post_{};
+    int postLocAberration_ = -1, postLocTime_ = -1, postLocRes_ = -1;
+    float aberration_ = 0;
+
     float shake_ = 0;
     float flash_ = 0;
     Color flashColor_ = WHITE;
@@ -136,6 +142,7 @@ private:
 
     std::string shotPath_;
     int shotFrames_ = 0;
+    float shotTime_ = -1;
 
     std::string assetDir_;
     Font fontSmall_{}, fontBig_{};

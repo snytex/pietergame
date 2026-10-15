@@ -1,5 +1,6 @@
 #include "engine/Engine.hpp"
 
+#include "engine/Fx.hpp"
 #include "engine/Ui.hpp"
 
 #include <algorithm>
@@ -31,6 +32,29 @@ std::string fmtNum(long long n) {
     for (int i = (int)s.size() - 3; i > 0; i -= 3) s.insert(i, ",");
     return neg ? "-" + s : s;
 }
+
+// Final pass over the whole frame: chromatic aberration (stronger toward the
+// edges, punched up on hits), vignette, and a touch of film grain.
+static const char* kPostFs = R"(#version 330
+in vec2 fragTexCoord;
+in vec4 fragColor;
+uniform sampler2D texture0;
+uniform float aberration;
+uniform float time;
+uniform vec2 resolution;
+out vec4 finalColor;
+void main() {
+    vec2 uv = fragTexCoord;
+    vec2 d = uv - 0.5;
+    float r2 = dot(d, d);
+    vec2 off = d * (0.0015 + aberration) * (0.6 + r2 * 3.0);
+    vec3 c = vec3(texture(texture0, uv + off).r, texture(texture0, uv).g, texture(texture0, uv - off).b);
+    c *= 1.0 - 0.38 * smoothstep(0.12, 0.6, r2 * 1.5);
+    float n = fract(sin(dot(floor(uv * resolution) + fract(time) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
+    c += (n - 0.5) * 0.022;
+    finalColor = vec4(c, 1.0) * fragColor;
+}
+)";
 
 static std::string findAssets() {
     std::vector<std::string> candidates = {"assets", std::string(GetApplicationDirectory()) + "assets",
@@ -74,6 +98,11 @@ bool Engine::init(const char* title, bool fullscreen, int resW, int resH, const 
     TraceLog(LOG_INFO, "PIETER: assets at %s", assetDir_.c_str());
 
     resizeCanvas();
+    fx::init();
+    post_ = LoadShaderFromMemory(nullptr, kPostFs);
+    postLocAberration_ = GetShaderLocation(post_, "aberration");
+    postLocTime_ = GetShaderLocation(post_, "time");
+    postLocRes_ = GetShaderLocation(post_, "resolution");
 
     // big atlases so text stays sharp at 1440p / 4K
     fontSmall_ = LoadFontEx(assetPath("fonts/NotoSans-Bold.ttf").c_str(), 72, nullptr, 0);
@@ -97,6 +126,8 @@ void Engine::shutdown() {
     discord.stop();
     music.shutdown();
     sfx.shutdown();
+    fx::shutdown();
+    UnloadShader(post_);
     for (auto& [k, t] : textures_) UnloadTexture(t);
     textures_.clear();
     UnloadFont(fontSmall_);
@@ -224,6 +255,11 @@ void Engine::beginClip(Rectangle r) {
 
 void Engine::updateCanvasTransform() {
     resizeCanvas();
+    fx::init();
+    post_ = LoadShaderFromMemory(nullptr, kPostFs);
+    postLocAberration_ = GetShaderLocation(post_, "aberration");
+    postLocTime_ = GetShaderLocation(post_, "time");
+    postLocRes_ = GetShaderLocation(post_, "resolution");
     float sw = (float)GetScreenWidth(), sh = (float)GetScreenHeight();
     scale_ = std::min(sw / VW, sh / VH);
     offset_ = {(sw - VW * scale_) / 2, (sh - VH * scale_) / 2};
@@ -305,6 +341,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
         std::erase_if(toasts_, [](auto& t) { return t.t > t.life; });
         shake_ = std::max(0.0f, shake_ - dt * 40);
         flash_ = std::max(0.0f, flash_ - dt * 2.5f);
+        aberration_ = std::max(0.0f, aberration_ - dt * 0.05f);
 
         scene_->update(dt);
 
@@ -319,19 +356,24 @@ void Engine::run(std::unique_ptr<Scene> first) {
         rlPopMatrix();
         EndTextureMode();
 
-        if (!shotPath_.empty() && --shotFrames_ <= 0) {
-            Image img = LoadImageFromTexture(canvas_.texture);
-            ImageFlipVertical(&img);
+        BeginDrawing();
+        ClearBackground(BLACK);
+        Vector2 sh{shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0, shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0};
+        float res[2] = {(float)canvas_.texture.width, (float)canvas_.texture.height};
+        SetShaderValue(post_, postLocAberration_, &aberration_, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(post_, postLocTime_, &time_, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(post_, postLocRes_, res, SHADER_UNIFORM_VEC2);
+        BeginShaderMode(post_);
+        DrawTexturePro(canvas_.texture, {0, 0, (float)canvas_.texture.width, -(float)canvas_.texture.height},
+                       {offset_.x + sh.x, offset_.y + sh.y, VW * scale_, VH * scale_}, {0, 0}, 0, WHITE);
+        EndShaderMode();
+        if (!shotPath_.empty() && (--shotFrames_ <= 0 || (shotTime_ >= 0 && time_ >= shotTime_))) {
+            rlDrawRenderBatchActive();
+            Image img = LoadImageFromScreen();  // final frame, post-processing included
             ExportImage(img, shotPath_.c_str());
             UnloadImage(img);
             quit_ = true;
         }
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        Vector2 sh{shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0, shake_ > 0 ? rnd(-shake_, shake_) * scale_ : 0};
-        DrawTexturePro(canvas_.texture, {0, 0, (float)canvas_.texture.width, -(float)canvas_.texture.height},
-                       {offset_.x + sh.x, offset_.y + sh.y, VW * scale_, VH * scale_}, {0, 0}, 0, WHITE);
         EndDrawing();
     }
 }

@@ -54,7 +54,7 @@ Saves go to `~/.local/share/PieterGame3/save.txt` on Linux (`$XDG_DATA_HOME` is 
 
 ```
 src/engine/   the "PieterEngine": scenes + fades, virtual-resolution canvas, UI toolkit,
-              particles, music jukebox, procedural sound synthesizer (all SFX are generated in code)
+              additive glow / shadows / shockwaves (Fx), post-processing shader, particles, music jukebox, procedural sound synthesizer (all SFX are generated in code)
 src/game/     profile/save + item database, procedural art (horses, cards, food, hats...)
 src/game/scenes/  one file per screen / game mode
 assets/       fonts, menu artwork + character portraits, music
@@ -66,6 +66,7 @@ tools/        make_sprites.py (cuts portraits from the menu art), slots_rtp.py
 ```sh
 PG_SCENE=classic PG_WAVE=10 ./build/pietergame3                  # jump straight to the horse boss
 PG_SCENE=slots PG_SHOT=out.png PG_SHOT_FRAMES=120 PG_MUTE=1 ...    # headless screenshot (works with xvfb-run)
+PG_SCENE=classic PG_GOD=1 PG_SHOT=out.png PG_SHOT_TIME=12 ... # invincible, screenshot after 12s of game time
 ```
 
 Scene names: `menu classic room horses stroop casino roulette blackjack mines slots shop inventory settings`.
