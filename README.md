@@ -23,7 +23,11 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Stroopwafel** | Stack stroopwafels on Pieter's coffee cup. Anything hanging over gets sliced off. Perfect drops build a combo, and every 10 layers earns Pieter a real stroopwafel. |
 | **Pieter Beats** | A 4-lane rhythm game on every Pieter song. The charts are generated from the music itself (onset detection + tempo tracking), on Easy, Normal and Hard. Hit notes with D F J K or the arrow keys, hold the long ones, and fill the JUHUH meter for double points. Grades S to F, full combos and personal bests per song. The first play of a song takes a moment while it's analysed; after that it's cached. |
 | **Five Nights at Pieter's** | Halloween special, FNAF 4 style. You're Pieter in his dark room from 12 AM to 6 AM, with no cameras. Run to the doors (A/D), the closet (W) and the bed (S). Use the flashlight (F / left mouse) to chase Davi and Kira out of the halls, but if you *hear* breathing or giggling at a door, hold it shut (SPACE) and don't shine the light. Hold the closet shut against Het Nachtpaard, light the paardjes off the bed, switch off the PC when Kira hacks it (it speeds everyone up), and throw a stroopwafel or boba down the hall (Q) to buy time. Five nights, plus an unlockable Juhuh night. |
-| **Casino** | Roulette (European), Blackjack (Davi deals), Mines, Slots (96.6% RTP, see `tools/slots_rtp.py`) and Dragon Tower (climb 9 rows of eggs, avoid the dragons, five difficulties). If you go broke, Pieter's pity fund helps you out. |
+| **Pieter Kart** | Top-down 3-lap race on the Tulip Circuit against Davi, Kira and the Horse. Hold SPACE through corners to drift and charge a mini-turbo; boba boxes give a boost, a hagelslag spill or a shield. |
+| **Davi's Dungeon** | Twin-stick roguelite in Davi's basement: WASD to move, mouse to aim and shoot boba pearls, SPACE to dash. Clear locked rooms of useless elektronik, pick upgrades in treasure rooms, beat Davi on his gaming chair and take the stairs down. |
+| **Get A Job Simulator** | "Pieter get a job", so he tries all of them: ten five-second microgames (type your CV, pour the coffee, hide from the boss...) that get faster. Four coffees, then you're unemployed. |
+| **Fietsen!** | Endless bike ride along an Amsterdam canal. Switch lanes past tourists and scooters, jump bollards and ducks, grab stroopwafels, and try not to end up in the canal. |
+| **Casino** | Roulette (European), Blackjack (Davi deals), Mines, Slots (96.6% RTP, see `tools/slots_rtp.py`), Crash, Plinko and Dragon Tower (climb 9 rows of eggs, avoid the dragons, five difficulties). If you go broke, Pieter's pity fund helps you out. |
 
 You earn **Pietercoins** in every mode. Spend them in **Kira's Shop** on Classic powerups, food for Pieter, and cosmetics (hats and trails). Set your powerup loadout and wardrobe in the **Inventory**.
 
@@ -93,10 +97,11 @@ PG_SCENE=fnap PG_FNAP=3 PG_FNAP_VIEW=closet PG_FNAP_STAGE=0,0,3,0,0 PG_FNAP_LIGH
 PG_SCENE=artlab PG_ARTLAB=horse|items ...                      # sprite sheet for checking art
 PG_SCENE=horses PG_HORSE=bet|race|ride ...                      # jump into a horse mode
 PG_SCENE=mines PG_MINES_DEMO=1 ...                               # a board with some tiles open
+PG_SCENE=job PG_JOB=3 ... / PG_SCENE=dungeon PG_DUNGEON=1|boss ... / PG_SCENE=fiets PG_FIETS=1 ... / PG_SCENE=plinko PG_PLINKO_AUTO=1 ...
 PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 
-Scene names: `menu classic room beats fnap tower horses stroop casino roulette blackjack mines slots shop inventory settings`.
+Scene names: `menu classic room beats fnap kart dungeon job fiets crash plinko tower horses stroop casino roulette blackjack mines slots shop inventory settings`.
 
 ## License
 

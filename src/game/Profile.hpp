@@ -47,6 +47,11 @@ struct Stats {
     int horseWins = 0;
     int rideWins = 0;
     int stroopBest = 0;
+    int jobBest = 0;       // Get A Job: most jobs survived
+    int fietsBest = 0;     // Fietsen: best distance (m)
+    int kartWins = 0;      // Pieter Kart: races won
+    float kartBestLap = 0; // Pieter Kart: best lap (s), 0 = none
+    int dungeonBest = 0;   // Davi's Dungeon: deepest floor
 };
 
 struct BeatsBest {  // Pieter Beats personal best for one song + difficulty

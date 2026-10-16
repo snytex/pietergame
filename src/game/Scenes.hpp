@@ -20,6 +20,12 @@ std::unique_ptr<Scene> makeBlackjack();
 std::unique_ptr<Scene> makeMines();
 std::unique_ptr<Scene> makeSlots();
 std::unique_ptr<Scene> makeDragonTower();
+std::unique_ptr<Scene> makeCrash();
+std::unique_ptr<Scene> makePlinko();
+std::unique_ptr<Scene> makeJob();    // Get A Job Simulator
+std::unique_ptr<Scene> makeFiets();  // Fietsen! bike runner
+std::unique_ptr<Scene> makeKart();   // Pieter Kart
+std::unique_ptr<Scene> makeDungeon();  // Davi's Dungeon
 std::unique_ptr<Scene> makeShop();
 std::unique_ptr<Scene> makeInventory();
 std::unique_ptr<Scene> makeSettings();

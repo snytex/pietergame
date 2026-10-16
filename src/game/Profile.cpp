@@ -119,7 +119,9 @@ void Profile::save() const {
     f << "s.bestWave=" << stats.bestWave << "\ns.classicWins=" << stats.classicWins << "\ns.classicRuns="
       << stats.classicRuns << "\ns.totalEarned=" << stats.totalEarned << "\ns.totalWagered=" << stats.totalWagered
       << "\ns.biggestWin=" << stats.biggestWin << "\ns.horseWins=" << stats.horseWins << "\ns.rideWins="
-      << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\n";
+      << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\ns.jobBest=" << stats.jobBest
+      << "\ns.fietsBest=" << stats.fietsBest << "\ns.kartWins=" << stats.kartWins << "\ns.kartBestLap=" << stats.kartBestLap
+      << "\ns.dungeonBest=" << stats.dungeonBest << "\n";
     f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
     for (auto& [k, b] : beats) f << "b." << k << "=" << b.score << "," << b.acc << "," << b.fc << "\n";
     f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
@@ -172,6 +174,11 @@ void Profile::load() {
         else if (k == "s.horseWins") stats.horseWins = (int)L();
         else if (k == "s.rideWins") stats.rideWins = (int)L();
         else if (k == "s.stroopBest") stats.stroopBest = (int)L();
+        else if (k == "s.jobBest") stats.jobBest = (int)L();
+        else if (k == "s.fietsBest") stats.fietsBest = (int)L();
+        else if (k == "s.kartWins") stats.kartWins = (int)L();
+        else if (k == "s.kartBestLap") stats.kartBestLap = F();
+        else if (k == "s.dungeonBest") stats.dungeonBest = (int)L();
         else if (k.rfind("b.", 0) == 0) {
             BeatsBest b;
             float fc = 0;
