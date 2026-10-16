@@ -49,6 +49,12 @@ struct Stats {
     int stroopBest = 0;
 };
 
+struct BeatsBest {  // Pieter Beats personal best for one song + difficulty
+    int score = 0;
+    float acc = 0;    // 0..1
+    bool fc = false;  // full combo
+};
+
 class Profile {
 public:
     long long coins = 500;
@@ -60,6 +66,10 @@ public:
     Stats stats;
     long long lastPity = 0;
     bool introSeen = false;
+    std::map<std::string, BeatsBest> beats;  // "<song>|<difficulty>"
+    int beatsOffsetMs = 0;                    // audio latency calibration
+    float beatsSpeed = 1.0f;                  // note scroll speed
+    bool beatsHitSounds = true;
 
     // settings
     float musicVolume = 0.55f;

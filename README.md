@@ -21,6 +21,7 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Pieter Room** | Look after Pieter like a virtual pet. Feed him, pet him, play games with him, scrub him in the shower, put him to sleep and chat with him. His needs keep dropping while you're away. Levelling him up pays out coins. The room follows your real clock: sunrise, sunset and a night sky over a Dutch skyline, and the lights go out when he sleeps. |
 | **Horses** | *Bet*: six horses, with odds from a Monte Carlo simulation of the race. Bet to WIN or on TOP 3. *Ride*: you're the jockey racing Davi and Kira. Alternate LEFT/RIGHT to gallop and press SPACE to jump hurdles. |
 | **Stroopwafel** | Stack stroopwafels on Pieter's coffee cup. Anything hanging over gets sliced off. Perfect drops build a combo, and every 10 layers earns Pieter a real stroopwafel. |
+| **Pieter Beats** | A 4-lane rhythm game on every Pieter song. The charts are generated from the music itself (onset detection + tempo tracking), on Easy, Normal and Hard. Hit notes with D F J K or the arrow keys, hold the long ones, and fill the JUHUH meter for double points. Grades S to F, full combos and personal bests per song. The first play of a song takes a moment while it's analysed; after that it's cached. |
 | **Casino** | Roulette (European), Blackjack (Davi deals), Mines and Slots (96.6% RTP, see `tools/slots_rtp.py`). If you go broke, Pieter's pity fund helps you out. |
 
 You earn **Pietercoins** in every mode. Spend them in **Kira's Shop** on Classic powerups, food for Pieter, and cosmetics (hats and trails). Set your powerup loadout and wardrobe in the **Inventory**.
@@ -76,10 +77,11 @@ PG_SCENE=classic PG_WAVE=10 ./build/pietergame3                  # jump straight
 PG_SCENE=slots PG_SHOT=out.png PG_SHOT_FRAMES=120 PG_MUTE=1 ...    # headless screenshot (works with xvfb-run)
 PG_SCENE=classic PG_GOD=1 PG_SHOT=out.png PG_SHOT_TIME=12 ... # invincible, screenshot after 12s of game time
 PG_SCENE=room PG_HOUR=22 PG_ROOM=sleep ...                       # Pieter Room at night, asleep (also shower/feed/chat/play/sad)
+PG_SCENE=beats PG_BEATS=3:2 PG_BEATS_AUTO=1 ...                  # Pieter Beats: song 3 on Hard, played by a bot
 PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 
-Scene names: `menu classic room horses stroop casino roulette blackjack mines slots shop inventory settings`.
+Scene names: `menu classic room beats horses stroop casino roulette blackjack mines slots shop inventory settings`.
 
 ## License
 

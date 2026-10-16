@@ -82,8 +82,8 @@ public:
         if (ui::bigButton({x1, y0 + bh + gap, bw, bh}, "STROOPWAFEL", "stack the waffles", rgba(0xc98a1fff), 29)) E().go(makeStroopwafel);
 
         float y2 = y0 + 2 * (bh + gap) + 4;
-        if (ui::bigButton({x0, y2, bw * 2 + gap, 70}, "CASINO", "roulette - blackjack - mines - slots", rgba(0x1f8a4cff), 32))
-            E().go(makeCasino);
+        if (ui::bigButton({x0, y2, bw, 70}, "PIETER BEATS", "rhythm game, every song", rgba(0x2a5bd7ff), 27)) E().go(makeBeats);
+        if (ui::bigButton({x1, y2, bw, 70}, "CASINO", "roulette, blackjack & more", rgba(0x1f8a4cff), 30)) E().go(makeCasino);
 
         float y3 = y2 + 70 + gap + 4, sw = (bw * 2 + gap - 2 * 12) / 3;
         if (ui::button({x0, y3, sw, 54}, "SHOP", col::panelHi, 24)) E().go(makeShop);

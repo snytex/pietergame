@@ -32,6 +32,7 @@ public:
 
     int trackCount() const { return (int)tracks_.size(); }
     const std::string& trackName(int i) const { return tracks_[i].name; }
+    const std::string& trackPath(int i) const { return tracks_[i].path; }
     int currentTrack() const { return current_; }
     std::string nowPlaying() const;
     float progress() const;           // 0..1 through the current song

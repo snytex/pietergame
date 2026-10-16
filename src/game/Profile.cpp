@@ -1,6 +1,8 @@
 #include "game/Profile.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -119,6 +121,8 @@ void Profile::save() const {
       << "\ns.biggestWin=" << stats.biggestWin << "\ns.horseWins=" << stats.horseWins << "\ns.rideWins="
       << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\n";
     f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
+    for (auto& [k, b] : beats) f << "b." << k << "=" << b.score << "," << b.acc << "," << b.fc << "\n";
+    f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
       << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
@@ -167,6 +171,17 @@ void Profile::load() {
         else if (k == "s.horseWins") stats.horseWins = (int)L();
         else if (k == "s.rideWins") stats.rideWins = (int)L();
         else if (k == "s.stroopBest") stats.stroopBest = (int)L();
+        else if (k.rfind("b.", 0) == 0) {
+            BeatsBest b;
+            float fc = 0;
+            if (std::sscanf(v.c_str(), "%d,%f,%f", &b.score, &b.acc, &fc) >= 2) {
+                b.fc = fc != 0;
+                beats[k.substr(2)] = b;
+            }
+        }
+        else if (k == "beatsOffset") beatsOffsetMs = (int)L();
+        else if (k == "beatsSpeed") beatsSpeed = std::clamp(F(), 0.5f, 2.5f);
+        else if (k == "beatsHitSounds") beatsHitSounds = L() != 0;
         else if (k == "lastPity") lastPity = L();
         else if (k == "introSeen") introSeen = L() != 0;
         else if (k == "musicVolume") musicVolume = F();

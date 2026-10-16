@@ -1,5 +1,6 @@
 // PieterGame 3 - entry point.
 #include "engine/Engine.hpp"
+#include "game/BeatChart.hpp"
 #include "game/DiscordConfig.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
@@ -14,7 +15,7 @@
 namespace {
 
 // Dev/testing hooks (all optional):
-//   PG_SCENE=classic|room|horses|stroop|casino|roulette|blackjack|mines|slots|shop|inventory|settings
+//   PG_SCENE=classic|room|beats|horses|stroop|casino|roulette|blackjack|mines|slots|shop|inventory|settings
 //   PG_SHOT=out.png PG_SHOT_FRAMES=120   save a screenshot after N frames and quit
 //   PG_SHOT_TIME=6.5                     ...or after N seconds of game time
 //   PG_GOD=1 PG_WAVE=10                  Classic: invincible / start at a wave
@@ -22,6 +23,8 @@ namespace {
 //   PG_HOUR=21.5                         Pieter Room: pretend it's this time of day
 //   PG_ROOM=sleep|shower|feed|chat|play|sad   Pieter Room: start in that state
 //   PG_MUTE=1                            silence all audio
+//   PG_BEATS=3:2 PG_BEATS_AUTO=1         Pieter Beats: play song 3 on HARD (and let a bot play it)
+//   PG_BEATS_TEST=1                      analyze every song for Pieter Beats, print tempo + note counts, quit
 //   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -29,7 +32,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings}, {"admin", makeAdmin},
+        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();
@@ -90,6 +93,18 @@ int dumpSfx(const std::string& dir) {
 
 }  // namespace
 
+int beatsTest() {
+    using namespace pg;
+    for (int i = 0; i < E().music.trackCount(); i++) {
+        double t0 = GetTime();
+        beats::Analysis a = beats::analyze(E().music.trackPath(i));
+        std::printf("%-40s %6.1fs  %5.1f bpm  easy %4zu  normal %4zu  hard %4zu  (%.1fs)\n", E().music.trackName(i).c_str(), a.duration, a.bpm,
+                    beats::buildChart(a, beats::Difficulty::Easy).size(), beats::buildChart(a, beats::Difficulty::Normal).size(),
+                    beats::buildChart(a, beats::Difficulty::Hard).size(), GetTime() - t0);
+    }
+    return 0;
+}
+
 int main() {
     using namespace pg;
     SetTraceLogLevel(LOG_WARNING);
@@ -111,6 +126,11 @@ int main() {
     E().presenceHook = [](Presence& p) {
         if (p.state.empty()) p.state = fmtNum(P().coins) + " Pietercoins";
     };
+    if (std::getenv("PG_BEATS_TEST")) {
+        int rc = beatsTest();
+        E().shutdown();
+        return rc;
+    }
     if (P().discordRpc) E().discord.start(discordAppId());
 
     if (std::getenv("PG_RENDER_INTRO")) {

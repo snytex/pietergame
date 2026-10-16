@@ -12,6 +12,7 @@ std::unique_ptr<Scene> makeClassic();
 std::unique_ptr<Scene> makePieterRoom();
 std::unique_ptr<Scene> makeHorses();
 std::unique_ptr<Scene> makeStroopwafel();
+std::unique_ptr<Scene> makeBeats();
 std::unique_ptr<Scene> makeCasino();
 std::unique_ptr<Scene> makeRoulette();
 std::unique_ptr<Scene> makeBlackjack();
