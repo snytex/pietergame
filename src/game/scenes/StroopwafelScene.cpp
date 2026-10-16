@@ -187,39 +187,86 @@ public:
 
     // Delft-blue tiled kitchen wall with little windmills, fading into the sky
     // and then space as the tower grows.
+    // one hand-painted Delft tile
+    void delftTile(Rectangle t, int motif, float fade, float spin) {
+        Color glaze0 = alpha(rgba(0xf6f7fcff), fade), glaze1 = alpha(rgba(0xdfe5f3ff), fade);
+        fx::gradRoundRect(t, 0.06f, glaze0, glaze1);
+        Color blue = alpha(rgba(0x2a4c9eff), 0.85f * fade), pale = alpha(rgba(0x2a4c9eff), 0.35f * fade);
+        Vector2 c = center(t);
+        float s = t.width / 80;
+        // corner ornaments: quarter rosettes that join up across tiles
+        for (int k = 0; k < 4; k++) {
+            Vector2 p{k % 2 ? t.x + t.width : t.x, k / 2 ? t.y + t.height : t.y};
+            float a0 = k == 0 ? 0 : k == 1 ? 90 : k == 2 ? 270 : 180;
+            DrawCircleSector(p, 11 * s, a0, a0 + 90, 8, pale);
+            DrawRing(p, 13 * s, 15 * s, a0, a0 + 90, 8, pale);
+        }
+        DrawRing(c, 27 * s, 28.5f * s, 0, 360, 40, pale);
+        switch (motif) {
+            case 0: {  // windmill
+                DrawTriangle({c.x - 7 * s, c.y + 18 * s}, {c.x + 7 * s, c.y + 18 * s}, {c.x + 3 * s, c.y - 4 * s}, blue);
+                DrawTriangle({c.x - 7 * s, c.y + 18 * s}, {c.x + 3 * s, c.y - 4 * s}, {c.x - 3 * s, c.y - 4 * s}, blue);
+                Vector2 hub{c.x, c.y - 5 * s};
+                for (int b = 0; b < 4; b++) {
+                    Vector2 d = fromAngle(spin + b * PI / 2);
+                    DrawLineEx(hub, hub + d * (17 * s), 2 * s, blue);
+                    DrawLineEx(hub + d * (6 * s) + Vector2{-d.y, d.x} * (3 * s), hub + d * (17 * s) + Vector2{-d.y, d.x} * (3 * s), 3 * s, pale);
+                }
+                DrawLineEx({c.x - 20 * s, c.y + 19 * s}, {c.x + 20 * s, c.y + 19 * s}, 1.5f * s, pale);
+                break;
+            }
+            case 1: {  // tulip
+                DrawLineEx({c.x, c.y + 18 * s}, {c.x, c.y - 2 * s}, 2 * s, blue);
+                DrawEllipse((int)(c.x - 7 * s), (int)(c.y + 10 * s), 7 * s, 3 * s, pale);
+                DrawEllipse((int)(c.x + 7 * s), (int)(c.y + 6 * s), 7 * s, 3 * s, pale);
+                DrawCircleSector({c.x, c.y - 6 * s}, 8 * s, 0, 180, 10, blue);
+                DrawTriangle({c.x - 8 * s, c.y - 6 * s}, {c.x - 4 * s, c.y - 6 * s}, {c.x - 6 * s, c.y - 15 * s}, blue);
+                DrawTriangle({c.x - 2 * s, c.y - 6 * s}, {c.x + 2 * s, c.y - 6 * s}, {c.x, c.y - 16 * s}, blue);
+                DrawTriangle({c.x + 4 * s, c.y - 6 * s}, {c.x + 8 * s, c.y - 6 * s}, {c.x + 6 * s, c.y - 15 * s}, blue);
+                break;
+            }
+            case 2: {  // sailing ship
+                DrawTriangle({c.x - 16 * s, c.y + 8 * s}, {c.x - 11 * s, c.y + 15 * s}, {c.x + 16 * s, c.y + 8 * s}, blue);
+                DrawTriangle({c.x - 11 * s, c.y + 15 * s}, {c.x + 11 * s, c.y + 15 * s}, {c.x + 16 * s, c.y + 8 * s}, blue);
+                DrawLineEx({c.x, c.y + 8 * s}, {c.x, c.y - 18 * s}, 1.5f * s, blue);
+                DrawTriangle({c.x + 1 * s, c.y - 16 * s}, {c.x + 1 * s, c.y + 5 * s}, {c.x + 13 * s, c.y + 5 * s}, pale);
+                DrawTriangle({c.x - 1 * s, c.y - 12 * s}, {c.x - 11 * s, c.y + 5 * s}, {c.x - 1 * s, c.y + 5 * s}, pale);
+                for (int k = -1; k <= 1; k++) DrawLineEx({c.x - 18 * s + k * 10 * s, c.y + 19 * s}, {c.x - 12 * s + k * 10 * s, c.y + 19 * s}, 1.2f * s, pale);
+                break;
+            }
+            default:  // rosette
+                for (int k = 0; k < 8; k++) DrawEllipse((int)(c.x + std::cos(k * PI / 4) * 10 * s), (int)(c.y + std::sin(k * PI / 4) * 10 * s), 5 * s, 5 * s, k % 2 ? pale : blue);
+                DrawCircleV(c, 5 * s, blue);
+                break;
+        }
+    }
+
+    // Delft-blue tiled kitchen wall, fading into the sky and then space as the tower grows.
     void drawKitchen(float h) {
-        const float tile = 72;
+        const float tile = 80;
         float wallFade = clamp01(1 - h * 3);
         if (wallFade <= 0) return;
+        DrawRectangle(0, 0, VW, VH, alpha(rgba(0xb8c2dcff), wallFade));  // grout
         float oy = std::fmod(-camY_, tile);
         for (float y = -tile + oy; y < VH; y += tile)
             for (float x = 0; x < VW; x += tile) {
                 int ix = (int)(x / tile), iy = (int)std::floor((y - oy - camY_) / tile);
-                Rectangle t{x + 2, y + 2, tile - 4, tile - 4};
-                DrawRectangleRec(t, alpha(rgba(0xe9eef8ff), wallFade));
-                Color blue = alpha(rgba(0x2f5aa8ff), 0.55f * wallFade);
-                Vector2 c = center(t);
-                // corner ornaments
-                for (int k = 0; k < 4; k++)
-                    DrawCircleSector({k % 2 ? t.x + t.width : t.x, k / 2 ? t.y + t.height : t.y}, 9, 0, 360, 8, alpha(blue, 0.5f * wallFade));
-                if ((ix + iy) % 2 == 0) {
-                    // tiny windmill
-                    DrawTriangle({c.x - 7, c.y + 16}, {c.x + 7, c.y + 16}, {c.x, c.y - 4}, blue);
-                    float rot = t_ * 0.6f + ix;
-                    for (int b = 0; b < 4; b++) DrawLineEx(c + Vector2{0, -4}, c + Vector2{0, -4} + fromAngle(rot + b * PI / 2, 14), 3, blue);
-                } else {
-                    DrawPoly(c, 4, 10, 45, alpha(blue, 0.8f));
-                    DrawPoly(c, 4, 5, 45, alpha(rgba(0xe9eef8ff), wallFade));
-                }
+                int motif = (ix * 7 + iy * 13 + (ix * iy) % 5) & 3;
+                delftTile({x + 2, y + 2, tile - 4, tile - 4}, motif, wallFade, t_ * 0.5f + ix);
             }
-        // mood: purple wash over the tiles so the game still feels like PieterGame
-        DrawRectangleGradientV(0, 0, VW, VH, alpha(rgba(0x241245ff), 0.82f * wallFade), alpha(rgba(0x3b2470ff), 0.62f * wallFade));
+        // keep it PieterGame purple, but let the blue and white come through
+        DrawRectangleGradientV(0, 0, VW, VH, alpha(rgba(0x241245ff), 0.74f * wallFade), alpha(rgba(0x3b2470ff), 0.56f * wallFade));
+        // warm kitchen light from above
+        fx::beginAdd();
+        fx::glow({VW / 2.0f, kCupTop - 260 - camY_}, 620, alpha(rgba(0xffcf8aff), 0.18f * wallFade));
+        fx::endAdd();
         // wooden counter under the cup
         float ct = kCupTop + 168 - camY_;
         if (ct < VH) {
-            DrawRectangleGradientV(0, (int)ct, VW, VH - (int)ct, rgba(0x8a5a32ff), rgba(0x4a2c16ff));
-            DrawRectangle(0, (int)ct, VW, 6, rgba(0xb07a48ff));
-            for (int k = 0; k < 6; k++) DrawLineEx({0, ct + 22 + k * 18}, {(float)VW, ct + 26 + k * 18}, 1.5f, alpha(rgba(0x3a2010ff), 0.35f));
+            DrawRectangleGradientV(0, (int)ct - 14, VW, 14, alpha(BLACK, 0), alpha(BLACK, 0.35f));
+            DrawRectangleGradientV(0, (int)ct, VW, VH - (int)ct, rgba(0x9a6638ff), rgba(0x4a2c16ff));
+            DrawRectangle(0, (int)ct, VW, 5, rgba(0xc8905aff));
+            for (int k = 0; k < 6; k++) DrawLineEx({0, ct + 22 + k * 18}, {(float)VW, ct + 26 + k * 18}, 1.5f, alpha(rgba(0x3a2010ff), 0.3f));
         }
     }
 

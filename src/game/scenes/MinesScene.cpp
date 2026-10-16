@@ -29,7 +29,17 @@ class MinesScene : public Scene {
 public:
     Presence presence() const override { return {"Casino - Mines", "", "casino", "Pieter Casino", "logo"}; }
 
-    void enter() override { bet_ = std::clamp<long long>(20, 1, std::max<long long>(1, P().coins)); }
+    void enter() override {
+        bet_ = std::clamp<long long>(20, 1, std::max<long long>(1, P().coins));
+        if (std::getenv("PG_MINES_DEMO")) {  // dev hook: a board mid-game with a few tiles open
+            start();
+            for (int i : {0, 6, 12, 18}) {
+                tiles_[i].mine = i == 18;
+                tiles_[i].open = true;
+                tiles_[i].reveal = 1;
+            }
+        }
+    }
 
     void start() {
         if (!P().spend(bet_)) { E().sfx.play(Sfx::Error); return; }
@@ -114,14 +124,34 @@ public:
             bool face = t.reveal > 0.5f;
             Rectangle d{c.x - kTile * k / 2, r.y - (hot ? 4 : 0), kTile * k, kTile};
             if (!face) {
-                DrawRectangleRounded({d.x, d.y + 6, d.width, d.height}, 0.2f, 8, darken(col::panelHi, 0.5f));
-                DrawRectangleRounded(d, 0.2f, 8, hot ? lighten(col::panelHi, 0.2f) : col::panelHi);
-                DrawRectangleRounded({d.x + 6, d.y + 5, d.width - 12, d.height * 0.35f}, 0.4f, 8, alpha(WHITE, 0.08f));
+                // covered: a beveled violet tile; a shimmer ripples across the board while playing
+                float wave = playing_ ? std::max(0.0f, std::sin(t_ * 2.2f - (i % 5) * 0.5f - (i / 5) * 0.5f)) : 0.0f;
+                Color base = mix(rgba(0x5a3aa8ff), rgba(0x7a56d8ff), hot ? 1.0f : wave * 0.35f);
+                if (hot) {
+                    fx::beginAdd();
+                    fx::glow(c, kTile, alpha(col::violet, 0.35f));
+                    fx::endAdd();
+                }
+                DrawRectangleRounded({d.x, d.y + 6, d.width, d.height}, 0.22f, 8, darken(base, 0.55f));
+                fx::gradRoundRect(d, 0.22f, lighten(base, 0.18f), darken(base, 0.2f));
+                if (d.width > 20) {
+                    Rectangle in = shrink(d, 8);
+                    DrawRectangleRoundedLinesEx(in, 0.2f, 8, 1.5f, alpha(WHITE, 0.10f));
+                    DrawPoly(c, 4, 10 * k, 45, alpha(BLACK, 0.18f));
+                    DrawPoly({c.x, c.y - 1.5f}, 4, 10 * k, 45, alpha(WHITE, 0.16f));
+                    DrawLineEx({d.x + 10, d.y + 2.5f}, {d.x + d.width - 10, d.y + 2.5f}, 2, alpha(WHITE, 0.3f));
+                }
+                DrawRectangleRoundedLinesEx(d, 0.22f, 8, 2, col::outline);
             } else {
-                Color bg = t.mine ? rgba(0x5a1a24ff) : rgba(0x2a1f4aff);
-                DrawRectangleRounded(d, 0.2f, 8, bg);
+                // revealed: an inset well, gold glow for a waffle, red for a bomb
+                Color bg = t.mine ? rgba(0x4a0e18ff) : rgba(0x1c1436ff);
+                fx::gradRoundRect(d, 0.22f, darken(bg, 0.4f), bg);
+                DrawRectangleRoundedLinesEx(d, 0.22f, 8, 2, t.mine ? col::red : alpha(col::gold, 0.5f));
                 if (k > 0.3f) {
-                    if (t.mine) art::bomb(c, 30 * k, t_);
+                    fx::beginAdd();
+                    fx::glow(c, kTile * 0.8f, alpha(t.mine ? col::red : col::gold, (t.mine ? 0.45f : 0.25f) * k));
+                    fx::endAdd();
+                    if (t.mine) art::bomb(c, 28 * k, t_);
                     else art::stroopwafelTop(c, 34 * k);
                 }
             }

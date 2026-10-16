@@ -93,19 +93,36 @@ float paragraph(const std::string& s, Rectangle box, float size, Color c, bool d
 
 bool hovered(Rectangle r) { return CheckCollisionPointRec(E().mouse(), r) && !E().transitioning(); }
 
+// corner radius in px -> raylib roundness for this rectangle
+float roundFor(Rectangle r, float radius) { return std::min(1.0f, 2 * radius / std::max(1.0f, std::min(r.width, r.height))); }
+
+// The shared "pressable" look: soft shadow, a darker bevel underneath, a gradient
+// face with a lit top edge and a crisp outline.
+void drawPressable(Rectangle d, float radius, Color c, float depth, float hover, bool enabled) {
+    float round = roundFor(d, radius);
+    DrawRectangleRounded({d.x + 1, d.y + depth + 3, d.width, d.height}, round, 12, alpha(BLACK, 0.28f));
+    DrawRectangleRounded({d.x, d.y + depth, d.width, d.height}, round, 12, darken(c, 0.5f));
+    if (hover > 0.01f && enabled) {
+        fx::beginAdd();
+        fx::glow({d.x + d.width / 2, d.y + d.height / 2}, std::max(d.width, d.height) * 0.75f, alpha(c, 0.22f * hover));
+        fx::endAdd();
+    }
+    fx::gradRoundRect(d, round, lighten(c, 0.16f + hover * 0.08f), darken(c, 0.12f));
+    float rad = round * std::min(d.width, d.height) / 2;
+    DrawLineEx({d.x + rad, d.y + 1.6f}, {d.x + d.width - rad, d.y + 1.6f}, 1.6f, alpha(WHITE, enabled ? 0.35f : 0.12f));
+    DrawRectangleRoundedLinesEx(d, round, 12, 2, alpha(col::outline, 0.9f));
+}
+
 bool button(Rectangle r, const std::string& label, Color base, float fontSize, bool enabled) {
     bool hot = enabled && hovered(r);
     float h = hoverAnim(r, hot);
     bool down = hot && E().mouseDown();
-    float grow = h * 3 - (down ? 2 : 0);
-    Rectangle d{r.x - grow, r.y - grow, r.width + grow * 2, r.height + grow * 2};
-    Color c = enabled ? mix(base, lighten(base, 0.3f), h) : mix(base, GRAY, 0.7f);
-    float depth = down ? 2 : 5;
-    DrawRectangleRounded({d.x, d.y + depth, d.width, d.height}, 0.3f, 10, darken(c, 0.55f));
-    DrawRectangleRounded(d, 0.3f, 10, c);
-    DrawRectangleRounded({d.x + 4, d.y + 3, d.width - 8, d.height * 0.4f}, 0.5f, 10, alpha(WHITE, 0.10f + h * 0.06f));
-    DrawRectangleRoundedLinesEx(d, 0.3f, 10, 2.5f, col::outline);
-    textShadow(label, d.x + d.width / 2, d.y + d.height / 2, fontSize, enabled ? col::text : col::muted, Center, false, 2);
+    Color c = enabled ? base : mix(base, rgba(0x2e2840ff), 0.75f);
+    float depth = down ? 1.5f : 4;
+    Rectangle d{r.x, r.y + (down ? 2.5f : -h * 1.5f), r.width, r.height};
+    drawPressable(d, std::min(12.0f, r.height * 0.32f), c, depth, h, enabled);
+    textShadow(label, d.x + d.width / 2, d.y + d.height / 2, fontSize, enabled ? col::text : alpha(col::muted, 0.8f), Center, false, 2,
+               alpha(darken(c, 0.7f), 0.9f));
     if (hot && E().mousePressed()) {
         E().consumeClick();
         E().sfx.play(Sfx::Click);
@@ -117,15 +134,19 @@ bool button(Rectangle r, const std::string& label, Color base, float fontSize, b
 bool bigButton(Rectangle r, const std::string& label, const std::string& sub, Color base, float fontSize) {
     bool hot = hovered(r);
     float h = hoverAnim(r, hot);
-    float grow = h * 5;
-    Rectangle d{r.x - grow, r.y - grow, r.width + grow * 2, r.height + grow * 2};
-    Color c = mix(base, lighten(base, 0.25f), h);
-    DrawRectangleRounded({d.x, d.y + 7, d.width, d.height}, 0.25f, 12, darken(c, 0.6f));
-    DrawRectangleRounded(d, 0.25f, 12, c);
-    DrawRectangleRounded({d.x + 6, d.y + 4, d.width - 12, d.height * 0.45f}, 0.4f, 12, alpha(WHITE, 0.12f));
-    DrawRectangleRoundedLinesEx(d, 0.25f, 12, 3, col::outline);
+    bool down = hot && E().mouseDown();
+    Rectangle d{r.x, r.y + (down ? 3.0f : -h * 3), r.width, r.height};
+    drawPressable(d, std::min(18.0f, r.height * 0.28f), base, down ? 2 : 6, h, true);
+    // a slow sheen sliding across while hovered
+    if (h > 0.01f) {
+        float k = std::fmod((float)GetTime() * 0.6f, 1.6f) - 0.3f;
+        float x = d.x + d.width * k;
+        float w = std::min(60.0f, d.width * 0.15f);
+        float x0 = std::max(d.x + 8, x), x1 = std::min(d.x + d.width - 8, x + w);
+        if (x1 > x0) DrawRectangleGradientH((int)x0, (int)d.y + 4, (int)(x1 - x0), (int)d.height - 8, alpha(WHITE, 0), alpha(WHITE, 0.10f * h));
+    }
     float cy = d.y + d.height / 2 - (sub.empty() ? 0 : 10);
-    textShadow(label, d.x + d.width / 2, cy, fontSize, col::text, Center, true, 3);
+    textShadow(label, d.x + d.width / 2, cy, fontSize, col::text, Center, true, 3, alpha(darken(base, 0.75f), 0.9f));
     if (!sub.empty()) text(sub, d.x + d.width / 2, cy + fontSize * 0.75f, 17, alpha(col::text, 0.85f), Center);
     if (hot && E().mousePressed()) {
         E().consumeClick();
@@ -137,8 +158,19 @@ bool bigButton(Rectangle r, const std::string& label, const std::string& sub, Co
 
 bool backButton() {
     bool esc = E().backPressed();
-    if (button({20, 16, 120, 44}, "< BACK", col::panelHi, 22) || esc) {
-        if (esc) E().sfx.play(Sfx::Click);
+    Rectangle r{20, 16, 124, 44};
+    bool hot = hovered(r);
+    float h = hoverAnim(r, hot);
+    Rectangle d{r.x - h * 2, r.y, r.width, r.height};
+    drawPressable(d, 22, col::panelHi, 3, h, true);
+    Vector2 c{d.x + 26, d.y + d.height / 2};
+    DrawLineEx({c.x + 5, c.y - 8}, {c.x - 3, c.y}, 3.5f, col::text);
+    DrawLineEx({c.x - 3, c.y}, {c.x + 5, c.y + 8}, 3.5f, col::text);
+    DrawCircleV({c.x - 3, c.y}, 1.75f, col::text);
+    text("BACK", d.x + 44, d.y + d.height / 2, 20, col::text, Left, true);
+    if ((hot && E().mousePressed()) || esc) {
+        if (hot) E().consumeClick();
+        E().sfx.play(Sfx::Click);
         return true;
     }
     return false;
@@ -147,25 +179,52 @@ bool backButton() {
 bool slider(Rectangle r, float& value, Color c) {
     static const void* dragging = nullptr;
     bool hot = hovered({r.x - 10, r.y - 12, r.width + 20, r.height + 24});
+    float h = hoverAnim({r.x - 10, r.y - 12, r.width + 20, r.height + 24}, hot || dragging == &value);
     if (hot && E().mousePressed()) { dragging = &value; E().consumeClick(); }
     if (!E().mouseDown()) dragging = nullptr;
     float old = value;
     if (dragging == &value) value = clamp01((E().mouse().x - r.x) / r.width);
-    DrawRectangleRounded(r, 1, 8, col::bgDeep);
-    DrawRectangleRounded({r.x, r.y, r.width * value, r.height}, 1, 8, c);
-    DrawCircleV({r.x + r.width * value, r.y + r.height / 2}, r.height * 1.1f, WHITE);
-    ui::circleOutline({r.x + r.width * value, r.y + r.height / 2}, r.height * 1.1f, col::outline);
+    // inset track
+    fx::gradRoundRect(r, 1, alpha(BLACK, 0.55f), col::bgDeep);
+    if (value > 0.001f) {
+        Rectangle f{r.x, r.y, std::max(r.height, r.width * value), r.height};
+        fx::gradRoundRect(f, 1, lighten(c, 0.25f), darken(c, 0.1f));
+        DrawLineEx({f.x + r.height / 2, f.y + 2}, {f.x + f.width - r.height / 2, f.y + 2}, 1.5f, alpha(WHITE, 0.35f));
+    }
+    DrawRectangleRoundedLinesEx(r, 1, 12, 1.5f, alpha(col::outline, 0.8f));
+    Vector2 k{r.x + r.width * value, r.y + r.height / 2};
+    float kr = r.height * 1.05f + h * 2;
+    DrawCircleV({k.x, k.y + 3}, kr, alpha(BLACK, 0.3f));
+    DrawCircleV(k, kr, WHITE);
+    DrawCircleV({k.x, k.y + kr * 0.15f}, kr * 0.8f, rgba(0xe8e0f4ff));
+    DrawCircleV(k, kr * 0.38f, c);
+    ui::circleOutline(k, kr, col::outline, 2);
     return old != value;
 }
 
 bool toggle(Rectangle r, const std::string& label, bool& value) {
     bool hot = hovered(r);
-    hoverAnim(r, hot);
-    text(label, r.x, r.y + r.height / 2, 24, col::text);
-    Rectangle sw{r.x + r.width - 70, r.y + r.height / 2 - 16, 70, 32};
-    DrawRectangleRounded(sw, 1, 12, value ? col::green : col::bgDeep);
-    DrawRectangleRoundedLinesEx(sw, 1, 12, 2, col::outline);
-    DrawCircleV({value ? sw.x + sw.width - 16 : sw.x + 16, sw.y + 16}, 12, WHITE);
+    float h = hoverAnim(r, hot);
+    float fs = std::min(22.0f, r.height * 0.44f);
+    text(label, r.x, r.y + r.height / 2, fs, alpha(col::text, 0.85f + 0.15f * h), Left, true);
+    Rectangle sw{r.x + r.width - 62, r.y + r.height / 2 - 15, 62, 30};
+    // knob position eases between the ends
+    static std::unordered_map<const void*, float> anim;
+    float& a = anim[&value];
+    a = approach(a, value ? 1.0f : 0.0f, GetFrameTime() * 8);
+    Color on = col::green, off = rgba(0x1a1230ff);
+    Color tc = mix(off, on, a);
+    if (a > 0.01f) {
+        fx::beginAdd();
+        fx::glow(center(sw), 60, alpha(on, 0.25f * a));
+        fx::endAdd();
+    }
+    fx::gradRoundRect(sw, 1, a > 0.5f ? lighten(tc, 0.1f) : alpha(BLACK, 0.5f), a > 0.5f ? darken(tc, 0.15f) : tc);
+    DrawRectangleRoundedLinesEx(sw, 1, 12, 2, alpha(col::outline, 0.9f));
+    Vector2 k{lerpf(sw.x + 15, sw.x + sw.width - 15, easeInOutSine(a)), sw.y + 15};
+    DrawCircleV({k.x, k.y + 2}, 12, alpha(BLACK, 0.3f));
+    DrawCircleV(k, 12, WHITE);
+    DrawCircleV({k.x, k.y + 2}, 9.5f, rgba(0xe8e0f4ff));
     if (hot && E().mousePressed()) {
         E().consumeClick();
         E().sfx.play(Sfx::Click);
@@ -176,21 +235,24 @@ bool toggle(Rectangle r, const std::string& label, bool& value) {
 }
 
 void panel(Rectangle r, Color c, float round, Color border) {
-    // glassy card: soft drop shadow, lit top edge, subtle inner rim
-    fx::softShadow({r.x + r.width / 2, r.y + r.height / 2 + 14}, r.width * 0.62f, r.height * 0.62f, 0.45f * c.a / 255.0f);
-    DrawRectangleRounded(r, round, 12, c);
-    float rr = round * std::min(r.width, r.height);
-    Rectangle top{r.x + 3, r.y + 3, r.width - 6, std::min(r.height * 0.45f, 160.0f)};
-    DrawRectangleRounded(top, std::min(1.0f, rr / std::min(top.width, top.height)), 12, alpha(WHITE, 0.045f));
-    DrawRectangleRoundedLinesEx(shrink(r, 3), round, 12, 1.5f, alpha(WHITE, 0.07f));
-    DrawRectangleRoundedLinesEx(r, round, 12, 3, border);
+    // card: soft drop shadow, gentle top-to-bottom gradient, lit top edge, thin rim
+    fx::softShadow({r.x + r.width / 2, r.y + r.height / 2 + 12}, r.width * 0.6f, r.height * 0.6f, 0.4f * c.a / 255.0f);
+    fx::gradRoundRect(r, round, lighten(c, 0.06f), darken(c, 0.22f));
+    float rad = round * std::min(r.width, r.height) / 2;
+    DrawLineEx({r.x + rad, r.y + 1.6f}, {r.x + r.width - rad, r.y + 1.6f}, 1.6f, alpha(WHITE, 0.10f));
+    DrawRectangleRoundedLinesEx(shrink(r, 2), round, 12, 1, alpha(WHITE, 0.04f));
+    DrawRectangleRoundedLinesEx(r, round, 12, 2, border);
 }
 
 void bar(Rectangle r, float frac, Color fill, Color back) {
-    DrawRectangleRounded(r, 1, 10, back);
-    if (frac > 0.001f) DrawRectangleRounded({r.x, r.y, std::max(r.height, r.width * clamp01(frac)), r.height}, 1, 10, fill);
-    DrawRectangleRounded({r.x + 3, r.y + 2, std::max(0.0f, r.width * clamp01(frac) - 6), r.height * 0.35f}, 1, 10, alpha(WHITE, 0.25f));
-    DrawRectangleRoundedLinesEx(r, 1, 10, 2, col::outline);
+    fx::gradRoundRect(r, 1, alpha(BLACK, 0.5f), back);
+    if (frac > 0.001f) {
+        Rectangle f{r.x, r.y, std::max(r.height, r.width * clamp01(frac)), r.height};
+        fx::gradRoundRect(f, 1, lighten(fill, 0.22f), darken(fill, 0.12f));
+        DrawLineEx({f.x + r.height / 2, f.y + r.height * 0.22f}, {f.x + f.width - r.height / 2, f.y + r.height * 0.22f}, std::max(1.0f, r.height * 0.14f),
+                   alpha(WHITE, 0.3f));
+    }
+    DrawRectangleRoundedLinesEx(r, 1, 10, 1.5f, alpha(col::outline, 0.85f));
 }
 
 void coin(Vector2 c, float radius) {
@@ -227,8 +289,16 @@ void coinCounter(float rightX, float y, long long amount) {
 }
 
 void titleBar(const std::string& title, Color accent) {
-    DrawRectangleGradientV(0, 0, VW, 76, alpha(col::bgDeep, 0.95f), alpha(col::bgDeep, 0.0f));
-    textShadow(title, VW / 2.0f, 38, 44, col::text, Center, true, 3, darken(accent, 0.5f));
+    DrawRectangleGradientV(0, 0, VW, 90, alpha(col::bgDeep, 0.92f), alpha(col::bgDeep, 0.0f));
+    float w = measure(title, 42, true);
+    // accent: a glowing bar under the title with fading rules either side
+    fx::beginAdd();
+    fx::glow({VW / 2.0f, 66}, w * 0.5f, alpha(accent, 0.18f));
+    fx::endAdd();
+    DrawRectangleRounded({VW / 2.0f - 28, 63, 56, 5}, 1, 8, accent);
+    DrawRectangleGradientH((int)(VW / 2.0f - 28 - 120), 65, 112, 1, alpha(accent, 0), alpha(accent, 0.6f));
+    DrawRectangleGradientH((int)(VW / 2.0f + 36), 65, 112, 1, alpha(accent, 0.6f), alpha(accent, 0));
+    textShadow(title, VW / 2.0f, 34, 42, col::text, Center, true, 3, alpha(darken(accent, 0.6f), 0.95f));
 }
 
 bool betSelector(Rectangle r, long long& bet, long long maxBet, bool enabled) {

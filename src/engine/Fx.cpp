@@ -82,6 +82,37 @@ void shadedRoundRect(Rectangle r, float round, Color base, float outline) {
                          alpha(lighten(base, 0.6f), 0.35f));
 }
 
+void gradRoundRect(Rectangle r, float roundness, Color top, Color bottom) {
+    if (r.width <= 0 || r.height <= 0) return;
+    float rad = std::min(roundness * std::min(r.width, r.height) / 2, std::min(r.width, r.height) / 2);
+    const int seg = std::clamp((int)(rad / 2), 3, 12);
+    // perimeter, corner by corner (clockwise on screen)
+    Vector2 pts[4 * 13];
+    int n = 0;
+    const Vector2 cs[4] = {{r.x + r.width - rad, r.y + rad}, {r.x + r.width - rad, r.y + r.height - rad}, {r.x + rad, r.y + r.height - rad}, {r.x + rad, r.y + rad}};
+    for (int c = 0; c < 4; c++)
+        for (int i = 0; i <= seg; i++) {
+            float a = (-90 + c * 90 + 90.0f * i / seg) * DEG2RAD;
+            pts[n++] = {cs[c].x + std::cos(a) * rad, cs[c].y + std::sin(a) * rad};
+        }
+    auto colAt = [&](float y) { return mix(top, bottom, clamp01((y - r.y) / r.height)); };
+    Vector2 mid{r.x + r.width / 2, r.y + r.height / 2};
+    Color cm = colAt(mid.y);
+    rlBegin(RL_TRIANGLES);
+    for (int i = 0; i < n; i++) {
+        Vector2 a = pts[i], b = pts[(i + 1) % n];
+        Color ca = colAt(a.y), cb = colAt(b.y);
+        for (int w = 0; w < 2; w++) {  // both windings: whichever survives culling draws
+            rlColor4ub(cm.r, cm.g, cm.b, cm.a); rlVertex2f(mid.x, mid.y);
+            Vector2 p = w ? b : a, q = w ? a : b;
+            Color cp = w ? cb : ca, cq = w ? ca : cb;
+            rlColor4ub(cp.r, cp.g, cp.b, cp.a); rlVertex2f(p.x, p.y);
+            rlColor4ub(cq.r, cq.g, cq.b, cq.a); rlVertex2f(q.x, q.y);
+        }
+    }
+    rlEnd();
+}
+
 void dashedRing(Vector2 c, float r, float thick, int dashes, float rot, Color color) {
     float step = 360.0f / dashes;
     for (int i = 0; i < dashes; i++) {

@@ -22,7 +22,8 @@ std::unique_ptr<Scene> makeSlots();
 std::unique_ptr<Scene> makeShop();
 std::unique_ptr<Scene> makeInventory();
 std::unique_ptr<Scene> makeSettings();
-std::unique_ptr<Scene> makeAdmin();  // secret: title screen code
+std::unique_ptr<Scene> makeAdmin();
+std::unique_ptr<Scene> makeArtLab();  // dev: sprite sheet  // secret: title screen code
 
 // Intro: the animation itself (rendered offline to a video) and the player that
 // shows assets/video/intro.mpg, then continues to the main menu.

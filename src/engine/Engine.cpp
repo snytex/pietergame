@@ -241,6 +241,12 @@ void Engine::resizeCanvas() {
     int cw = std::min(bw, bh * VW / VH), ch = cw * VH / VW;
     cw = std::max(cw, 320);
     ch = std::max(ch, 180);
+    // supersampling: 2x, read back with a bilinear tap that averages each 2x2 block
+    if (smooth_) {
+        int ss = std::min(2, std::max(1, 4096 / cw));
+        cw *= ss;
+        ch *= ss;
+    }
     if (canvas_.id && canvas_.texture.width == cw && canvas_.texture.height == ch) return;
     if (canvas_.id) UnloadRenderTexture(canvas_);
     canvas_ = LoadRenderTexture(cw, ch);

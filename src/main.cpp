@@ -34,7 +34,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap},
+        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();
@@ -113,6 +113,7 @@ int main() {
     if (const char* dir = std::getenv("PG_DUMP_SFX")) return dumpSfx(dir);
     P().load();
     if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
+    E().setSmooth(P().smoothGraphics);
 
     bool mute = std::getenv("PG_MUTE") != nullptr;
     E().music.setVolume(mute ? 0 : P().musicVolume);

@@ -99,8 +99,12 @@ public:
                             fs ? "fullscreen scales to the monitor" : "window size", (int)cs.x, (int)cs.y),
                  a.x + 24, a.y + 324, 15, col::muted);
 
-        if (ui::toggle({a.x + 24, a.y + 344, 236, 50}, "Screen shake", P().screenShake)) E().screenShake = P().screenShake;
-        if (ui::toggle({a.x + 290, a.y + 344, 246, 50}, "Discord status", P().discordRpc)) {
+        if (ui::toggle({a.x + 24, a.y + 344, 158, 50}, "Shake", P().screenShake)) E().screenShake = P().screenShake;
+        if (ui::toggle({a.x + 200, a.y + 344, 158, 50}, "Smooth", P().smoothGraphics)) {
+            E().setSmooth(P().smoothGraphics);
+            P().save();
+        }
+        if (ui::toggle({a.x + 376, a.y + 344, 160, 50}, "Discord", P().discordRpc)) {
             if (P().discordRpc) E().discord.start(discordAppId());
             else E().discord.stop();
             P().save();

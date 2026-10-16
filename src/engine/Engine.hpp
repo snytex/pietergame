@@ -83,6 +83,9 @@ public:
     // (above taskbars) and the game renders at the chosen resolution, scaled up.
     void setDisplay(bool fullscreen, int resW, int resH);
     void setFullscreen(bool on) { setDisplay(on, resW_, resH_); }
+    // Smooth edges: render the canvas at 2x and filter it down (supersampling AA).
+    void setSmooth(bool on) { smooth_ = on; resizeCanvas(); }
+    bool smooth() const { return smooth_; }
     bool fullscreen() const;
     int resWidth() const { return resW_; }
     int resHeight() const { return resH_; }
@@ -128,6 +131,7 @@ private:
     bool quit_ = false;
 
     float scale_ = 1;
+    bool smooth_ = true;
     Vector2 offset_{};
     Vector2 mouse_{};
     bool mousePressed_ = false;

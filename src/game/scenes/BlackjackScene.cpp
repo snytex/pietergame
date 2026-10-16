@@ -200,9 +200,33 @@ public:
 
     void draw() override {
         casino::felt(t_);
-        // table arc
-        DrawRing({VW / 2.0f, -260}, 820, 830, 20, 160, 80, alpha(col::gold, 0.4f));
-        ui::text("BLACKJACK PAYS 3 TO 2  -  DEALER STANDS ON 17", VW / 2.0f, 370, 18, alpha(col::gold, 0.6f), ui::Center, true);
+        // printed table: outer rail, insurance band and curved lettering
+        Vector2 ac{VW / 2.0f, -260};
+        DrawRing(ac, 820, 830, 20, 160, 80, alpha(col::gold, 0.45f));
+        DrawRing(ac, 606, 609, 48, 132, 80, alpha(col::gold, 0.5f));
+        DrawRing(ac, 690, 693, 50, 130, 80, alpha(col::gold, 0.5f));
+        casino::arcText("BLACKJACK PAYS 3 TO 2", ac, 664, 90, 22, alpha(col::gold, 0.75f));
+        casino::arcText("DEALER STANDS ON 17   -   INSURANCE PAYS 2 TO 1", ac, 628, 90, 13, alpha(col::gold, 0.55f));
+        // dealer's chip tray
+        Rectangle tray{VW / 2.0f - 70, 84, 420, 44};
+        DrawRectangleRounded({tray.x, tray.y + 4, tray.width, tray.height}, 0.25f, 8, alpha(BLACK, 0.35f));
+        fx::gradRoundRect(tray, 0.25f, rgba(0x3a2a1aff), rgba(0x1a1008ff));
+        const Color chipCols[] = {rgba(0xe8e2f0ff), col::red, rgba(0x2a9a5aff), rgba(0x1d1a24ff), col::violet, col::gold};
+        for (int i = 0; i < 10; i++) {
+            Rectangle slot{tray.x + 12 + i * 40.0f, tray.y + 8, 36, 28};
+            DrawRectangleRounded(slot, 0.5f, 6, rgba(0x120a04ff));
+            for (int k = 0; k < 4; k++) casino::chip({slot.x + 18, slot.y + 22 - k * 4.0f}, 15, chipCols[i % 6], true);
+        }
+        DrawRectangleRoundedLinesEx(tray, 0.25f, 8, 2, alpha(col::gold, 0.4f));
+        // betting circle with your stake
+        Vector2 spot{1140, 636};
+        DrawRing(spot, 42, 45, 0, 360, 48, alpha(col::gold, 0.6f));
+        DrawRing(spot, 36, 37, 0, 360, 48, alpha(col::gold, 0.3f));
+        {
+            int stack = (int)std::clamp<long long>(1 + bet_ / 50, 1, 8);
+            for (int k = 0; k < stack; k++) casino::chip({spot.x, spot.y + 10 - k * 5.0f}, 24, k % 2 ? col::red : rgba(0x2a9a5aff), true);
+        }
+        ui::text("BET", spot.x, spot.y + 58, 13, alpha(col::gold, 0.6f), ui::Center, true);
 
         // dealer Davi
         art::portrait("davi", {150, 200}, 80, col::cyan, std::sin(t_ * 1.5f) * 4);

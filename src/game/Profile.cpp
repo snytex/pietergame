@@ -125,7 +125,7 @@ void Profile::save() const {
     f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
     f << "fnapNight=" << fnapNight << "\nfnapBeaten=" << fnapBeaten << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
-      << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
+      << "\nscreenShake=" << screenShake << "\nsmooth=" << smoothGraphics << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
     std::error_code ec;
     fs::rename(path() + ".tmp", path(), ec);
@@ -191,6 +191,7 @@ void Profile::load() {
         else if (k == "sfxVolume") sfxVolume = F();
         else if (k == "fullscreen") fullscreen = L() != 0;
         else if (k == "screenShake") screenShake = L() != 0;
+        else if (k == "smooth") smoothGraphics = L() != 0;
         else if (k == "discordRpc") discordRpc = L() != 0;
         else if (k == "monitor") monitor = v;
         else if (k == "resW") resW = (int)L();

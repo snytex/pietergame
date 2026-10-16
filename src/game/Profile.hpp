@@ -80,6 +80,7 @@ public:
     int resW = 0, resH = 0;  // 0 = pick automatically
     std::string monitor;     // monitor name, empty = primary
     bool screenShake = true;
+    bool smoothGraphics = true;
     bool discordRpc = true;
 
     int count(const std::string& id) const;
