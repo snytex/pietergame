@@ -145,7 +145,16 @@ public:
         return p;
     }
 
-    void enter() override { newField(); }
+    void enter() override {
+        newField();
+        // dev hook: PG_HORSE=bet|race|ride jumps straight into that part
+        if (const char* h = std::getenv("PG_HORSE")) {
+            std::string m = h;
+            if (m == "bet") mode_ = Mode::BetPick;
+            if (m == "race") { pick_ = 2; startBetRace(); }
+            if (m == "ride") startRide();
+        }
+    }
 
     void newField() {
         field_ = makeField();

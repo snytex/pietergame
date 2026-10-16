@@ -80,6 +80,9 @@ PG_SCENE=classic PG_GOD=1 PG_SHOT=out.png PG_SHOT_TIME=12 ... # invincible, scre
 PG_SCENE=room PG_HOUR=22 PG_ROOM=sleep ...                       # Pieter Room at night, asleep (also shower/feed/chat/play/sad)
 PG_SCENE=beats PG_BEATS=3:2 PG_BEATS_AUTO=1 ...                  # Pieter Beats: song 3 on Hard, played by a bot
 PG_SCENE=fnap PG_FNAP=3 PG_FNAP_VIEW=closet PG_FNAP_STAGE=0,0,3,0,0 PG_FNAP_LIGHT=1 ...  # Five Nights: frozen setup for screenshots
+PG_SCENE=artlab PG_ARTLAB=horse|items ...                      # sprite sheet for checking art
+PG_SCENE=horses PG_HORSE=bet|race|ride ...                      # jump into a horse mode
+PG_SCENE=mines PG_MINES_DEMO=1 ...                               # a board with some tiles open
 PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 

@@ -173,7 +173,7 @@ public:
         }
         ui::titleBar("PIETER DEV PANEL", col::green);
         if (ui::backButton()) E().go(makeMenu);
-        ui::text("shh... don't tell Davi", VW / 2.0f, 70, 15, alpha(col::green, 0.7f), ui::Center);
+        ui::text("shh... don't tell Davi", VW / 2.0f, 84, 15, alpha(col::green, 0.7f), ui::Center);
         drawPractice();
         drawCheats();
         fx_.draw();

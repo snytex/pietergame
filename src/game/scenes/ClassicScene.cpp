@@ -1208,19 +1208,24 @@ public:
         }
         fx::endAdd();
         // giant floor logo
-        ui::text("PIETERGAME 3", a.x + a.width / 2, a.y + a.height / 2 + 10, 150, alpha(col::violet, 0.07f), ui::Center, true);
-        // lit floor grid: dots brighten near the player (and the boss)
-        for (float y = a.y + 32; y < a.y + a.height - 10; y += 40)
-            for (float x = a.x + 32; x < a.x + a.width - 10; x += 40) {
-                float l = clamp01(1 - Vector2Distance({x, y}, player_) / 260);
+        ui::text("PIETERGAME 3", a.x + a.width / 2, a.y + a.height / 2 + 10, 150, alpha(col::violet, 0.05f), ui::Center, true);
+        // hex-tile floor: faint everywhere, lit up around the player (and the boss)
+        const float R = 30, hw = R * 1.7320508f;
+        E().beginClip(shrink(a, 6));
+        for (int row = 0; row * R * 1.5f < a.height + R; row++)
+            for (int colI = 0; colI * hw < a.width + hw; colI++) {
+                Vector2 c{a.x + colI * hw + (row % 2) * hw / 2, a.y + row * R * 1.5f};
+                float l = clamp01(1 - Vector2Distance(c, player_) / 230);
                 l = l * l;
-                Color c = col::violet;
+                Color tint = col::violet;
                 if (boss_.alive()) {
-                    float lb = clamp01(1 - Vector2Distance({x, y}, boss_.pos) / 320);
-                    if (lb * lb > l) { l = lb * lb; c = boss_.enraged() ? col::red : bossColor(boss_.kind); }
+                    float lb = clamp01(1 - Vector2Distance(c, boss_.pos) / 300);
+                    if (lb * lb > l) { l = lb * lb; tint = boss_.enraged() ? col::red : bossColor(boss_.kind); }
                 }
-                DrawRectangleRec({x - 1.5f - l * 1.5f, y - 1.5f - l * 1.5f, 3 + l * 3, 3 + l * 3}, alpha(mix(c, WHITE, l * 0.5f), 0.2f + 0.7f * l));
+                if (l > 0.02f) DrawPoly(c, 6, R - 3, 30, alpha(tint, 0.10f * l));
+                DrawPolyLinesEx(c, 6, R - 1.5f, 30, 1.2f + l * 1.3f, alpha(mix(tint, WHITE, l * 0.4f), 0.07f + 0.5f * l));
             }
+        E().endClip();
     }
 
     void drawArenaBorder() {
