@@ -78,6 +78,7 @@ public:
     // pan: -1 left .. 1 right
     void play(Sfx s, float volume = 1.0f, float pitch = 1.0f, float pan = 0.0f);
     void playAt(Sfx s, float x, float volume = 1.0f, float pitch = 1.0f);  // pans by screen x (virtual units)
+    void stop(Sfx s);  // cuts every playing copy of a sound (long ambient loops when leaving a scene)
     void setVolume(float v) { volume_ = v; }
     float volume() const { return volume_; }
 

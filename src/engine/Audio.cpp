@@ -213,6 +213,12 @@ void SoundBank::play(Sfx s, float volume, float pitch, float pan) {
     PlaySound(snd);
 }
 
+void SoundBank::stop(Sfx s) {
+    if (!ready_) return;
+    for (auto& take : slots_[(int)s].alias)
+        for (auto& snd : take) StopSound(snd);
+}
+
 void SoundBank::playAt(Sfx s, float x, float volume, float pitch) { play(s, volume, pitch, (x / VW * 2 - 1) * 0.6f); }
 
 }  // namespace pg

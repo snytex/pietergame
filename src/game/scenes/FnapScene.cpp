@@ -247,7 +247,13 @@ public:
         }
     }
 
-    void exit() override { P().save(); }
+    void exit() override {
+        // the music box, drone and friends are long one-shots: cut them so they
+        // don't play over the menu music
+        for (Sfx x : {Sfx::MusicBox, Sfx::Drone, Sfx::Breath, Sfx::Giggle, Sfx::Heart, Sfx::Static, Sfx::Scream, Sfx::Creak, Sfx::Step})
+            E().sfx.stop(x);
+        P().save();
+    }
 
     // ============================================================ night setup
     struct Hall {
