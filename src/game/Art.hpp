@@ -22,7 +22,7 @@ void bomb(Vector2 c, float r, float t);
 void gem(Vector2 c, float r, Color color);
 
 // Side-view galloping horse. `phase` advances the leg cycle, `facing` = +1 right.
-// `jockey` is a portrait name ("pieter", "davi", ...) or empty for a generic rider.
+// `jockey` is a portrait name ("pieter", "davi", ...), empty for a generic rider, or "none".
 void horse(Vector2 feet, float scale, float phase, Color body, Color mane, Color silk, const std::string& jockey = "",
            float facing = 1);
 

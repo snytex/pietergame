@@ -340,6 +340,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
         if (IsKeyPressed(KEY_F9)) music.next();
 
         music.update(dt);
+        sfx.poll();
         trackMonitor(dt);
         presenceT_ -= dt;
         if (discord.running() && presenceT_ <= 0 && fadeDir_ == 0) {

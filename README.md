@@ -18,7 +18,7 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | Mode | What you do |
 |---|---|
 | **Classic** | The mode that's been in every PieterGame. Dodge enemies for 10 waves. Davi is a miniboss at wave 5, Kira at wave 8, and **The Horse** is the final boss at wave 10. You can't attack, so during boss fights you collect **boba** and it fires at the boss automatically. After you win you can keep going in endless mode. |
-| **Pieter Room** | Look after Pieter like a virtual pet. Feed him, pet him, play games with him, scrub him in the shower, put him to sleep and chat with him. His needs keep dropping while you're away. Levelling him up pays out coins. |
+| **Pieter Room** | Look after Pieter like a virtual pet. Feed him, pet him, play games with him, scrub him in the shower, put him to sleep and chat with him. His needs keep dropping while you're away. Levelling him up pays out coins. The room follows your real clock: sunrise, sunset and a night sky over a Dutch skyline, and the lights go out when he sleeps. |
 | **Horses** | *Bet*: six horses, with odds from a Monte Carlo simulation of the race. Bet to WIN or on TOP 3. *Ride*: you're the jockey racing Davi and Kira. Alternate LEFT/RIGHT to gallop and press SPACE to jump hurdles. |
 | **Stroopwafel** | Stack stroopwafels on Pieter's coffee cup. Anything hanging over gets sliced off. Perfect drops build a combo, and every 10 layers earns Pieter a real stroopwafel. |
 | **Casino** | Roulette (European), Blackjack (Davi deals), Mines and Slots (96.6% RTP, see `tools/slots_rtp.py`). If you go broke, Pieter's pity fund helps you out. |
@@ -62,11 +62,11 @@ Saves go to `~/.local/share/PieterGame3/save.txt` on Linux (`$XDG_DATA_HOME` is 
 
 ```
 src/engine/   the "PieterEngine": scenes + fades, virtual-resolution canvas, UI toolkit,
-              additive glow / shadows / shockwaves (Fx), post-processing shader, particles, music jukebox, procedural sound synthesizer (all SFX are generated in code)
-src/game/     profile/save + item database, procedural art (horses, cards, food, hats...)
+              additive glow / shadows / shockwaves (Fx), post-processing shader, particles, music jukebox, procedural sound synthesizer (Synth.cpp: every SFX is designed in code from oscillators, filters, FM, reverb and echo)
+src/game/     profile/save + item database, procedural art (horses, cards, food, hats...), the Pieter Room bedroom (RoomArt)
 src/game/scenes/  one file per screen / game mode
 assets/       fonts, menu artwork + character portraits, music
-tools/        make_sprites.py (cuts portraits from the menu art), slots_rtp.py
+tools/        make_sprites.py (cuts portraits from the menu art), make_cutout.py (Pieter's head for the room), slots_rtp.py
 ```
 
 ### Dev hooks
@@ -75,6 +75,8 @@ tools/        make_sprites.py (cuts portraits from the menu art), slots_rtp.py
 PG_SCENE=classic PG_WAVE=10 ./build/pietergame3                  # jump straight to the horse boss
 PG_SCENE=slots PG_SHOT=out.png PG_SHOT_FRAMES=120 PG_MUTE=1 ...    # headless screenshot (works with xvfb-run)
 PG_SCENE=classic PG_GOD=1 PG_SHOT=out.png PG_SHOT_TIME=12 ... # invincible, screenshot after 12s of game time
+PG_SCENE=room PG_HOUR=22 PG_ROOM=sleep ...                       # Pieter Room at night, asleep (also shower/feed/chat/play/sad)
+PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 
 Scene names: `menu classic room horses stroop casino roulette blackjack mines slots shop inventory settings`.

@@ -3,6 +3,10 @@
 #pragma once
 
 #include "engine/Core.hpp"
+#include "engine/Synth.hpp"
+
+#include <atomic>
+#include <thread>
 
 #include <array>
 #include <string>
@@ -58,21 +62,35 @@ private:
 enum class Sfx {
     Click, Hover, Coin, Hurt, Power, Win, Lose, Dash, Boom, Card, Tick, Gem,
     Neigh, Chew, Bubble, Whoosh, Drop, Perfect, Jump, Bell, Spawn, Shoot, Error, Kiss,
+    Pop, Snore, Water, Yawn, Boop, Gulp, Buzz, Msg, Send, Key,
     Count
 };
 
+// Every effect is synthesized at startup (see Synth.cpp) in a few takes; each
+// play picks a take, so rapid repeats don't sound like a machine gun.
 class SoundBank {
 public:
-    void init();
+    void init();      // starts rendering in the background
+    void poll();      // uploads the rendered sounds once they're done
     void shutdown();
-    void play(Sfx s, float volume = 1.0f, float pitch = 1.0f);
+    // pan: -1 left .. 1 right
+    void play(Sfx s, float volume = 1.0f, float pitch = 1.0f, float pan = 0.0f);
+    void playAt(Sfx s, float x, float volume = 1.0f, float pitch = 1.0f);  // pans by screen x (virtual units)
     void setVolume(float v) { volume_ = v; }
     float volume() const { return volume_; }
 
 private:
-    static constexpr int kVoices = 4;
-    struct Slot { Sound base{}; std::array<Sound, kVoices> alias{}; int next = 0; };
+    static constexpr int kVoices = 4;  // per take
+    struct Slot {
+        std::array<Sound, synth::kVariants> base{};
+        std::array<std::array<Sound, kVoices>, synth::kVariants> alias{};
+        int next = 0, lastVariant = -1;
+        double lastPlay = -1;
+    };
     std::array<Slot, (size_t)Sfx::Count> slots_{};
+    std::array<std::array<synth::Pcm, synth::kVariants>, (size_t)Sfx::Count> pcm_{};
+    std::thread worker_;
+    std::atomic<bool> rendered_{false};
     float volume_ = 0.7f;
     bool ready_ = false;
 };

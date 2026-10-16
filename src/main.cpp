@@ -4,6 +4,7 @@
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -18,7 +19,10 @@ namespace {
 //   PG_SHOT_TIME=6.5                     ...or after N seconds of game time
 //   PG_GOD=1 PG_WAVE=10                  Classic: invincible / start at a wave
 //   PG_RENDER_INTRO=1                    re-render assets/video/intro.{mpg,ogg} (+ media/*.mp4), needs ffmpeg
+//   PG_HOUR=21.5                         Pieter Room: pretend it's this time of day
+//   PG_ROOM=sleep|shower|feed|chat|play|sad   Pieter Room: start in that state
 //   PG_MUTE=1                            silence all audio
+//   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
     const std::map<std::string, std::unique_ptr<Scene> (*)()> scenes = {
@@ -70,11 +74,26 @@ int renderIntroVideo() {
     return pclose(pipe) == 0 ? 0 : 1;
 }
 
+int dumpSfx(const std::string& dir) {
+    using namespace pg;
+    std::filesystem::create_directories(dir);
+    for (int i = 0; i < (int)Sfx::Count; i++)
+        for (int v = 0; v < synth::kVariants; v++) {
+            synth::Pcm pcm = synth::render((Sfx)i, v);
+            std::vector<short> s16(pcm.data.size());
+            for (size_t k = 0; k < s16.size(); k++) s16[k] = (short)(std::clamp(pcm.data[k], -1.0f, 1.0f) * 32000);
+            Wave w{(unsigned)pcm.frames(), synth::kRate, 16, 2, s16.data()};
+            ExportWave(w, TextFormat("%s/%s_%d.wav", dir.c_str(), synth::name((Sfx)i), v));
+        }
+    return 0;
+}
+
 }  // namespace
 
 int main() {
     using namespace pg;
     SetTraceLogLevel(LOG_WARNING);
+    if (const char* dir = std::getenv("PG_DUMP_SFX")) return dumpSfx(dir);
     P().load();
     if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
 

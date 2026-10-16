@@ -1,5 +1,7 @@
 #include "engine/Audio.hpp"
 
+#include "engine/Synth.hpp"
+
 #include <algorithm>
 #include <filesystem>
 
@@ -137,148 +139,80 @@ float Jukebox::progress() const {
     return len > 0 ? GetMusicTimePlayed(music_) / len : 0;
 }
 
-// ====================================================================== Synth
-
-namespace {
-
-enum class Osc { Sine, Square, Saw, Triangle, Noise };
-
-struct Note {
-    float start = 0;      // seconds into the sound
-    float dur = 0.1f;
-    float f0 = 440, f1 = 440;  // frequency sweep (exponential)
-    Osc wave = Osc::Square;
-    float vol = 0.5f;
-    float attack = 0.005f;
-    float vibDepth = 0, vibRate = 0;  // vibrato in semitones / Hz
-    float duty = 0.5f;
-};
-
-constexpr int kRate = 44100;
-
-Sound render(std::initializer_list<Note> notes) {
-    float total = 0;
-    for (auto& n : notes) total = std::max(total, n.start + n.dur);
-    int frames = (int)(total * kRate) + 64;
-    std::vector<float> buf(frames, 0.0f);
-
-    uint32_t noiseState = 0x12345u;
-    for (auto& n : notes) {
-        int s0 = (int)(n.start * kRate);
-        int len = (int)(n.dur * kRate);
-        double phase = 0;
-        float noiseVal = 0;
-        double noisePhase = 0;
-        for (int i = 0; i < len && s0 + i < frames; i++) {
-            float t = (float)i / len;
-            float f = n.f0 * std::pow(n.f1 / n.f0, t);
-            if (n.vibDepth > 0) f *= std::pow(2.0f, n.vibDepth * std::sin(2 * PI * n.vibRate * i / kRate) / 12.0f);
-            phase += f / kRate;
-            phase -= std::floor(phase);
-            float p = (float)phase, v = 0;
-            switch (n.wave) {
-                case Osc::Sine: v = std::sin(2 * PI * p); break;
-                case Osc::Square: v = p < n.duty ? 0.6f : -0.6f; break;
-                case Osc::Saw: v = (2 * p - 1) * 0.6f; break;
-                case Osc::Triangle: v = (p < 0.5f ? 4 * p - 1 : 3 - 4 * p); break;
-                case Osc::Noise:
-                    noisePhase += f / kRate;
-                    if (noisePhase >= 1) {
-                        noisePhase -= std::floor(noisePhase);
-                        noiseState ^= noiseState << 13; noiseState ^= noiseState >> 17; noiseState ^= noiseState << 5;
-                        noiseVal = (noiseState & 0xffff) / 32768.0f - 1.0f;
-                    }
-                    v = noiseVal * 0.7f;
-                    break;
-            }
-            float tsec = (float)i / kRate;
-            float env = tsec < n.attack ? tsec / n.attack : 1.0f;
-            env *= std::pow(1.0f - t, 1.6f);
-            buf[s0 + i] += v * env * n.vol;
-        }
-    }
-    std::vector<short> pcm(frames);
-    for (int i = 0; i < frames; i++) pcm[i] = (short)(std::clamp(buf[i], -1.0f, 1.0f) * 32000);
-
-    Wave w{};
-    w.frameCount = (unsigned)frames;
-    w.sampleRate = kRate;
-    w.sampleSize = 16;
-    w.channels = 1;
-    w.data = pcm.data();
-    return LoadSoundFromWave(w);  // copies the samples
-}
-
-
-Sound makeSfx(Sfx s) {
-    using O = Osc;
-    switch (s) {
-        case Sfx::Click: return render({{0, 0.06f, 900, 600, O::Square, 0.35f, 0.001f, 0, 0, 0.25f}});
-        case Sfx::Hover: return render({{0, 0.035f, 1400, 1500, O::Triangle, 0.18f}});
-        case Sfx::Coin: return render({{0, 0.06f, 988, 988, O::Square, 0.3f, 0.001f, 0, 0, 0.25f},
-                                       {0.055f, 0.22f, 1319, 1319, O::Square, 0.3f, 0.001f, 0, 0, 0.25f}});
-        case Sfx::Hurt: return render({{0, 0.28f, 420, 70, O::Saw, 0.5f}, {0, 0.18f, 3000, 400, O::Noise, 0.35f}});
-        case Sfx::Power: return render({{0, 0.08f, 523, 523, O::Square, 0.3f}, {0.07f, 0.08f, 659, 659, O::Square, 0.3f},
-                                        {0.14f, 0.08f, 784, 784, O::Square, 0.3f}, {0.21f, 0.25f, 1047, 1047, O::Square, 0.3f, 0.005f, 0.3f, 12}});
-        case Sfx::Win: return render({{0, 0.12f, 523, 523, O::Square, 0.3f}, {0.12f, 0.12f, 659, 659, O::Square, 0.3f},
-                                      {0.24f, 0.12f, 784, 784, O::Square, 0.3f}, {0.36f, 0.5f, 1047, 1047, O::Square, 0.3f, 0.005f, 0.4f, 7},
-                                      {0.36f, 0.5f, 523, 523, O::Triangle, 0.3f}});
-        case Sfx::Lose: return render({{0, 0.2f, 392, 392, O::Square, 0.3f}, {0.2f, 0.2f, 370, 370, O::Square, 0.3f},
-                                       {0.4f, 0.2f, 349, 349, O::Square, 0.3f}, {0.6f, 0.7f, 330, 300, O::Square, 0.3f, 0.005f, 0.5f, 6}});
-        case Sfx::Dash: return render({{0, 0.16f, 2500, 300, O::Noise, 0.35f}, {0, 0.12f, 300, 900, O::Sine, 0.25f}});
-        case Sfx::Boom: return render({{0, 0.6f, 900, 40, O::Noise, 0.7f}, {0, 0.4f, 120, 30, O::Sine, 0.6f}});
-        case Sfx::Card: return render({{0, 0.07f, 5000, 1500, O::Noise, 0.3f}});
-        case Sfx::Tick: return render({{0, 0.025f, 2400, 2000, O::Square, 0.2f, 0.001f, 0, 0, 0.2f}});
-        case Sfx::Gem: return render({{0, 0.1f, 1568, 1568, O::Sine, 0.35f}, {0.06f, 0.25f, 2093, 2093, O::Sine, 0.3f},
-                                      {0.06f, 0.25f, 2637, 2637, O::Triangle, 0.12f}});
-        case Sfx::Neigh: return render({{0, 0.9f, 700, 380, O::Saw, 0.32f, 0.03f, 1.8f, 16}, {0.02f, 0.85f, 1400, 760, O::Square, 0.12f, 0.03f, 1.8f, 16, 0.3f}});
-        case Sfx::Chew: return render({{0, 0.07f, 600, 300, O::Noise, 0.3f}, {0.13f, 0.07f, 600, 300, O::Noise, 0.3f},
-                                       {0.26f, 0.08f, 600, 250, O::Noise, 0.3f}});
-        case Sfx::Bubble: return render({{0, 0.09f, 300, 1200, O::Sine, 0.35f}});
-        case Sfx::Whoosh: return render({{0, 0.35f, 400, 3000, O::Noise, 0.25f, 0.15f}});
-        case Sfx::Drop: return render({{0, 0.12f, 220, 90, O::Triangle, 0.5f}, {0, 0.06f, 1800, 600, O::Noise, 0.25f}});
-        case Sfx::Perfect: return render({{0, 0.09f, 1047, 1047, O::Triangle, 0.35f}, {0.08f, 0.09f, 1319, 1319, O::Triangle, 0.35f},
-                                          {0.16f, 0.25f, 1568, 1568, O::Triangle, 0.35f}});
-        case Sfx::Jump: return render({{0, 0.18f, 300, 800, O::Square, 0.28f, 0.002f, 0, 0, 0.3f}});
-        case Sfx::Bell: return render({{0, 0.8f, 1760, 1760, O::Sine, 0.3f}, {0, 0.6f, 2640, 2640, O::Sine, 0.12f},
-                                       {0, 0.9f, 880, 880, O::Sine, 0.2f}});
-        case Sfx::Spawn: return render({{0, 0.15f, 200, 500, O::Triangle, 0.2f}});
-        case Sfx::Shoot: return render({{0, 0.09f, 1200, 300, O::Square, 0.18f, 0.001f, 0, 0, 0.3f}});
-        case Sfx::Error: return render({{0, 0.12f, 180, 160, O::Square, 0.3f}, {0.13f, 0.18f, 150, 140, O::Square, 0.3f}});
-        case Sfx::Kiss: return render({{0, 0.12f, 900, 2200, O::Sine, 0.35f}, {0.1f, 0.05f, 4000, 1000, O::Noise, 0.15f}});
-        case Sfx::Count: break;
-    }
-    return render({{0, 0.01f}});
-}
-
-}  // namespace
+// ====================================================================== SoundBank
 
 void SoundBank::init() {
+    // Rendering ~100 takes with reverb takes a moment, so do it off the main
+    // thread; sounds start playing as soon as the batch is uploaded.
+    worker_ = std::thread([this] {
+        const int jobs = (int)Sfx::Count * synth::kVariants;
+        std::atomic<int> next{0};
+        auto work = [&] {
+            for (int j; (j = next++) < jobs;) pcm_[j / synth::kVariants][j % synth::kVariants] = synth::render((Sfx)(j / synth::kVariants), j % synth::kVariants);
+        };
+        std::vector<std::thread> pool;
+        int n = std::clamp((int)std::thread::hardware_concurrency() - 1, 1, 8);
+        for (int i = 1; i < n; i++) pool.emplace_back(work);
+        work();
+        for (auto& t : pool) t.join();
+        rendered_ = true;
+    });
+}
+
+void SoundBank::poll() {
+    if (ready_ || !rendered_) return;
+    worker_.join();
     for (int i = 0; i < (int)Sfx::Count; i++) {
         auto& slot = slots_[i];
-        slot.base = makeSfx((Sfx)i);
-        for (auto& a : slot.alias) a = LoadSoundAlias(slot.base);
+        for (int v = 0; v < synth::kVariants; v++) {
+            auto& pcm = pcm_[i][v];
+            std::vector<short> s16(pcm.data.size());
+            for (size_t k = 0; k < s16.size(); k++) s16[k] = (short)(std::clamp(pcm.data[k], -1.0f, 1.0f) * 32000);
+            Wave w{};
+            w.frameCount = (unsigned)pcm.frames();
+            w.sampleRate = synth::kRate;
+            w.sampleSize = 16;
+            w.channels = 2;
+            w.data = s16.data();
+            slot.base[v] = LoadSoundFromWave(w);  // copies the samples
+            for (auto& a : slot.alias[v]) a = LoadSoundAlias(slot.base[v]);
+            pcm = {};
+        }
     }
     ready_ = true;
 }
 
 void SoundBank::shutdown() {
+    if (worker_.joinable()) worker_.join();
     if (!ready_) return;
-    for (auto& slot : slots_) {
-        for (auto& a : slot.alias) UnloadSoundAlias(a);
-        UnloadSound(slot.base);
-    }
+    for (auto& slot : slots_)
+        for (int v = 0; v < synth::kVariants; v++) {
+            for (auto& a : slot.alias[v]) UnloadSoundAlias(a);
+            UnloadSound(slot.base[v]);
+        }
     ready_ = false;
 }
 
-void SoundBank::play(Sfx s, float volume, float pitch) {
+void SoundBank::play(Sfx s, float volume, float pitch, float pan) {
+    poll();
     if (!ready_ || volume_ <= 0) return;
     auto& slot = slots_[(int)s];
-    Sound& snd = slot.alias[slot.next];
+    // a different take than last time, a hair of pitch drift, and ducking when
+    // the same sound is retriggered within a few frames (no phasing pile-ups)
+    int v = rndi(0, synth::kVariants - 1);
+    if (v == slot.lastVariant) v = (v + 1) % synth::kVariants;
+    slot.lastVariant = v;
+    double now = GetTime();
+    if (now - slot.lastPlay < 0.035) volume *= 0.55f;
+    slot.lastPlay = now;
+    Sound& snd = slot.alias[v][slot.next];
     slot.next = (slot.next + 1) % kVoices;
     SetSoundVolume(snd, volume * volume_);
-    SetSoundPitch(snd, pitch);
+    SetSoundPitch(snd, pitch * rnd(0.975f, 1.025f));
+    SetSoundPan(snd, std::clamp(pan, -1.0f, 1.0f));
     PlaySound(snd);
 }
+
+void SoundBank::playAt(Sfx s, float x, float volume, float pitch) { play(s, volume, pitch, (x / VW * 2 - 1) * 0.6f); }
 
 }  // namespace pg

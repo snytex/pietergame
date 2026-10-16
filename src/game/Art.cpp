@@ -241,7 +241,12 @@ void horse(Vector2 feet, float s, float phase, Color body, Color mane, Color sil
     leg(26, PI * 0.5f, false);
     leg(-36, PI * 1.5f, false);
 
-    // saddle cloth + jockey
+    // saddle cloth + jockey ("none" = riderless, e.g. a plush toy)
+    if (jockey == "none") {
+        DrawRectangleRounded({-14 * s, -92 * s + bob, 30 * s, 20 * s}, 0.4f, 6, silk);
+        DrawRectangleRoundedLinesEx({-14 * s, -92 * s + bob, 30 * s, 20 * s}, 0.4f, 6, 2, o);
+        return;
+    }
     DrawRectangleRounded({-14 * s, -92 * s + bob, 30 * s, 20 * s}, 0.4f, 6, silk);
     DrawRectangleRoundedLinesEx({-14 * s, -92 * s + bob, 30 * s, 20 * s}, 0.4f, 6, 2, o);
     Vector2 seat{2 * s, -92 * s + bob};

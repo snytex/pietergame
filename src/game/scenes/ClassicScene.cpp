@@ -311,7 +311,7 @@ public:
             case EType::Spinner: e.r = 20; e.timer = 2.0f; e.vel = rndDir() * 60; break;
         }
         enemies_.push_back(e);
-        E().sfx.play(Sfx::Spawn, 0.35f);
+        E().sfx.playAt(Sfx::Spawn, e.pos.x, 0.35f);
         shocks_.add(at, 4, 46, enemyColor(t), 0.35f, 6);
         fx_.burst(at, 10, lighten(enemyColor(t), 0.3f), 220, 4, 0.4f, PShape::Spark);
     }
@@ -362,7 +362,7 @@ public:
                         fire(e.pos, Vector2Rotate(toP, 0.3f), 215 * diff, col::green);
                         fire(e.pos, Vector2Rotate(toP, -0.3f), 215 * diff, col::green);
                     }
-                    E().sfx.play(Sfx::Shoot, 0.4f);
+                    E().sfx.playAt(Sfx::Shoot, e.pos.x, 0.4f);
                 }
                 break;
             case EType::Charger:
@@ -377,7 +377,7 @@ public:
                         e.state = 2;
                         e.timer = 0.55f;
                         e.vel = e.aim * 600 * diff;
-                        E().sfx.play(Sfx::Dash, 0.4f);
+                        E().sfx.playAt(Sfx::Dash, e.pos.x, 0.4f);
                         shocks_.add(e.pos, 10, 50, col::pink, 0.3f, 6);
                     }
                 } else {  // dashing
@@ -390,7 +390,7 @@ public:
                     e.timer = 3.4f;
                     ring(e.pos, 6, 150 * diff, col::cyan, 0, e.t);
                     shocks_.add(e.pos, e.r, e.r + 40, col::cyan, 0.35f, 6);
-                    E().sfx.play(Sfx::Shoot, 0.35f, 0.7f);
+                    E().sfx.playAt(Sfx::Shoot, e.pos.x, 0.35f, 0.7f);
                 }
                 break;
         }
@@ -435,7 +435,7 @@ public:
                         if (chance(0.3f)) say(chance(0.5f) ? "PRO SINCE 2010" : "lag!! that was lag");
                     }
                     b.attackT = 2.3f / rage;
-                    E().sfx.play(Sfx::Shoot, 0.6f, 0.8f);
+                    E().sfx.playAt(Sfx::Shoot, b.pos.x, 0.6f, 0.8f);
                 }
                 break;
             }
@@ -473,7 +473,7 @@ public:
                             b.state = 1;
                             b.attackT = 1.15f / rage;
                             b.dir = toP;
-                            E().sfx.play(Sfx::Neigh, 0.8f);
+                            E().sfx.playAt(Sfx::Neigh, b.pos.x, 0.8f);
                             say("JUHUH!");
                         }
                     }
@@ -487,7 +487,7 @@ public:
                     bounceInArena(b.pos, b.vel, b.r);
                     if (before.x != b.vel.x || before.y != b.vel.y) {
                         E().shake(12);
-                        E().sfx.play(Sfx::Boom, 0.7f);
+                        E().sfx.playAt(Sfx::Boom, b.pos.x, 0.7f);
                         ring(b.pos, b.enraged() ? 12 : 8, 200, col::orange, 3, rnd(0, 6.28f));
                         fx_.burst(b.pos, 30, col::orange, 400, 8, 0.6f);
                         fx_.burst(b.pos, 20, rgba(0xc8a070ff), 250, 10, 0.9f, PShape::Circle, 200);
@@ -692,18 +692,18 @@ public:
                 switch (p.kind) {
                     case Pickup::Coin:
                         addCoins(2, p.pos);
-                        E().sfx.play(Sfx::Coin, 0.45f, rnd(0.95f, 1.1f));
+                        E().sfx.playAt(Sfx::Coin, p.pos.x, 0.45f, rnd(0.95f, 1.1f));
                         fx_.burst(p.pos, 5, col::gold, 160, 3, 0.3f, PShape::Spark);
                         break;
                     case Pickup::BigCoin:
                         addCoins(10, p.pos);
-                        E().sfx.play(Sfx::Coin, 0.7f, 0.8f);
+                        E().sfx.playAt(Sfx::Coin, p.pos.x, 0.7f, 0.8f);
                         fx_.burst(p.pos, 10, col::gold, 220, 4, 0.4f, PShape::Star);
                         shocks_.add(p.pos, 8, 40, col::gold, 0.3f, 5);
                         break;
                     case Pickup::Power: applyPower(p.power); break;
                     case Pickup::Boba:
-                        E().sfx.play(Sfx::Gem);
+                        E().sfx.playAt(Sfx::Gem, p.pos.x);
                         homing_.push_back({player_, rndDir() * 300});
                         fx_.floatText("BOBA!", p.pos, col::boba, 24);
                         shocks_.add(p.pos, 10, 70, col::boba, 0.4f, 8);
@@ -741,7 +741,7 @@ public:
         Boss& b = boss_;
         b.hp--;
         b.flash = 1;
-        E().sfx.play(Sfx::Boom, 0.5f, 1.5f);
+        E().sfx.playAt(Sfx::Boom, at.x, 0.5f, 1.5f);
         E().shake(5);
         fx_.burst(at, 18, col::boba, 300, 7, 0.5f);
         fx_.burst(at, 10, WHITE, 450, 4, 0.3f, PShape::Spark);
