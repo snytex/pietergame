@@ -306,6 +306,7 @@ public:
         failT_ = 0;
         endT_ = 0;
         judgeT_ = 0;
+        resumeT_ = 0;
         fx_.clear();
         newBest_ = false;
         coinsWon_ = 0;
@@ -452,9 +453,11 @@ public:
         previewIdx_ = -1;
     }
 
+    // back from pause: a 2 second count-in before the music continues
     void resume() {
         phase_ = Phase::Play;
-        if (songLoaded_ && started_) ResumeMusicStream(song_);
+        resumeT_ = 2.0f;
+        lastResumeTick_ = 3;
     }
 
     void updateSelect(float dt) {
@@ -519,6 +522,21 @@ public:
     }
 
     void updatePlay(float dt) {
+        if (resumeT_ > 0) {
+            int tick = (int)std::ceil(resumeT_);
+            if (tick != lastResumeTick_) {
+                lastResumeTick_ = tick;
+                E().sfx.play(Sfx::Tick, 0.8f, 1.3f);
+            }
+            resumeT_ -= dt;
+            if (resumeT_ <= 0) {
+                resumeT_ = 0;
+                E().sfx.play(Sfx::Bell, 0.4f);
+                if (songLoaded_ && started_) ResumeMusicStream(song_);
+            }
+            if (E().backPressed()) { phase_ = Phase::Paused; resumeT_ = 0; }
+            return;
+        }
         // song clock: run on frame time, gently pulled towards the audio stream's position
         if (failed_) {
             failT_ += dt;
@@ -934,6 +952,17 @@ public:
             fx::gradientText("GO!", 0, 0, 110, alpha(col::gold, 1 - k), alpha(col::orange, 1 - k), 6);
             rlPopMatrix();
         }
+        if (resumeT_ > 0) {
+            float k = resumeT_ - std::floor(resumeT_);
+            float sc = 0.8f + k * 0.6f;
+            DrawRectangle(0, 0, VW, VH, alpha(col::bgDeep, 0.35f * clamp01(resumeT_)));
+            rlPushMatrix();
+            rlTranslatef(kCX, 330, 0);
+            rlScalef(sc, sc, 1);
+            fx::gradientText(std::to_string((int)std::ceil(resumeT_)), 0, 0, 120, alpha(WHITE, 0.4f + k * 0.6f), alpha(col::cyan, 0.4f + k * 0.6f), 6);
+            rlPopMatrix();
+            ui::text("get ready...", kCX, 420, 18, alpha(col::text, 0.8f), ui::Center, true);
+        }
         if (autoplay_) ui::text("AUTOPLAY", kCX, 80, 18, col::red, ui::Center, true);
         if (failed_) {
             float k = clamp01(failT_ / 0.6f);
@@ -1227,7 +1256,8 @@ private:
     std::vector<LiveNote> notes_;
     Music song_{};
     bool songLoaded_ = false, started_ = false, failed_ = false, autoplay_ = false, newBest_ = false;
-    float songT_ = 0, failT_ = 0, endT_ = 0, resultsT_ = 0;
+    float songT_ = 0, failT_ = 0, endT_ = 0, resultsT_ = 0, resumeT_ = 0;
+    int lastResumeTick_ = 0;
     int lastCount_ = -1;
     long long score_ = 0, coinsWon_ = 0, shownCoins_ = 0;
     double shownScore_ = 0;
