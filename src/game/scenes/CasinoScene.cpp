@@ -26,7 +26,7 @@ public:
         switch (icon) {
             case 0: {  // mini roulette wheel
                 for (int i = 0; i < 18; i++)
-                    DrawCircleSector(ic, 80, t_ * 40 + i * 20, t_ * 40 + (i + 1) * 20, 4, i == 0 ? col::green : (i % 2 ? col::red : rgba(0x1d1a24ff)));
+                    DrawCircleSector(ic, 72, t_ * 40 + i * 20, t_ * 40 + (i + 1) * 20, 4, i == 0 ? col::green : (i % 2 ? col::red : rgba(0x1d1a24ff)));
                 DrawCircleV(ic, 48, rgba(0x6b3a1aff));
                 DrawCircleV(ic, 16, col::gold);
                 DrawCircleV(ic + fromAngle(-t_ * 3, 68), 7, WHITE);
@@ -45,10 +45,28 @@ public:
                         if (x == 2 && y == 0) art::bomb(p, 14, t_);
                     }
                 break;
+            case 4:
+                // mini tower: rows of tiles, an egg and a dragon peeking out
+                for (int r = 0; r < 4; r++)
+                    for (int k = 0; k < 3; k++) {
+                        Rectangle tl{ic.x - 75 + k * 52.0f, ic.y + 60 - r * 36.0f, 46, 30};
+                        DrawRectangleRounded(tl, 0.3f, 6, r == 1 ? rgba(0x3a8a4aff) : col::panelHi);
+                        DrawRectangleRoundedLinesEx(tl, 0.3f, 6, 2, col::outline);
+                    }
+                DrawEllipse((int)ic.x, (int)ic.y + 39, 9, 12, col::outline);
+                DrawEllipse((int)ic.x, (int)ic.y + 39, 7, 10, rgba(0xffd860ff));
+                DrawCircleV({ic.x, ic.y - 76}, 28, col::outline);
+                DrawCircleV({ic.x, ic.y - 76}, 26, rgba(0x2f9a4aff));
+                DrawEllipse((int)ic.x, (int)ic.y - 64, 15, 10, rgba(0xb8e070ff));
+                DrawCircleV({ic.x - 9, ic.y - 82}, 5, rgba(0xffd030ff));
+                DrawCircleV({ic.x + 9, ic.y - 82}, 5, rgba(0xffd030ff));
+                DrawTriangle({ic.x - 18, ic.y - 92}, {ic.x - 26, ic.y - 114}, {ic.x - 8, ic.y - 98}, rgba(0xe8dcc0ff));
+                DrawTriangle({ic.x + 18, ic.y - 92}, {ic.x + 8, ic.y - 98}, {ic.x + 26, ic.y - 114}, rgba(0xe8dcc0ff));
+                break;
             case 3:
-                art::portrait("pieter", {ic.x - 72, ic.y}, 34);
-                art::portrait("pieter", {ic.x, ic.y}, 34);
-                art::portrait("pieter", {ic.x + 72, ic.y}, 34);
+                art::portrait("pieter", {ic.x - 64, ic.y}, 30);
+                art::portrait("pieter", {ic.x, ic.y}, 30);
+                art::portrait("pieter", {ic.x + 64, ic.y}, 30);
                 ui::text("JACKPOT", ic.x, ic.y + 60, 22, col::gold, ui::Center, true);
                 break;
         }
@@ -70,13 +88,14 @@ public:
         }
         if (casino::header("PIETER CASINO")) E().go(makeMenu);
 
-        float w = 285, gap = 22, x0 = VW / 2.0f - (4 * w + 3 * gap) / 2;
-        drawTable({x0, 130, w, 380}, "ROULETTE", "European wheel. Red, black, or go all in on 17.", col::red, 0, makeRoulette);
-        drawTable({x0 + (w + gap), 130, w, 380}, "BLACKJACK", "Beat Davi the dealer to 21. Blackjack pays 3:2.", col::cyan, 1, makeBlackjack);
-        drawTable({x0 + 2 * (w + gap), 130, w, 380}, "MINES", "Find stroopwafels, avoid bombs, cash out in time.", col::violet, 2, makeMines);
+        float w = 232, gap = 14, x0 = VW / 2.0f - (5 * w + 4 * gap) / 2;
+        drawTable({x0, 130, w, 380}, "ROULETTE", "European wheel. Red, black, or all in on 17.", col::red, 0, makeRoulette);
+        drawTable({x0 + (w + gap), 130, w, 380}, "BLACKJACK", "Beat Davi the dealer to 21. Pays 3:2.", col::cyan, 1, makeBlackjack);
+        drawTable({x0 + 2 * (w + gap), 130, w, 380}, "MINES", "Find stroopwafels, avoid the bombs.", col::violet, 2, makeMines);
         drawTable({x0 + 3 * (w + gap), 130, w, 380}, "SLOTS", "Three Pieters in a row pays 500x.", col::gold, 3, makeSlots);
+        drawTable({x0 + 4 * (w + gap), 130, w, 380}, "DRAGON TOWER", "Climb for eggs. Don't wake the dragon.", col::green, 4, makeDragonTower);
 
-        Rectangle st{x0, 540, 4 * w + 3 * gap, 70};
+        Rectangle st{x0, 540, 5 * w + 4 * gap, 70};
         ui::panel(st, alpha(col::bgDeep, 0.8f));
         auto& s = P().stats;
         ui::text("Total wagered: " + fmtNum(s.totalWagered), st.x + 30, st.y + 35, 22, col::text);

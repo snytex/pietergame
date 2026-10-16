@@ -33,7 +33,7 @@ std::unique_ptr<pg::Scene> firstScene() {
     const std::map<std::string, std::unique_ptr<Scene> (*)()> scenes = {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
-        {"mines", makeMines},       {"slots", makeSlots},     {"shop", makeShop},        {"inventory", makeInventory},
+        {"mines", makeMines},       {"slots", makeSlots}, {"tower", makeDragonTower},     {"shop", makeShop},        {"inventory", makeInventory},
         {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
