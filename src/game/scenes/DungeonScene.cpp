@@ -69,6 +69,10 @@ public:
     void enter() override {
         if (std::getenv("PG_DUNGEON")) {  // dev hook: straight into a run
             newRun();
+            if (std::string(std::getenv("PG_DUNGEON")) == "fight") {
+                for (auto& [k, r] : rooms_)
+                    if (r.type == RoomType::Fight) { enterRoom(k, -1); break; }
+            }
             if (std::string(std::getenv("PG_DUNGEON")) == "boss") {
                 for (auto& [k, r] : rooms_)
                     if (r.type == RoomType::Boss) enterRoom(k, -1);
@@ -256,6 +260,7 @@ public:
             }
             return;
         }
+        if (!rooms_.empty()) renderLightMap();
         if (phase_ == Phase::Pick) return;
         if (E().backPressed()) { phase_ = Phase::Title; return; }
 
@@ -293,6 +298,7 @@ public:
             }
         }
         player_ += vel * dt;
+        lastMoveVel_ = vel;
         bool locked = !room.cleared;
         // walls, with door gaps when unlocked
         auto clampAxis = [&](float& v, float lo, float hi, bool gap) {
@@ -501,146 +507,213 @@ public:
     }
 
     // ------------------------------------------------------------ draw
+    // deterministic pseudo-random per room
+    static float hsh(int seed, int i) { return std::fmod(std::abs(std::sin(seed * 0.0137f + i * 12.9898f) * 43758.5453f), 1.0f); }
+
     void drawRoom() {
         const Room& room = rooms_.at(cur_);
-        Color stone = room.type == RoomType::Boss ? rgba(0x5a2a3aff) : room.type == RoomType::Treasure ? rgba(0x5a4a2aff) : rgba(0x4a4060ff);
-        DrawRectangle(0, 0, VW, VH, rgba(0x0c0814ff));
-        // outer walls (top face lit, side faces darker)
-        Rectangle outer{kRoom.x - kWall, kRoom.y - kWall, kRoom.width + 2 * kWall, kRoom.height + 2 * kWall};
-        DrawRectangleRec(outer, rgba(0x1e1828ff));
-        DrawRectangleRec({outer.x, outer.y, outer.width, kWall}, rgba(0x3a3048ff));  // lit top wall face
-        DrawRectangleLinesEx(shrink(outer, 2), 3, alpha(BLACK, 0.5f));
-        for (int r = 0; r < 3; r++)
-            for (float x = outer.x + (r % 2) * 30; x < outer.x + outer.width; x += 60) DrawRectangleLinesEx({x, outer.y + r * 14.0f, 60, 14}, 1, alpha(BLACK, 0.3f));
-        DrawRectangleRec(kRoom, stone);
-        DrawRectangleLinesEx(shrink(kRoom, -3), 3, rgba(0x0c0814ff));
-        // floor tiles with variation
-        for (float y = kRoom.y; y < kRoom.y + kRoom.height; y += 56)
-            for (float x = kRoom.x; x < kRoom.x + kRoom.width; x += 56) {
-                int h = (int)(x * 7 + y * 13 + room.seed) % 7;
-                DrawRectangleRec({x + 1, y + 1, 54, 54}, alpha(h < 2 ? BLACK : WHITE, h < 2 ? 0.12f : 0.025f));
-                if (h == 3) DrawLineEx({x + 10, y + 20}, {x + 30, y + 26}, 1.5f, alpha(BLACK, 0.3f));  // crack
-            }
-        DrawRectangleGradientV((int)kRoom.x, (int)kRoom.y, (int)kRoom.width, 40, alpha(BLACK, 0.45f), alpha(BLACK, 0));
-        // doors
+        Texture2D& stone = E().tex("tex/stone");
+        Texture2D& brick = E().tex("tex/brick_dark");
+        Texture2D& wood = E().tex("tex/wood");
+        DrawRectangle(0, 0, VW, VH, rgba(0x07040cff));
         Vector2 c = center(kRoom);
+        // floor
+        Color floorTint = room.type == RoomType::Boss ? rgba(0xffb8c8ff) : room.type == RoomType::Treasure ? rgba(0xffe8b8ff) : WHITE;
+        fx::tiled(stone, kRoom, 0.55f, {(float)(room.seed % 256), (float)(room.seed / 7 % 256)}, floorTint);
+        // north wall: a tall brick face, with a capstone ledge
+        Rectangle face{kRoom.x - kWall, kRoom.y - 76, kRoom.width + 2 * kWall, 76};
+        fx::tiled(brick, face, 0.75f, {0, 0}, rgba(0xc8b8e0ff));
+        DrawRectangleGradientV((int)face.x, (int)face.y, (int)face.width, (int)face.height, alpha(BLACK, 0.35f), alpha(BLACK, 0.05f));
+        DrawRectangleRec({face.x, face.y - 14, face.width, 16}, rgba(0x2a2236ff));
+        DrawRectangleRec({face.x, face.y - 14, face.width, 3}, rgba(0x4a3e5aff));
+        // side + south wall tops
+        Rectangle walls[3] = {{kRoom.x - kWall, kRoom.y, kWall, kRoom.height + kWall},
+                              {kRoom.x + kRoom.width, kRoom.y, kWall, kRoom.height + kWall},
+                              {kRoom.x - kWall, kRoom.y + kRoom.height, kRoom.width + 2 * kWall, kWall}};
+        for (auto& w : walls) {
+            fx::tiled(brick, w, 0.6f, {w.x, w.y}, rgba(0x8a7aa8ff));
+            DrawRectangleLinesEx(w, 2, alpha(BLACK, 0.4f));
+        }
+        // ambient occlusion where the floor meets the walls
+        DrawRectangleGradientV((int)kRoom.x, (int)kRoom.y, (int)kRoom.width, 46, alpha(BLACK, 0.55f), alpha(BLACK, 0));
+        DrawRectangleGradientH((int)kRoom.x, (int)kRoom.y, 30, (int)kRoom.height, alpha(BLACK, 0.4f), alpha(BLACK, 0));
+        DrawRectangleGradientH((int)(kRoom.x + kRoom.width - 30), (int)kRoom.y, 30, (int)kRoom.height, alpha(BLACK, 0), alpha(BLACK, 0.4f));
+        DrawRectangleGradientV((int)kRoom.x, (int)(kRoom.y + kRoom.height - 24), (int)kRoom.width, 24, alpha(BLACK, 0), alpha(BLACK, 0.35f));
+        // doors: archways with wooden doors while locked
         bool open = room.cleared;
-        auto door = [&](Rectangle r, bool vertical) {
-            DrawRectangleRec(r, rgba(0x0c0814ff));
+        auto door = [&](Rectangle r, bool north) {
+            DrawRectangleRec(r, rgba(0x05030aff));
+            if (north) DrawCircleSector({r.x + r.width / 2, r.y + 18}, r.width / 2, 180, 360, 20, rgba(0x05030aff));
             if (!open) {
-                DrawRectangleRec(r, rgba(0x5a3a28ff));
-                for (int i = 1; i < 4; i++) {
-                    if (vertical) DrawLineEx({r.x, r.y + i * r.height / 4}, {r.x + r.width, r.y + i * r.height / 4}, 3, rgba(0x2a1a10ff));
-                    else DrawLineEx({r.x + i * r.width / 4, r.y}, {r.x + i * r.width / 4, r.y + r.height}, 3, rgba(0x2a1a10ff));
+                fx::tiled(wood, r, 0.5f, {0, 0}, rgba(0xc8a080ff));
+                for (int k = 0; k < 2; k++) {
+                    bool vert = r.height > r.width;
+                    if (vert) DrawRectangleRec({r.x, r.y + r.height * (0.25f + k * 0.5f) - 4, r.width, 8}, rgba(0x3a3448ff));
+                    else DrawRectangleRec({r.x + r.width * (0.25f + k * 0.5f) - 4, r.y, 8, r.height}, rgba(0x3a3448ff));
                 }
+                DrawRectangleLinesEx(r, 3, rgba(0x15121cff));
+            } else {
+                fx::beginAdd();
+                fx::glow(center(r), 70, alpha(rgba(0x8fb0ffff), 0.15f));
+                fx::endAdd();
             }
         };
-        if (room.door[0]) door({c.x - 46, kRoom.y - kWall, 92, kWall}, false);
+        if (room.door[0]) door({c.x - 46, kRoom.y - 60, 92, 60}, true);
         if (room.door[2]) door({c.x - 46, kRoom.y + kRoom.height, 92, kWall}, false);
-        if (room.door[3]) door({kRoom.x - kWall, c.y - 46, kWall, 92}, true);
-        if (room.door[1]) door({kRoom.x + kRoom.width, c.y - 46, kWall, 92}, true);
-        // torches in the corners
-        const Vector2 torches[] = {{kRoom.x + 30, kRoom.y - 14}, {kRoom.x + kRoom.width - 30, kRoom.y - 14}};
-        fx::beginAdd();
-        for (auto& tp : torches) fx::glow(tp, 140 + std::sin(t_ * 9 + tp.x) * 10, alpha(col::orange, 0.35f));
-        fx::endAdd();
-        for (auto& tp : torches) DrawCircleV(tp, 6, col::gold);
-        // room features
-        if (room.type == RoomType::Treasure) {
-            DrawRectangleRounded({c.x - 40, c.y - 20, 80, 40}, 0.3f, 8, rgba(0x6a5a3aff));
-            if (!room.taken) {
-                fx::beginAdd();
-                fx::glow({c.x, c.y - 30}, 90, alpha(col::gold, 0.5f + 0.2f * std::sin(t_ * 4)));
-                fx::endAdd();
-                art::itemIcon("boba", {c.x, c.y - 40 + std::sin(t_ * 3) * 5}, 60);
+        if (room.door[3]) door({kRoom.x - kWall, c.y - 46, kWall, 92}, false);
+        if (room.door[1]) door({kRoom.x + kRoom.width, c.y - 46, kWall, 92}, false);
+        // banners with Davi on the north wall
+        for (int s2 : {-1, 1}) {
+            float bx = c.x + s2 * 260;
+            Rectangle bn{bx - 30, kRoom.y - 70, 60, 84};
+            DrawRectangleRec(bn, room.type == RoomType::Boss ? rgba(0x8a1a2aff) : rgba(0x3a2a6aff));
+            DrawTriangle({bn.x, bn.y + bn.height}, {bn.x + 30, bn.y + bn.height + 16}, {bn.x + 60, bn.y + bn.height}, room.type == RoomType::Boss ? rgba(0x8a1a2aff) : rgba(0x3a2a6aff));
+            DrawTriangle({bn.x, bn.y + bn.height}, {bn.x + 60, bn.y + bn.height}, {bn.x + 30, bn.y + bn.height + 16}, room.type == RoomType::Boss ? rgba(0x8a1a2aff) : rgba(0x3a2a6aff));
+            DrawRectangleRec({bn.x - 6, bn.y - 4, 72, 6}, rgba(0x8a7a5aff));
+            art::portrait("davi", {bx, bn.y + 40}, 20, col::gold);
+        }
+        // torches on the north wall
+        for (float tx : {kRoom.x + 120, kRoom.x + kRoom.width - 120, c.x - 130, c.x + 130}) {
+            if (std::abs(tx - c.x) < 100 && room.door[0]) continue;
+            Vector2 tp{tx, kRoom.y - 34};
+            DrawRectangleRec({tp.x - 4, tp.y, 8, 22}, rgba(0x3a2418ff));
+            DrawRectangleRec({tp.x - 8, tp.y - 4, 16, 6}, rgba(0x6a6478ff));
+            float f = std::sin(t_ * 13 + tx) * 2;
+            DrawTriangle({tp.x - 7, tp.y - 4}, {tp.x + 7, tp.y - 4}, {tp.x + f, tp.y - 26}, col::orange);
+            DrawTriangle({tp.x - 7, tp.y - 4}, {tp.x + f, tp.y - 26}, {tp.x + 7, tp.y - 4}, col::orange);
+            DrawTriangle({tp.x - 3, tp.y - 4}, {tp.x + 3, tp.y - 4}, {tp.x + f * 0.5f, tp.y - 16}, col::gold);
+            DrawTriangle({tp.x - 3, tp.y - 4}, {tp.x + f * 0.5f, tp.y - 16}, {tp.x + 3, tp.y - 4}, col::gold);
+        }
+        // decor, fixed per room
+        int seed = room.seed;
+        for (int i = 0; i < 7; i++) {
+            float u = hsh(seed, i), v = hsh(seed, i + 50);
+            bool edgeX = hsh(seed, i + 90) < 0.5f;
+            Vector2 p = edgeX ? Vector2{u < 0.5f ? kRoom.x + 40 : kRoom.x + kRoom.width - 40, kRoom.y + 60 + v * (kRoom.height - 120)}
+                              : Vector2{kRoom.x + 80 + u * (kRoom.width - 160), v < 0.5f ? kRoom.y + 34 : kRoom.y + kRoom.height - 34};
+            if (std::abs(p.x - c.x) < 110 || std::abs(p.y - c.y) < 90) continue;  // keep doorways clear
+            int kind = (int)(hsh(seed, i + 7) * 4);
+            DrawEllipse((int)p.x + 4, (int)p.y + 14, 24, 9, alpha(BLACK, 0.35f));
+            if (kind == 0) {  // barrel from above
+                DrawCircleV(p, 22, col::outline);
+                DrawCircleGradient(p, 20, rgba(0x9a6a40ff), rgba(0x5a3a20ff));
+                DrawRing(p, 13, 15, 0, 360, 24, rgba(0x3a3448ff));
+                DrawRing(p, 18, 20, 0, 360, 24, rgba(0x3a3448ff));
+                DrawCircleV({p.x - 6, p.y - 6}, 4, alpha(WHITE, 0.25f));
+            } else if (kind == 1) {  // crate
+                Rectangle cr{p.x - 20, p.y - 20, 40, 40};
+                DrawRectangleRec(shrink(cr, -2), col::outline);
+                fx::tiled(wood, cr, 0.4f, {u * 100, 0}, rgba(0xe8c8a0ff));
+                DrawLineEx({cr.x, cr.y}, {cr.x + 40, cr.y + 40}, 4, rgba(0x5a3a20ff));
+                DrawRectangleLinesEx(cr, 3, rgba(0x5a3a20ff));
+            } else if (kind == 2) {  // bones
+                for (int k = 0; k < 3; k++) {
+                    Vector2 d = fromAngle(u * 6 + k * 2.1f, 14);
+                    DrawLineEx(p - d, p + d, 5, rgba(0xe8e0c8ff));
+                    DrawCircleV(p - d, 4, rgba(0xe8e0c8ff));
+                    DrawCircleV(p + d, 4, rgba(0xe8e0c8ff));
+                }
+            } else {  // rubble
+                for (int k = 0; k < 5; k++) DrawCircleV(p + fromAngle(k * 1.3f + u, 6 + k * 3.0f), 5 - k * 0.6f, rgba(0x5a5068ff));
             }
         }
-        if (room.type == RoomType::Boss && room.cleared) {
-            DrawRectangleRec({c.x - 40, c.y - 40, 80, 80}, rgba(0x0c0814ff));
-            for (int i = 0; i < 4; i++) DrawRectangleRec({c.x - 40 + i * 10.0f, c.y - 40 + i * 20.0f, 80 - i * 20.0f, 20}, rgba(0x3a3448ff));
-            ui::text("DOWN", c.x, c.y - 56, 16, col::gold, ui::Center, true);
+        // cobwebs in the corners
+        for (int k = 0; k < 2; k++) {
+            Vector2 cc{k ? kRoom.x + kRoom.width : kRoom.x, kRoom.y};
+            float dir = k ? -1.0f : 1.0f;
+            for (int r = 1; r <= 3; r++) DrawRing(cc, r * 14.0f, r * 14.0f + 1, k ? 90 : 0, k ? 180 : 90, 10, alpha(WHITE, 0.18f));
+            for (int i = 0; i <= 4; i++) DrawLineEx(cc, cc + Vector2{dir * std::cos(i * PI / 8) * 46, std::sin(i * PI / 8) * 46}, 1, alpha(WHITE, 0.18f));
+        }
+        // room features
+        if (room.type == RoomType::Treasure) {
+            DrawRectangleRounded({c.x - 150, c.y - 90, 300, 180}, 0.1f, 8, rgba(0x6a1a2aff));  // carpet
+            DrawRectangleRoundedLinesEx(shrink({c.x - 150, c.y - 90, 300, 180}, 8), 0.1f, 8, 3, col::gold);
+            DrawRectangleRounded({c.x - 44, c.y - 26, 88, 52}, 0.2f, 8, col::outline);
+            fx::gradRoundRect({c.x - 40, c.y - 22, 80, 44}, 0.2f, rgba(0x9a8a6aff), rgba(0x5a4a2aff));  // pedestal
+            if (!room.taken) {
+                fx::beginAdd();
+                fx::glow({c.x, c.y - 34}, 110, alpha(col::gold, 0.45f + 0.2f * std::sin(t_ * 4)));
+                fx::endAdd();
+                art::itemIcon("boba", {c.x, c.y - 44 + std::sin(t_ * 3) * 6}, 64);
+            }
+        }
+        if (room.type == RoomType::Boss) {
+            for (Vector2 pp : {Vector2{kRoom.x + 90, kRoom.y + 90}, {kRoom.x + kRoom.width - 90, kRoom.y + 90}, {kRoom.x + 90, kRoom.y + kRoom.height - 90},
+                               {kRoom.x + kRoom.width - 90, kRoom.y + kRoom.height - 90}}) {
+                DrawCircleV({pp.x + 6, pp.y + 10}, 36, alpha(BLACK, 0.4f));
+                DrawCircleV(pp, 34, col::outline);
+                DrawCircleGradient(pp, 31, rgba(0x6a5e7eff), rgba(0x2a2236ff));
+                DrawCircleV({pp.x - 9, pp.y - 9}, 8, alpha(WHITE, 0.15f));
+            }
+            if (room.cleared) {
+                DrawRectangleRec({c.x - 44, c.y - 44, 88, 88}, rgba(0x05030aff));
+                for (int i = 0; i < 4; i++) {
+                    Rectangle st{c.x - 44 + i * 9.0f, c.y - 44 + i * 20.0f, 88 - i * 18.0f, 20};
+                    fx::gradRoundRect(st, 0.1f, rgba(0x6a5e7eff), rgba(0x3a3448ff));
+                }
+                ui::textShadow("DOWN", c.x, c.y - 62, 18, col::gold, ui::Center, true, 2);
+            }
         }
     }
 
     void drawEnemy(const Enemy& e) {
         Vector2 p = e.pos;
-        fx::softShadow({p.x, p.y + e.r * 0.8f}, e.r, e.r * 0.3f, 0.5f);
-        Color fl = e.flash > 0 ? WHITE : BLANK;
-        switch (e.type) {
-            case EType::Router: {
-                DrawRectangleRounded({p.x - 22, p.y - 14, 44, 28}, 0.3f, 6, col::outline);
-                DrawRectangleRounded({p.x - 20, p.y - 12, 40, 24}, 0.3f, 6, e.flash > 0 ? WHITE : rgba(0x3a3a4aff));
-                for (int s : {-1, 1}) DrawLineEx({p.x + s * 14, p.y - 12}, {p.x + s * 18, p.y - 30}, 3, col::outline);
-                for (int i = 0; i < 3; i++) DrawCircleV({p.x - 10 + i * 10.0f, p.y + 4}, 3, std::fmod(t_ * 4 + i, 1.0f) < 0.5f ? col::green : rgba(0x1a4a1aff));
-                // angry eyes
-                DrawRectangleRec({p.x - 12, p.y - 7, 8, 3}, col::red);
-                DrawRectangleRec({p.x + 4, p.y - 7, 8, 3}, col::red);
-                break;
+        DrawEllipse((int)p.x + 4, (int)(p.y + e.r * 0.9f), e.r * 1.1f, e.r * 0.35f, alpha(BLACK, 0.45f));
+        const char* spr = e.type == EType::Router ? "spr/router" : e.type == EType::Drone ? "spr/drone" : e.type == EType::Turret ? "spr/turret" : e.type == EType::Printer ? "spr/printer" : nullptr;
+        float bob = std::sin(e.t * 5 + p.x) * (e.type == EType::Drone ? 4.0f : 1.5f);
+        if (spr) {
+            Texture2D& t = E().tex(spr);
+            float sc = e.r * 2.6f / t.width;
+            float tilt = e.type == EType::Drone ? e.vel.x * 0.04f : e.vel.x * 0.02f;
+            fx::sprite(t, {p.x, p.y + bob}, sc, tilt);
+            if (e.flash > 0) {
+                BeginBlendMode(BLEND_ADDITIVE);
+                fx::sprite(t, {p.x, p.y + bob}, sc, tilt, alpha(WHITE, e.flash));
+                EndBlendMode();
             }
-            case EType::Drone: {
-                float spin = t_ * 30;
-                for (int i = 0; i < 4; i++) {
-                    Vector2 arm = p + fromAngle(PI / 4 + i * PI / 2, 18);
-                    DrawLineEx(p, arm, 3, col::outline);
-                    DrawEllipse((int)arm.x, (int)arm.y, 10 * std::abs(std::sin(spin + i)), 3, alpha(WHITE, 0.6f));
-                }
-                DrawCircleV(p, 12, col::outline);
-                DrawCircleV(p, 10, e.flash > 0 ? WHITE : (e.state == 1 ? col::red : rgba(0x5a5a6aff)));
-                DrawCircleV(p, 4, col::red);
-                break;
+            if (e.type == EType::Drone && e.state == 1) {
+                fx::beginAdd();
+                fx::glow(p, 50, alpha(col::red, 0.6f));
+                fx::endAdd();
             }
-            case EType::Turret: {
-                DrawRectangleRounded({p.x - 28, p.y - 22, 56, 42}, 0.12f, 6, col::outline);
-                DrawRectangleRec({p.x - 24, p.y - 18, 48, 32}, e.flash > 0 ? WHITE : rgba(0x1a3a5aff));
-                ui::text(":(", p.x, p.y - 2, 18, col::cyan, ui::Center, true);
-                DrawRectangleRec({p.x - 6, p.y + 20, 12, 8}, col::outline);
-                break;
+        } else {
+            // Davi on his gaming chair
+            float rot = e.state == 3 ? t_ * 900 : std::sin(t_ * 2) * 10 + e.vel.x * 0.03f;
+            Texture2D& chair = E().tex("spr/chair");
+            fx::sprite(chair, p, 0.62f, rot);
+            if (e.flash > 0) {
+                BeginBlendMode(BLEND_ADDITIVE);
+                fx::sprite(chair, p, 0.62f, rot, alpha(WHITE, e.flash * 0.8f));
+                EndBlendMode();
             }
-            case EType::Printer: {
-                DrawRectangleRounded({p.x - 30, p.y - 22, 60, 44}, 0.2f, 6, col::outline);
-                DrawRectangleRounded({p.x - 27, p.y - 19, 54, 38}, 0.2f, 6, e.flash > 0 ? WHITE : rgba(0xd8d8e0ff));
-                DrawRectangleRec({p.x - 20, p.y - 30 + std::sin(t_ * 6) * 3, 40, 14}, WHITE);
-                DrawRectangleRec({p.x - 22, p.y + 2, 44, 5}, col::outline);
-                DrawCircleV({p.x + 18, p.y - 10}, 3, col::red);
-                break;
+            bool rage = e.hp < e.maxHp * 0.5f;
+            if (rage) {
+                fx::beginAdd();
+                fx::glow(p, 120, alpha(col::red, 0.3f + 0.15f * std::sin(t_ * 10)));
+                fx::endAdd();
             }
-            case EType::Davi: {
-                // gaming chair seen from above, Davi's head, spinning in phase 3
-                float rot = e.state == 3 ? t_ * 900 : std::sin(t_ * 2) * 10;
-                rlPushMatrix();
-                rlTranslatef(p.x, p.y, 0);
-                rlRotatef(rot, 0, 0, 1);
-                for (int i = 0; i < 5; i++) {
-                    Vector2 leg = fromAngle(i * 2 * PI / 5, 58);
-                    DrawLineEx({0, 0}, leg, 8, rgba(0x15121cff));
-                    DrawCircleV(leg, 8, rgba(0x2a2534ff));
-                }
-                DrawRectangleRounded({-46, -40, 92, 80}, 0.4f, 8, col::outline);
-                DrawRectangleRounded({-42, -36, 84, 72}, 0.4f, 8, e.flash > 0 ? WHITE : rgba(0x2a9ad8ff));
-                DrawRectangleRounded({-42, 18, 84, 22}, 0.4f, 8, rgba(0x15121cff));
-                rlPopMatrix();
-                art::portrait("davi", p, 34, e.hp < e.maxHp * 0.5f ? col::red : col::cyan, std::sin(t_ * 3) * 8);
-                break;
-            }
+            art::portrait("davi", {p.x, p.y - 4}, 34, rage ? col::red : col::cyan, std::sin(t_ * 3) * 8);
         }
-        (void)fl;
-        // health pip bar for tougher things
         if (e.type != EType::Davi && e.hp < e.maxHp) {
-            DrawRectangle((int)(p.x - 18), (int)(p.y - e.r - 12), 36, 4, alpha(BLACK, 0.6f));
-            DrawRectangle((int)(p.x - 18), (int)(p.y - e.r - 12), (int)(36 * e.hp / e.maxHp), 4, col::red);
+            Rectangle hb{p.x - 20, p.y - e.r - 16, 40, 6};
+            DrawRectangleRounded(hb, 1, 4, alpha(BLACK, 0.7f));
+            DrawRectangleRounded({hb.x, hb.y, hb.width * e.hp / e.maxHp, hb.height}, 1, 4, col::red);
         }
     }
 
     void drawPlayer() {
         if (iframes_ > 0 && std::fmod(t_, 0.12f) < 0.06f) return;
         Vector2 aim = Vector2Normalize(E().mouse() - player_);
-        fx::softShadow({player_.x, player_.y + 18}, 22, 7, 0.5f);
-        // straw blaster pointing at the mouse
-        DrawLineEx(player_, player_ + aim * 34, 10, col::outline);
-        DrawLineEx(player_, player_ + aim * 32, 6, col::pink);
-        DrawCircleV(player_, 22, col::outline);
-        DrawCircleV(player_, 20, rgba(0x1f1c26ff));
-        art::pieter({player_.x, player_.y - 6}, 18, P().hat);
+        float walk = std::sin(t_ * 14) * (Vector2Length(lastMoveVel_) > 10 ? 3.0f : 0.0f);
+        DrawEllipse((int)player_.x + 3, (int)player_.y + 20, 24, 8, alpha(BLACK, 0.45f));
+        // straw blaster
+        Vector2 gun = player_ + aim * 18 + Vector2{0, 6};
+        DrawLineEx(gun, gun + aim * 22, 12, col::outline);
+        DrawLineEx(gun, gun + aim * 21, 8, rgba(0xff6fb5ff));
+        DrawLineEx(gun + aim * 4, gun + aim * 18, 3, alpha(WHITE, 0.4f));
+        // body (black tee) + head
+        fx::shadedBall({player_.x, player_.y + 8 + walk * 0.3f}, 17, rgba(0x2a2534ff), 2.5f);
+        art::pieter({player_.x, player_.y - 12 + walk * 0.5f}, 17, P().hat);
     }
 
     void drawMinimap() {
@@ -763,32 +836,93 @@ public:
         }
     }
 
+    void renderLightMap() {
+        if (!lm_.id) {
+            lm_ = LoadRenderTexture(VW / 2, VH / 2);
+            SetTextureFilter(lm_.texture, TEXTURE_FILTER_BILINEAR);
+        }
+        const Room& room = rooms_.at(cur_);
+        Vector2 c = center(kRoom);
+        BeginTextureMode(lm_);
+        ClearBackground(room.type == RoomType::Boss ? rgba(0x5a3650ff) : rgba(0x4c466cff));
+        rlPushMatrix();
+        rlScalef(0.5f, 0.5f, 1);
+        fx::beginAdd();
+        for (float tx : {kRoom.x + 120, kRoom.x + kRoom.width - 120, c.x - 130, c.x + 130}) {
+            if (std::abs(tx - c.x) < 100 && room.door[0]) continue;
+            float f = 1 + std::sin(t_ * 11 + tx) * 0.05f + std::sin(t_ * 23 + tx) * 0.03f;
+            fx::glow({tx, kRoom.y}, 420 * f, alpha(rgba(0xffa050ff), 0.75f));
+        }
+        fx::glow(player_, 380, alpha(rgba(0xffe0c0ff), 0.75f));
+        for (auto& s2 : shots_)
+            if (s2.enemy) fx::glow(s2.pos, 70, alpha(s2.color, 0.5f));
+        for (auto& e : enemies_)
+            if (e.type == EType::Davi) fx::glow(e.pos, 300, alpha(e.hp < e.maxHp * 0.5f ? col::red : col::cyan, 0.45f));
+            else if (e.type == EType::Turret) fx::glow(e.pos, 120, alpha(col::cyan, 0.35f));
+        if (room.type == RoomType::Treasure && !room.taken) fx::glow(c, 300, alpha(col::gold, 0.6f));
+        if (room.cleared)
+            for (int d = 0; d < 4; d++)
+                if (room.door[d]) {
+                    Vector2 dp = d == 0 ? Vector2{c.x, kRoom.y} : d == 1 ? Vector2{kRoom.x + kRoom.width, c.y} : d == 2 ? Vector2{c.x, kRoom.y + kRoom.height} : Vector2{kRoom.x, c.y};
+                    fx::glow(dp, 160, alpha(rgba(0x8fb0ffff), 0.35f));
+                }
+        fx::endAdd();
+        rlPopMatrix();
+        EndTextureMode();
+    }
+
     void draw() override {
         if (phase_ == Phase::Title) { drawTitle(); return; }
         drawRoom();
         for (auto& p : pickups_) {
-            if (p.kind == 1) ui::heart(p.pos, 22, col::red);
-            else ui::coin(p.pos, 10);
+            float bob = std::sin(t_ * 4 + p.pos.x) * 3;
+            DrawEllipse((int)p.pos.x, (int)p.pos.y + 12, 10, 4, alpha(BLACK, 0.4f));
+            if (p.kind == 1) ui::heart({p.pos.x, p.pos.y + bob}, 22, col::red);
+            else ui::coin({p.pos.x, p.pos.y + bob}, 10);
         }
-        for (auto& e : enemies_) drawEnemy(e);
-        drawPlayer();
-        for (auto& s : shots_) {
-            if (s.enemy) {
-                fx::beginAdd();
-                fx::glow(s.pos, s.r * 2.6f, alpha(s.color, 0.5f));
-                fx::endAdd();
-                DrawCircleV(s.pos, s.r, s.color);
-                DrawCircleV(s.pos, s.r * 0.5f, WHITE);
-            } else {
-                fx::shadedBall(s.pos, s.r, s.color, 1.5f);
+        // y-sorted actors
+        std::vector<std::pair<float, int>> order;
+        for (size_t i = 0; i < enemies_.size(); i++) order.push_back({enemies_[i].pos.y, (int)i});
+        order.push_back({player_.y, -1});
+        std::sort(order.begin(), order.end());
+        for (auto& [y, i] : order) {
+            if (i < 0) drawPlayer();
+            else drawEnemy(enemies_[i]);
+        }
+        for (auto& s2 : shots_)
+            if (!s2.enemy) {
+                DrawEllipse((int)s2.pos.x + 2, (int)s2.pos.y + 10, s2.r, s2.r * 0.4f, alpha(BLACK, 0.3f));
+                fx::shadedBall(s2.pos, s2.r, s2.color, 1.5f);
             }
+        // light: multiply the scene by the light map
+        if (lm_.id) {
+            BeginBlendMode(BLEND_MULTIPLIED);
+            DrawTexturePro(lm_.texture, {0, 0, (float)lm_.texture.width, -(float)lm_.texture.height}, {0, 0, (float)VW, (float)VH}, {0, 0}, 0, WHITE);
+            EndBlendMode();
         }
-        fx_.draw();
-        // warm light pooled around Pieter
+        // glowing things stay bright
+        for (auto& s2 : shots_)
+            if (s2.enemy) {
+                fx::beginAdd();
+                fx::glow(s2.pos, s2.r * 3, alpha(s2.color, 0.6f));
+                fx::endAdd();
+                DrawCircleV(s2.pos, s2.r, s2.color);
+                DrawCircleV(s2.pos, s2.r * 0.5f, WHITE);
+            }
         fx::beginAdd();
-        fx::glow(player_, 260, alpha(rgba(0xffd8a0ff), 0.10f));
+        for (float tx : {kRoom.x + 120, kRoom.x + kRoom.width - 120, center(kRoom).x - 130, center(kRoom).x + 130})
+            if (!(std::abs(tx - center(kRoom).x) < 100 && rooms_.at(cur_).door[0])) fx::glow({tx, kRoom.y - 50}, 46 + std::sin(t_ * 13 + tx) * 4, alpha(col::orange, 0.55f));
         fx::endAdd();
-        art::vignette(0.3f);
+        // dust motes
+        fx::beginAdd();
+        for (int i = 0; i < 30; i++) {
+            float u = std::fmod(i * 0.137f + t_ * 0.01f * (1 + i % 3), 1.0f);
+            Vector2 dp{kRoom.x + std::fmod(i * 97.0f + std::sin(t_ * 0.3f + i) * 30, kRoom.width), kRoom.y + kRoom.height - u * kRoom.height};
+            fx::glow(dp, 3, alpha(WHITE, 0.3f * std::sin(u * PI)));
+        }
+        fx::endAdd();
+        fx_.draw();
+        art::vignette(0.4f);
         drawHud();
         if (roomIntro_ > 0) ui::textOutline("LOCKED IN!", VW / 2.0f, 240, 50, alpha(col::red, roomIntro_), alpha(col::outline, roomIntro_), 4);
         if (phase_ == Phase::Pick) drawPick();
@@ -797,6 +931,10 @@ public:
             DrawRectangle(0, 0, VW, VH, alpha(BLACK, clamp01(phaseT_ / 1.2f)));
             ui::textOutline(TextFormat("FLOOR %d", floor_ + 1), VW / 2.0f, VH / 2.0f, 70, col::gold, col::outline, 5);
         }
+    }
+
+    ~DungeonScene() override {
+        if (lm_.id) UnloadRenderTexture(lm_);
     }
 
 private:
@@ -816,6 +954,8 @@ private:
     long long earned_ = 0;
     bool newBest_ = false;
     Particles fx_;
+    RenderTexture2D lm_{};
+    Vector2 lastMoveVel_{};
 };
 
 }  // namespace

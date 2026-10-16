@@ -1,5 +1,6 @@
 #include "game/ModeArt.hpp"
 
+#include "engine/Engine.hpp"
 #include "engine/Fx.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
@@ -158,9 +159,15 @@ void modeArt(const std::string& id, Rectangle r, float t, float hover) {
         pieter({c.x, c.y - s * 0.22f + bob}, s * 0.17f, "");
         ui::textShadow("GET A JOB", c.x, bc.y + bc.height * 0.72f, s * 0.09f, col::gold, ui::Center, true, 2);
     } else if (id == "fiets") {
+        for (int i = 0; i < 4; i++) {
+            Texture2D& h = E().tex(TextFormat("spr/house%d", i));
+            float span = r.width - 40;
+            float x = r.x + 20 + std::fmod(std::fmod(i * 70 - t * 20, span) + span, span);
+            fx::sprite(h, {x, c.y - s * 0.02f}, s / 900);
+        }
         DrawRectangleGradientV((int)r.x, (int)(c.y + s * 0.18f), (int)r.width, (int)(r.y + r.height - c.y - s * 0.18f), rgba(0x2a5aa8ff), rgba(0x183a78ff));
         for (int i = 0; i < 6; i++) {
-            float x = r.x + std::fmod(i * 60 - t * 80, r.width + 40);
+            float x = r.x + std::fmod(std::fmod(i * 60 - t * 80, r.width - 20) + r.width - 20, r.width - 20);
             DrawLineEx({x, c.y + s * 0.3f}, {x + 18, c.y + s * 0.3f}, 2, alpha(WHITE, 0.4f));
         }
         float ph = t * (8 + hover * 10);
@@ -235,40 +242,45 @@ void modeArt(const std::string& id, Rectangle r, float t, float hover) {
             DrawLineEx(prev, p, 4, col::green);
             prev = p;
         }
-        rocket({prev.x - 6, prev.y + 8}, s * 0.16f, -55, 1, t);
+        fx::beginAdd();
+        fx::glow({prev.x - 20, prev.y + 24}, 30, alpha(col::orange, 0.8f));
+        fx::endAdd();
+        fx::sprite(E().tex("spr/rocket"), {prev.x - 6, prev.y + 8}, s / 900, -55);
         ui::textShadow("2.47x", c.x - s * 0.12f, c.y + s * 0.05f, s * 0.13f, WHITE, ui::Center, true, 2);
     } else if (id == "kart") {
-        // a curve of track with two karts and a curb
-        DrawRing({c.x, c.y + s * 0.5f}, s * 0.42f, s * 0.7f, 200, 340, 32, rgba(0x4a4a52ff));
-        for (int i = 0; i < 10; i++) DrawRing({c.x, c.y + s * 0.5f}, s * 0.7f, s * 0.76f, 200 + i * 14.0f, 207 + i * 14.0f, 4, i % 2 ? col::red : WHITE);
-        auto kart = [&](Vector2 p, float a, Color body, const char* who) {
-            rlPushMatrix();
-            rlTranslatef(p.x, p.y, 0);
-            rlRotatef(a, 0, 0, 1);
-            DrawRectangleRounded({-26, -15, 52, 30}, 0.5f, 8, col::outline);
-            DrawRectangleRounded({-24, -13, 48, 26}, 0.5f, 8, body);
-            rlPopMatrix();
-            portrait(who, {p.x, p.y - 4}, 13, col::outline);
-        };
-        float ph = t * (0.4f + hover * 0.6f);
-        kart(Vector2{c.x, c.y + s * 0.5f} + fromAngle(PI + 0.6f + std::fmod(ph, 1.0f) * 1.2f, s * 0.56f), (PI + 0.6f + std::fmod(ph, 1.0f) * 1.2f) * RAD2DEG + 90, rgba(0x2a9ad8ff), "davi");
-        kart({c.x - s * 0.05f, c.y - s * 0.02f}, -10, rgba(0x6b3fd1ff), "pieter");
+        fx::tiled(E().tex("tex/grass"), r, 0.5f, {t * 4, 0});
+        Rectangle road{r.x, c.y - s * 0.2f, r.width, s * 0.42f};
+        fx::tiled(E().tex("tex/asphalt"), road, 0.5f, {t * 300, 0});
+        float shift = std::fmod(t * 150, 40.0f);
+        for (float x = r.x - shift; x < r.x + r.width; x += 20) {
+            float x0 = std::max(x, r.x), x1 = std::min(x + 20, r.x + r.width);
+            if (x1 <= x0) continue;
+            bool red = (int)std::lround((x - r.x + shift) / 20) % 2 == 0;
+            DrawRectangleRec({x0, road.y - 8, x1 - x0, 8}, red ? col::red : WHITE);
+            DrawRectangleRec({x0, road.y + road.height, x1 - x0, 8}, red ? WHITE : col::red);
+        }
+        float bob = std::sin(t * 9) * 3;
+        fx::sprite(E().tex("spr/kart_davi"), {c.x - s * 0.22f, c.y + s * 0.08f + bob}, s / 360, 0);
+        portrait("davi", {c.x - s * 0.22f, c.y + s * 0.06f + bob}, s * 0.05f, col::outline);
+        fx::sprite(E().tex("spr/kart_pieter"), {c.x + s * 0.18f, c.y - s * 0.06f}, s / 330, 0);
+        portrait("pieter", {c.x + s * 0.18f, c.y - s * 0.08f}, s * 0.055f, col::outline);
         fx::beginAdd();
-        fx::glow({c.x - s * 0.22f, c.y + s * 0.02f}, 24, alpha(col::orange, 0.8f));
+        fx::glow({c.x + s * 0.02f, c.y - s * 0.06f}, 26, alpha(col::orange, 0.8f));
         fx::endAdd();
     } else if (id == "dungeon") {
-        DrawRectangleRounded({c.x - s * 0.42f, c.y - s * 0.3f, s * 0.84f, s * 0.62f}, 0.06f, 6, rgba(0x2a2438ff));
-        for (int i = 0; i < 4; i++)
-            for (int k = 0; k < 3; k++) DrawRectangleLinesEx({c.x - s * 0.42f + i * s * 0.21f, c.y - s * 0.3f + k * s * 0.2f, s * 0.21f, s * 0.2f}, 1, alpha(BLACK, 0.3f));
+        fx::tiled(E().tex("tex/stone"), shrink(r, 4), 0.35f, {0, 0}, rgba(0xa098c0ff));
+        fx::tiled(E().tex("tex/brick_dark"), {r.x + 4, r.y + 4, r.width - 8, r.height * 0.22f}, 0.4f);
         fx::beginAdd();
-        fx::glow({c.x - s * 0.36f, c.y - s * 0.3f}, 40, alpha(col::orange, 0.6f));
-        fx::glow({c.x + s * 0.36f, c.y - s * 0.3f}, 40, alpha(col::orange, 0.6f));
+        fx::glow({r.x + r.width * 0.2f, r.y + r.height * 0.15f}, s * 0.35f, alpha(col::orange, 0.5f));
+        fx::glow({r.x + r.width * 0.8f, r.y + r.height * 0.15f}, s * 0.35f, alpha(col::orange, 0.5f));
         fx::endAdd();
-        portrait("davi", {c.x + s * 0.18f, c.y - s * 0.05f + bob}, s * 0.14f, col::cyan);
-        pieter({c.x - s * 0.2f, c.y + s * 0.12f}, s * 0.11f, P().hat);
+        fx::sprite(E().tex("spr/chair"), {c.x + s * 0.2f, c.y + s * 0.02f}, s / 620, std::sin(t * 2) * 12);
+        portrait("davi", {c.x + s * 0.2f, c.y + bob}, s * 0.09f, col::cyan);
+        fx::sprite(E().tex("spr/router"), {c.x - s * 0.28f, c.y + s * 0.18f}, s / 520, 0);
+        pieter({c.x - s * 0.12f, c.y - s * 0.12f}, s * 0.08f, P().hat);
         for (int i = 0; i < 3; i++) {
-            Vector2 p{c.x - s * 0.08f + i * s * 0.08f + std::fmod(t * 120, s * 0.1f), c.y + s * 0.08f - i * s * 0.05f};
-            DrawCircleV(p, 4, rgba(0x3a2418ff));
+            Vector2 p{c.x - s * 0.05f + std::fmod(t * 120 + i * 30, s * 0.22f), c.y - s * 0.1f + i * 2.0f};
+            fx::shadedBall(p, 4, rgba(0x3a2418ff), 1);
         }
     } else if (id == "plinko") {
         for (int row = 0; row < 6; row++)

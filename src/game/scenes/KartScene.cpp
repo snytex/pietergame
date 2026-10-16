@@ -65,6 +65,11 @@ public:
     void enter() override {
         buildTrack();
         reset();
+        // dev hook: PG_KART_AUTO=1 skips the intro and lets a bot drive you
+        if (std::getenv("PG_KART_AUTO")) {
+            autopilot_ = true;
+            phase_ = Phase::Race;
+        }
     }
 
     // ------------------------------------------------------------ track
@@ -169,6 +174,16 @@ public:
             k.driftT += dt;
             k.slip = damp(k.slip, k.driftDir * 0.42f, 6, dt);
             k.heading += (k.driftDir * 1.6f + steer * 1.1f) * dt * grip;
+            if (rndi(0, 2) == 0) {
+                Particle sm;
+                sm.pos = k.pos - fromAngle(k.heading, 20) + fromAngle(k.heading + PI / 2, rnd(-14, 14));
+                sm.vel = {rnd(-20, 20), rnd(-20, 20)};
+                sm.life = sm.maxLife = rnd(0.5f, 0.9f);
+                sm.size = rnd(6, 10);
+                sm.endSize = 26;
+                sm.color = alpha(rgba(0xd8d4e0ff), 0.35f);
+                fx_.add(sm);
+            }
             if (k.player && rndi(0, 2) == 0) {
                 Color sc = k.driftT > 1.6f ? col::violet : k.driftT > 0.8f ? col::orange : col::cyan;
                 for (int side : {-1, 1}) {
@@ -393,7 +408,9 @@ public:
             case Phase::Results: {
                 raceT_ += dt;
                 Kart& me = karts_[0];
-                if (phase_ == Phase::Race) {
+                if (phase_ == Phase::Race && autopilot_) {
+                    steerAI(me, dt);
+                } else if (phase_ == Phase::Race) {
                     float throttle = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) ? 1.0f : (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) ? -1.0f : 0.0f;
                     float steer = ((IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) ? 1.0f : 0.0f) - ((IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) ? 1.0f : 0.0f);
                     bool drift = IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_LEFT_SHIFT);
@@ -422,148 +439,234 @@ public:
         DrawTriangle(a, c, b, col);
     }
 
+    // textured strip between two offsets from the centreline (u runs along the track)
+    void strip(Texture2D& tex, float in, float out, float uvScale, Color tint, const Rectangle& view) {
+        float dist = 0;
+        for (int i = 0; i < kSamples; i++) {
+            int j = (i + 1) % kSamples;
+            float seg = Vector2Distance(center_[i], center_[j]);
+            if (CheckCollisionPointRec(center_[i], view) || CheckCollisionPointRec(center_[j], view)) {
+                Vector2 p[4] = {center_[i] + normal_[i] * in, center_[j] + normal_[j] * in, center_[j] + normal_[j] * out,
+                                center_[i] + normal_[i] * out};
+                Vector2 uv[4] = {{dist * uvScale, in * uvScale}, {(dist + seg) * uvScale, in * uvScale}, {(dist + seg) * uvScale, out * uvScale},
+                                 {dist * uvScale, out * uvScale}};
+                fx::texQuad(tex, p, uv, tint);
+            }
+            dist += seg;
+        }
+    }
+
     void drawWorld() {
         Vector2 o = camOff();
-        Rectangle view{-o.x - 100, -o.y - 100, VW + 200.0f, VH + 200.0f};
-        // grass with a checker of mowing stripes
-        DrawRectangle(0, 0, VW, VH, rgba(0x5a9a3aff));
+        Rectangle view{-o.x - 160, -o.y - 160, VW + 320.0f, VH + 320.0f};
+        Texture2D& grass = E().tex("tex/grass");
+        Texture2D& asphalt = E().tex("tex/asphalt");
+        Texture2D& water = E().tex("tex/water");
+        Texture2D& tulips = E().tex("tex/tulips");
+        Texture2D& wood = E().tex("tex/wood");
+        // grass, tiled in world space
+        fx::tiled(grass, {0, 0, (float)VW, (float)VH}, 1.0f, {-o.x, -o.y});
         rlPushMatrix();
         rlTranslatef(o.x, o.y, 0);
-        for (float y = std::floor(view.y / 120) * 120; y < view.y + view.height; y += 120)
-            DrawRectangleRec({view.x, y, view.width, 60}, alpha(rgba(0x6aaa4aff), 0.6f));
-        // tulip fields (striped colours) outside the track
+        // mowing stripes on top of the texture
+        for (float y = std::floor(view.y / 160) * 160; y < view.y + view.height; y += 160)
+            DrawRectangleRec({view.x, y, view.width, 80}, alpha(WHITE, 0.035f));
+        // tulip fields with dirt borders and a soft shadow
         const Rectangle fields[] = {{900, 900, 700, 500}, {2400, 1500, 500, 600}, {100, 150, 900, 250}, {1150, 1500, 500, 400}};
-        const Color tulips[] = {rgba(0xff4a5aff), rgba(0xffc531ff), rgba(0xff6fb5ff), rgba(0x8f5cffff), rgba(0xff8a2bff)};
-        for (int f = 0; f < 4; f++) {
-            Rectangle r = fields[f];
+        for (const Rectangle& r : fields) {
             if (!CheckCollisionRecs(r, view)) continue;
-            DrawRectangleRec(r, rgba(0x4a7a2aff));
-            int rows = (int)(r.height / 28);
-            for (int i = 0; i < rows; i++) {
-                Color c = tulips[(i / 3 + f) % 5];
-                for (float x = r.x + 10; x < r.x + r.width - 10; x += 16) DrawCircleV({x, r.y + 14 + i * 28.0f}, 6, c);
+            DrawRectangleRounded({r.x - 10, r.y - 4, r.width + 20, r.height + 20}, 0.04f, 8, alpha(BLACK, 0.18f));
+            DrawRectangleRounded(shrink(r, -8), 0.04f, 8, rgba(0x6a4628ff));
+            fx::tiled(tulips, r, 1.0f, {r.x * 0.5f, r.y});
+            DrawRectangleLinesEx(r, 2, alpha(BLACK, 0.3f));
+        }
+        // canal: animated water with stone banks
+        Rectangle canal{1980, -200, 180, 2900};
+        if (CheckCollisionRecs(canal, view)) {
+            fx::tiled(water, canal, 1.0f, {t_ * 12, t_ * 20});
+            DrawRectangleGradientH((int)canal.x, (int)canal.y, 24, (int)canal.height, alpha(BLACK, 0.35f), alpha(BLACK, 0));
+            DrawRectangleGradientH((int)(canal.x + canal.width - 24), (int)canal.y, 24, (int)canal.height, alpha(BLACK, 0), alpha(BLACK, 0.35f));
+            fx::tiled(E().tex("tex/brick_dark"), {canal.x - 14, canal.y, 14, canal.height}, 0.5f);
+            fx::tiled(E().tex("tex/brick_dark"), {canal.x + canal.width, canal.y, 14, canal.height}, 0.5f);
+        }
+        // track: drop shadow, curbs, asphalt, then lines
+        float half = kTrackW / 2;
+        for (int i = 0; i < kSamples; i++) {
+            int j = (i + 1) % kSamples;
+            if (!CheckCollisionPointRec(center_[i], view) && !CheckCollisionPointRec(center_[j], view)) continue;
+            for (int side : {-1, 1}) {
+                Vector2 a0 = center_[i] + normal_[i] * (side * (half + 30)), a1 = center_[i] + normal_[i] * (side * half);
+                Vector2 b0 = center_[j] + normal_[j] * (side * (half + 30)), b1 = center_[j] + normal_[j] * (side * half);
+                tri(a0, b0, b1, alpha(BLACK, 0.16f));
+                tri(a0, b1, a1, alpha(BLACK, 0.16f));
+                // curb: red/white blocks with a lit top edge
+                Vector2 c0 = center_[i] + normal_[i] * (side * (half + 14)), c1 = center_[j] + normal_[j] * (side * (half + 14));
+                Color cc = (i / 3) % 2 ? rgba(0xd8283aff) : rgba(0xf4f0f4ff);
+                tri(a1, b1, c1, cc);
+                tri(a1, c1, c0, cc);
+                DrawLineEx(c0, c1, 2, darken(cc, 0.35f));
             }
         }
-        // canal under the bridge section
-        DrawRectangleRec({1980, 0, 180, 2500}, rgba(0x2a6aa8ff));
-        for (int i = 0; i < 40; i++) DrawLineEx({2000 + (i % 5) * 30.0f, i * 64.0f + std::sin(t_ + i) * 6}, {2030 + (i % 5) * 30.0f, i * 64.0f + std::sin(t_ + i) * 6}, 2, alpha(WHITE, 0.3f));
-        // track: shadowed edge, curbs, asphalt
-        for (int pass = 0; pass < 3; pass++) {
-            float half = pass == 0 ? kTrackW / 2 + 22 : pass == 1 ? kTrackW / 2 + 12 : kTrackW / 2;
-            for (int i = 0; i < kSamples; i++) {
-                int j = (i + 1) % kSamples;
-                if (!CheckCollisionPointRec(center_[i], view) && !CheckCollisionPointRec(center_[j], view)) continue;
-                Vector2 a0 = center_[i] - normal_[i] * half, a1 = center_[i] + normal_[i] * half;
-                Vector2 b0 = center_[j] - normal_[j] * half, b1 = center_[j] + normal_[j] * half;
-                Color c = pass == 0 ? alpha(BLACK, 0.25f) : pass == 1 ? ((i / 4) % 2 ? col::red : WHITE) : rgba(0x4a4a52ff);
-                tri(a0, b0, b1, c);
-                tri(a0, b1, a1, c);
-            }
+        strip(asphalt, -half, half, 1.0f, WHITE, view);
+        // racing line wear + edge lines
+        for (int i = 0; i < kSamples; i++) {
+            int j = (i + 1) % kSamples;
+            if (!CheckCollisionPointRec(center_[i], view)) continue;
+            for (int side : {-1, 1}) DrawLineEx(center_[i] + normal_[i] * (side * (half - 8)), center_[j] + normal_[j] * (side * (half - 8)), 3, alpha(WHITE, 0.85f));
+            DrawLineEx(center_[i], center_[j], 26, alpha(BLACK, 0.06f));
         }
-        // centre dashes + start line
         for (int i = 0; i < kSamples; i += 8) {
             if (!CheckCollisionPointRec(center_[i], view)) continue;
-            DrawLineEx(center_[i], center_[(i + 3) % kSamples], 4, alpha(WHITE, 0.4f));
+            DrawLineEx(center_[i], center_[(i + 3) % kSamples], 4, alpha(WHITE, 0.35f));
         }
-        Vector2 n0 = normal_[0];
+        // wooden bridge deck + railings where the track crosses the canal
+        for (int i = 0; i < kSamples; i++) {
+            int j = (i + 1) % kSamples;
+            if (center_[i].x < canal.x - 20 || center_[i].x > canal.x + canal.width + 20) continue;
+            if (!CheckCollisionPointRec(center_[i], view)) continue;
+            Vector2 p[4] = {center_[i] - normal_[i] * (half + 18), center_[j] - normal_[j] * (half + 18), center_[j] + normal_[j] * (half + 18),
+                            center_[i] + normal_[i] * (half + 18)};
+            float v0 = i * 25.0f, v1 = v0 + Vector2Distance(center_[i], center_[j]);
+            Vector2 uv[4] = {{0, v0}, {0, v1}, {2 * (half + 18), v1}, {2 * (half + 18), v0}};
+            fx::texQuad(wood, p, uv, WHITE);
+            for (int side : {-1, 1}) DrawLineEx(center_[i] + normal_[i] * (side * (half + 18)), center_[j] + normal_[j] * (side * (half + 18)), 6, rgba(0x3a2418ff));
+        }
+        // start/finish: chequered band + grid boxes
+        Vector2 n0 = normal_[0], d0 = dirAt(0);
         for (int r = 0; r < 2; r++)
             for (int c = 0; c < 10; c++) {
-                Vector2 p = center_[0] + n0 * (-kTrackW / 2 + c * kTrackW / 10) + dirAt(0) * (r * 17.0f);
-                Vector2 q = p + n0 * (kTrackW / 10), d = dirAt(0) * 17.0f;
+                Vector2 p = center_[0] + n0 * (-half + c * kTrackW / 10) + d0 * (r * 17.0f);
+                Vector2 q = p + n0 * (kTrackW / 10), d = d0 * 17.0f;
                 Color cc = (r + c) % 2 ? WHITE : col::outline;
                 tri(p, q, q + d, cc);
                 tri(p, q + d, p + d, cc);
             }
+        for (int g = 0; g < 4; g++) {
+            Vector2 gp = center_[0] - d0 * (70.0f + (g / 2) * 90) + n0 * ((g % 2) ? 40.0f : -40.0f);
+            DrawLineEx(gp + n0 * 22 + d0 * 24, gp - n0 * 22 + d0 * 24, 3, alpha(WHITE, 0.8f));
+            DrawLineEx(gp + n0 * 22 + d0 * 24, gp + n0 * 22 - d0 * 10, 3, alpha(WHITE, 0.8f));
+            DrawLineEx(gp - n0 * 22 + d0 * 24, gp - n0 * 22 - d0 * 10, 3, alpha(WHITE, 0.8f));
+        }
         // skid marks
-        for (auto& s : skids_) DrawLineEx(s.a, s.b, 5, alpha(rgba(0x1a1a20ff), 0.35f * std::min(1.0f, s.life)));
-        // item boxes
-        for (auto& b : boxes_) {
-            if (b.respawn > 0) continue;
-            Vector2 bp = center_[b.sample] + normal_[b.sample] * b.lateral;
-            float bob = std::sin(t_ * 3 + b.sample) * 3;
+        for (auto& sk : skids_) DrawLineEx(sk.a, sk.b, 6, alpha(rgba(0x15121cff), 0.3f * std::min(1.0f, sk.life)));
+        // item boxes: spinning glossy cubes with a "?"
+        for (auto& bx : boxes_) {
+            if (bx.respawn > 0) continue;
+            Vector2 bp = center_[bx.sample] + normal_[bx.sample] * bx.lateral;
+            float bob = std::sin(t_ * 3 + bx.sample) * 3;
+            DrawEllipse((int)bp.x + 3, (int)bp.y + 14, 18, 7, alpha(BLACK, 0.3f));
             fx::beginAdd();
-            fx::glow(bp, 40, alpha(col::gold, 0.4f));
+            fx::glow({bp.x, bp.y + bob}, 46, alpha(ColorFromHSV(std::fmod(t_ * 90 + bx.sample, 360), 0.6f, 1), 0.35f));
             fx::endAdd();
             rlPushMatrix();
             rlTranslatef(bp.x, bp.y + bob, 0);
-            rlRotatef(t_ * 60, 0, 0, 1);
-            DrawRectangleRounded({-15, -15, 30, 30}, 0.3f, 6, col::outline);
-            DrawRectangleRounded({-13, -13, 26, 26}, 0.3f, 6, ColorFromHSV(std::fmod(t_ * 90 + b.sample, 360), 0.6f, 1));
+            rlRotatef(std::sin(t_ * 2 + bx.sample) * 18, 0, 0, 1);
+            Color hc = ColorFromHSV(std::fmod(t_ * 90 + bx.sample, 360), 0.55f, 1);
+            DrawRectangleRounded({-17, -17, 34, 34}, 0.3f, 6, col::outline);
+            fx::gradRoundRect({-15, -15, 30, 30}, 0.3f, lighten(hc, 0.4f), darken(hc, 0.2f));
+            DrawRectangleRounded({-12, -12, 24, 8}, 0.6f, 6, alpha(WHITE, 0.45f));
             rlPopMatrix();
-            ui::text("?", bp.x, bp.y + bob, 18, WHITE, ui::Center, true);
+            ui::textShadow("?", bp.x, bp.y + bob + 1, 20, WHITE, ui::Center, true, 2);
         }
-        // hagelslag spills
-        for (auto& s : spills_)
-            for (int i = 0; i < 26; i++) {
-                Vector2 p = s.pos + fromAngle(i * 2.4f, 6 + (i % 7) * 4.0f);
-                DrawLineEx(p, p + fromAngle(i * 1.3f, 5), 3, rgba(0x3b2112ff));
+        // hagelslag spills: a puddle of sprinkles
+        for (auto& sp : spills_) {
+            DrawEllipse((int)sp.pos.x, (int)sp.pos.y, 34, 26, alpha(rgba(0x2a1608ff), 0.35f));
+            for (int i = 0; i < 40; i++) {
+                Vector2 p = sp.pos + fromAngle(i * 2.4f, 4 + (i % 9) * 3.2f);
+                DrawLineEx(p, p + fromAngle(i * 1.3f, 5), 3, i % 4 ? rgba(0x3b2112ff) : rgba(0x7a4a2aff));
             }
-        // decorations: windmill, trees, grandstand by the start
-        windmill({1260, 1150});
-        windmill({2700, 300});
-        const Vector2 trees[] = {{250, 600}, {700, 1200}, {1300, 250}, {2000, 800}, {2800, 1200}, {1600, 1900}, {600, 2300}, {2300, 2300}};
-        for (auto& tp : trees) {
-            if (!CheckCollisionPointRec(tp, view)) continue;
-            DrawCircleV(tp + Vector2{8, 10}, 46, alpha(BLACK, 0.2f));
-            DrawCircleV(tp, 46, rgba(0x2a6a2aff));
-            DrawCircleV(tp + Vector2{-12, -12}, 30, rgba(0x3a8a3aff));
         }
         // grandstand alongside the start straight
-        Vector2 gs = center_[6] - normal_[6] * (kTrackW / 2 + 80);
+        Vector2 gs = center_[6] - normal_[6] * (kTrackW / 2 + 90);
         rlPushMatrix();
         rlTranslatef(gs.x, gs.y, 0);
         rlRotatef(angleOf(dirAt(6)) * RAD2DEG, 0, 0, 1);
-        DrawRectangleRec({-170, -36, 340, 66}, rgba(0x3a2a5aff));
-        DrawRectangleRec({-176, -44, 352, 10}, rgba(0x6b3fd1ff));
+        DrawRectangleRec({-178, -30, 356, 80}, alpha(BLACK, 0.25f));
+        fx::gradRoundRect({-170, -40, 340, 76}, 0.1f, rgba(0x4a3a6aff), rgba(0x2a1a4aff));
         for (int row = 0; row < 3; row++)
-            for (int i = 0; i < 32; i++)
-                DrawCircleV({-160 + i * 10.0f + (row % 2) * 5, -22 + row * 18 - std::abs(std::sin(t_ * 6 + i + row)) * 3}, 4, ColorFromHSV((i * 47 + row * 90) % 360 * 1.0f, 0.5f, 0.9f));
+            for (int i = 0; i < 32; i++) {
+                Vector2 hp{-158 + i * 10.0f + (row % 2) * 5, -26 + row * 20 - std::abs(std::sin(t_ * 6 + i + row)) * 3};
+                DrawCircleV({hp.x, hp.y + 5}, 5, ColorFromHSV((float)((i * 47 + row * 90) % 360), 0.5f, 0.8f));
+                DrawCircleV(hp, 3.6f, i % 3 ? rgba(0xf0c8a0ff) : rgba(0x8a5a3aff));
+            }
+        fx::gradRoundRect({-176, -52, 352, 14}, 0.5f, rgba(0x8f5cffff), rgba(0x5b2fb0ff));
         rlPopMatrix();
+        // windmills, trees, bushes (sprites with soft shadows)
+        windmill({1260, 1150});
+        windmill({2700, 300});
+        Texture2D& tree = E().tex("spr/tree");
+        Texture2D& bush = E().tex("spr/bush");
+        const Vector2 trees[] = {{250, 600}, {700, 1200}, {1300, 250}, {2000 - 60, 800}, {2800, 1200}, {1600, 1900}, {600, 2300}, {2300, 2300}, {150, 1900}, {2700, 2000}};
+        for (int i = 0; i < 10; i++) {
+            Vector2 tp = trees[i];
+            if (!CheckCollisionPointRec(tp, view)) continue;
+            DrawEllipse((int)tp.x + 26, (int)tp.y + 34, 92, 70, alpha(BLACK, 0.22f));
+            fx::sprite(tree, tp, 1.0f + (i % 3) * 0.15f, i * 37.0f);
+        }
+        for (int i = 0; i < kSamples; i += 37) {
+            Vector2 bp = center_[i] + normal_[i] * ((i % 2 ? 1 : -1) * (half + 70));
+            if (!CheckCollisionPointRec(bp, view) || (bp.x > canal.x - 40 && bp.x < canal.x + canal.width + 40)) continue;
+            fx::sprite(bush, bp, 0.8f, (float)i * 13);
+        }
         rlPopMatrix();
     }
 
     void windmill(Vector2 p) {
-        DrawCircleV(p + Vector2{10, 14}, 60, alpha(BLACK, 0.2f));
-        DrawCircleV(p, 54, rgba(0x8a5a3aff));
-        DrawCircleV(p, 44, rgba(0x6a3a2aff));
+        Vector2 o = camOff();
+        if (p.x + o.x < -200 || p.x + o.x > VW + 200 || p.y + o.y < -200 || p.y + o.y > VH + 200) return;
+        DrawEllipse((int)p.x + 22, (int)p.y + 26, 70, 62, alpha(BLACK, 0.22f));
+        // octagonal thatched cap, lit from the top-left
+        DrawPoly(p, 8, 62, 22.5f, col::outline);
+        DrawPoly(p, 8, 58, 22.5f, rgba(0x6a4a30ff));
+        DrawCircleGradient(p, 56, rgba(0x9a6a40ff), rgba(0x4a2e18ff));
+        for (int i = 0; i < 8; i++) DrawLineEx(p, p + fromAngle(i * PI / 4 + PI / 8, 56), 2, alpha(BLACK, 0.25f));
+        // sails with a lattice
         for (int i = 0; i < 4; i++) {
-            Vector2 d = fromAngle(t_ * 0.8f + i * PI / 2, 120), n = Vector2Normalize({-d.y, d.x}) * 14;
-            tri(p, p + d, p + d + n, rgba(0xe8e2d0ff));
-            DrawLineEx(p, p + d, 4, rgba(0x3a2418ff));
+            float a = t_ * 0.8f + i * PI / 2;
+            Vector2 d = fromAngle(a), n{-d.y, d.x};
+            Vector2 root = p + d * 16, tip = p + d * 130;
+            Vector2 q[4] = {root + n * 2, tip + n * 2, tip + n * 22, root + n * 22};
+            DrawTriangle(q[0], q[1], q[2], alpha(rgba(0xf4ecd8ff), 0.92f));
+            DrawTriangle(q[0], q[2], q[1], alpha(rgba(0xf4ecd8ff), 0.92f));
+            DrawTriangle(q[0], q[2], q[3], alpha(rgba(0xf4ecd8ff), 0.92f));
+            DrawTriangle(q[0], q[3], q[2], alpha(rgba(0xf4ecd8ff), 0.92f));
+            for (int k = 1; k < 6; k++) DrawLineEx(root + d * (k * 20.0f) + n * 2, root + d * (k * 20.0f) + n * 22, 1.5f, rgba(0x6a4a30ff));
+            DrawLineEx(p, tip, 5, rgba(0x3a2418ff));
         }
-        DrawCircleV(p, 10, rgba(0x2a1a10ff));
+        DrawCircleV(p, 12, rgba(0x2a1a10ff));
+        DrawCircleV({p.x - 3, p.y - 3}, 4, alpha(WHITE, 0.3f));
     }
 
     void drawKart(const Kart& k) {
         Vector2 o = camOff();
         Vector2 p = k.pos + o;
-        if (p.x < -60 || p.x > VW + 60 || p.y < -60 || p.y > VH + 60) return;
+        if (p.x < -80 || p.x > VW + 80 || p.y < -80 || p.y > VH + 80) return;
         float ang = k.heading * RAD2DEG;
+        DrawEllipse((int)p.x + 6, (int)p.y + 9, 34, 24, alpha(BLACK, 0.3f));
         if (k.boostT > 0) {
             fx::beginAdd();
-            for (int i = 0; i < 3; i++) fx::glow(p - fromAngle(k.heading, 30.0f + i * 14), 22 - i * 4.0f, alpha(i ? col::orange : col::gold, 0.7f));
+            for (int i = 0; i < 4; i++) {
+                float f = std::sin(t_ * 40 + i) * 3;
+                fx::glow(p - fromAngle(k.heading, 34.0f + i * 12 + f), 20 - i * 3.0f, alpha(i < 2 ? col::gold : col::orange, 0.75f));
+            }
             fx::endAdd();
         }
-        DrawEllipse((int)p.x + 4, (int)p.y + 6, 28, 20, alpha(BLACK, 0.3f));
-        rlPushMatrix();
-        rlTranslatef(p.x, p.y, 0);
-        rlRotatef(ang, 0, 0, 1);
-        // wheels
-        for (int sx : {-1, 1})
-            for (int sy : {-1, 1}) DrawRectangleRounded({sx * 14.0f - 7, sy * 15.0f - 5, 14, 10}, 0.4f, 4, rgba(0x15121cff));
-        // body
-        DrawRectangleRounded({-26, -15, 52, 30}, 0.5f, 8, col::outline);
-        DrawRectangleRounded({-24, -13, 48, 26}, 0.5f, 8, k.body);
-        DrawRectangleRounded({-24, -13, 48, 10}, 0.5f, 8, lighten(k.body, 0.3f));
-        DrawRectangleRounded({16, -10, 10, 20}, 0.4f, 6, darken(k.body, 0.3f));  // nose
-        DrawRectangleRec({-28, -12, 6, 24}, rgba(0x2a2534ff));                    // rear spoiler
-        rlPopMatrix();
+        std::string spr = std::string("spr/kart_") + k.who;
+        fx::sprite(E().tex(spr), p, 0.62f, ang);
         // driver's head stays upright
-        art::portrait(k.who, {p.x - std::cos(k.heading) * 4, p.y - std::sin(k.heading) * 4 - 4}, 13, col::outline);
-        if (k.shieldT > 0) DrawRing(p, 34, 37, 0, 360, 32, alpha(col::cyan, 0.5f + 0.3f * std::sin(t_ * 8)));
-        if (k.spinT > 0) ui::text("@#!", p.x, p.y - 40, 18, col::red, ui::Center, true);
+        Vector2 hp = p - fromAngle(k.heading, 2) + Vector2{0, -3};
+        art::portrait(k.who, hp, 14, col::outline);
+        if (k.shieldT > 0) {
+            fx::beginAdd();
+            fx::glow(p, 52, alpha(col::cyan, 0.3f));
+            fx::endAdd();
+            DrawRing(p, 38, 41, 0, 360, 36, alpha(col::cyan, 0.6f + 0.3f * std::sin(t_ * 8)));
+        }
+        if (k.spinT > 0) ui::textShadow("@#!", p.x, p.y - 44, 18, col::red, ui::Center, true, 2);
         if (!k.player) {
-            ui::text(k.name, p.x, p.y - 34, 13, alpha(WHITE, 0.85f), ui::Center, true);
+            float w = ui::measure(k.name, 13, true) + 14;
+            DrawRectangleRounded({p.x - w / 2, p.y - 52, w, 20}, 1, 8, alpha(col::bgDeep, 0.65f));
+            ui::text(k.name, p.x, p.y - 42, 13, lighten(k.body, 0.4f), ui::Center, true);
         }
     }
 
@@ -711,6 +814,7 @@ private:
     Vector2 cam_{};
     float t_ = 0, phaseT_ = 0, raceT_ = 0, itemRoll_ = 0, lapFlash_ = 0;
     int lastLight_ = -1, finishOrder_ = 0;
+    bool autopilot_ = false;
     long long reward_ = 0;
     Particles fx_, uiFx_;
 };

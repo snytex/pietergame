@@ -137,8 +137,14 @@ public:
     void drawBoard() {
         Rectangle board{40, 100, 820, 600};
         ui::panel(board, alpha(rgba(0x120c22ff), 0.9f), 0.04f, alpha(col::pink, 0.35f));
+        // board: dark glass with a subtle diamond lattice and light from above
+        E().beginClip(shrink(board, 4));
+        for (float y = board.y; y < board.y + board.height; y += 40)
+            for (float x = board.x + (int(y / 40) % 2) * 20; x < board.x + board.width; x += 40) DrawPoly({x, y}, 4, 3, 0, alpha(col::violet, 0.12f));
+        E().endClip();
         fx::beginAdd();
-        fx::glow({cx(), top() + rows_ * dy() * 0.5f}, 420, alpha(col::violet, 0.12f));
+        fx::glow({cx(), top() + rows_ * dy() * 0.5f}, 460, alpha(col::violet, 0.16f));
+        fx::glow({cx(), top() - 40}, 220, alpha(col::pink, 0.18f));
         fx::endAdd();
         // dropper
         DrawRectangleRounded({cx() - 26, top() - 92, 52, 28}, 0.5f, 8, col::panelHi);
@@ -154,9 +160,8 @@ public:
                     fx::glow(p, pr * 6, alpha(col::pink, 0.6f * f));
                     fx::endAdd();
                 }
-                DrawCircleV({p.x, p.y + 1.5f}, pr, alpha(BLACK, 0.4f));
-                DrawCircleV(p, pr, mix(rgba(0xe8e2f0ff), col::pink, f));
-                DrawCircleV({p.x - pr * 0.3f, p.y - pr * 0.3f}, pr * 0.35f, alpha(WHITE, 0.8f));
+                DrawCircleV({p.x + 1, p.y + 3}, pr * 1.1f, alpha(BLACK, 0.45f));
+                fx::shadedBall(p, pr, mix(rgba(0xc8c0dcff), col::pink, f), 1);
             }
         // buckets, coloured from red edges to gold centre
         const auto& tb = table(rows_, risk_);

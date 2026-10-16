@@ -180,6 +180,18 @@ public:
             float y = g.y + std::fmod(i * 71.0f + starScroll_ * 0.2f * (i % 2), g.height);
             DrawCircleV({x, y}, 1 + (i % 3) * 0.6f, alpha(WHITE, 0.25f + 0.2f * (i % 3)));
         }
+        // nebula glow + a city skyline at the bottom
+        fx::beginAdd();
+        fx::glow({g.x + g.width * 0.7f, g.y + g.height * 0.3f}, 320, alpha(col::violet, 0.12f));
+        fx::glow({g.x + g.width * 0.2f, g.y + g.height * 0.5f}, 260, alpha(col::pink, 0.08f));
+        fx::endAdd();
+        for (int i = 0; i < 26; i++) {
+            float bw = 26 + (i * 37 % 30), bh = 30 + (i * 53 % 70);
+            float bx = g.x + i * 34 - std::fmod(starScroll_ * 0.4f, 34.0f);
+            DrawRectangleRec({bx, g.y + g.height - bh, bw, bh}, rgba(0x120c22ff));
+            for (int w = 0; w < (int)(bh / 12); w++)
+                if ((i * 7 + w * 3) % 5 < 2) DrawRectangleRec({bx + 6, g.y + g.height - bh + 6 + w * 12, 4, 5}, alpha(col::gold, 0.6f));
+        }
         // grid + axis labels
         Rectangle in{g.x + 60, g.y + 30, g.width - 90, g.height - 80};
         float mm = maxM(), tt = maxT();
@@ -216,6 +228,7 @@ public:
             for (int i = 1; i <= steps; i++) {
                 float s = flyT_ * i / steps;
                 Vector2 p = toGraph(s, multiplierAt(s));
+                DrawLineEx(prev, p, 12, alpha(cc, 0.25f));
                 DrawLineEx(prev, p, 5, cc);
                 prev = p;
             }
@@ -232,7 +245,13 @@ public:
             if (!dead) {
                 Vector2 a = toGraph(std::max(0.0f, flyT_ - 0.3f), multiplierAt(std::max(0.0f, flyT_ - 0.3f)));
                 float ang = angleOf(prev - a) * RAD2DEG;
-                art::rocket(prev, 34, ang, 1, t_);
+                fx::beginAdd();
+                for (int i = 0; i < 4; i++) {
+                    float k = std::fmod(t_ * 6 + i * 0.25f, 1.0f);
+                    fx::glow(prev - fromAngle(ang * DEG2RAD, 40 + k * 50), 26 - k * 14, alpha(mix(col::gold, col::red, k), 0.8f));
+                }
+                fx::endAdd();
+                fx::sprite(E().tex("spr/rocket"), prev, 0.36f, ang);
             }
         }
         E().endClip();

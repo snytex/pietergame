@@ -82,6 +82,40 @@ void shadedRoundRect(Rectangle r, float round, Color base, float outline) {
                          alpha(lighten(base, 0.6f), 0.35f));
 }
 
+void tiled(Texture2D& t, Rectangle dest, float scale, Vector2 scroll, Color tint) {
+    if (t.id == 0 || scale <= 0) return;
+    SetTextureWrap(t, TEXTURE_WRAP_REPEAT);
+    DrawTexturePro(t, {scroll.x, scroll.y, dest.width / scale, dest.height / scale}, dest, {0, 0}, 0, tint);
+}
+
+void texQuad(Texture2D& t, const Vector2 p[4], const Vector2 uv[4], Color tint) {
+    if (t.id == 0) return;
+    SetTextureWrap(t, TEXTURE_WRAP_REPEAT);
+    rlSetTexture(t.id);
+    rlBegin(RL_QUADS);
+    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+    // raylib quads: tl, bl, br, tr
+    const int order[4] = {0, 3, 2, 1};
+    for (int k : order) {
+        rlTexCoord2f(uv[k].x / t.width, uv[k].y / t.height);
+        rlVertex2f(p[k].x, p[k].y);
+    }
+    // and the other winding, in case this one is culled
+    const int order2[4] = {0, 1, 2, 3};
+    for (int k : order2) {
+        rlTexCoord2f(uv[k].x / t.width, uv[k].y / t.height);
+        rlVertex2f(p[k].x, p[k].y);
+    }
+    rlEnd();
+    rlSetTexture(0);
+}
+
+void sprite(Texture2D& t, Vector2 c, float scale, float rotDeg, Color tint, bool flipX) {
+    if (t.id == 0) return;
+    float w = t.width * scale, h = t.height * scale;
+    DrawTexturePro(t, {0, 0, flipX ? -(float)t.width : (float)t.width, (float)t.height}, {c.x, c.y, w, h}, {w / 2, h / 2}, rotDeg, tint);
+}
+
 void gradRoundRect(Rectangle r, float roundness, Color top, Color bottom) {
     if (r.width <= 0 || r.height <= 0) return;
     float rad = std::min(roundness * std::min(r.width, r.height) / 2, std::min(r.width, r.height) / 2);

@@ -282,190 +282,166 @@ public:
     }
 
     // ------------------------------------------------------------ draw: world
-    void canalHouse(float x, float baseY, float w, float h, int seed, float shade) {
-        const Color walls[] = {rgba(0x8a3a2aff), rgba(0x6a2a20ff), rgba(0xd8c8a8ff), rgba(0x3a4a6aff), rgba(0x5a3a28ff), rgba(0xb8783aff)};
-        Color wc = darken(walls[seed % 6], shade);
-        DrawRectangleRec({x, baseY - h, w, h}, wc);
-        // gable: stepped, bell or neck
-        int g = seed % 3;
-        if (g == 0)
-            for (int s = 1; s <= 3; s++) DrawRectangleRec({x + s * w / 8, baseY - h - s * 9, w - s * w / 4, 9}, wc);
-        else if (g == 1) {
-            DrawCircleSector({x + w / 2, baseY - h}, w * 0.38f, 180, 360, 16, wc);
-            DrawRectangleRec({x + w / 2 - 4, baseY - h - w * 0.5f, 8, 10}, wc);
-        } else {
-            DrawRectangleRec({x + w * 0.25f, baseY - h - 22, w * 0.5f, 22}, wc);
-            DrawTriangle({x + w * 0.25f, baseY - h - 22}, {x + w / 2, baseY - h - 40}, {x + w * 0.75f, baseY - h - 22}, wc);
-            DrawTriangle({x + w * 0.25f, baseY - h - 22}, {x + w * 0.75f, baseY - h - 22}, {x + w / 2, baseY - h - 40}, wc);
-        }
-        // white-framed windows and a door
-        Color frame = darken(rgba(0xf4f0e8ff), shade);
-        Color glass = darken(rgba(0x2a3a5aff), shade);
-        int cols = w > 70 ? 3 : 2;
-        for (int r = 0; r < (int)(h / 46); r++)
-            for (int c = 0; c < cols; c++) {
-                Rectangle wr{x + 10 + c * (w - 20) / cols + 3, baseY - h + 14 + r * 46.0f, (w - 20) / cols - 6, 30};
-                if (wr.y + wr.height > baseY - 40) continue;
-                DrawRectangleRec(shrink(wr, -2), frame);
-                DrawRectangleRec(wr, glass);
-                DrawLineEx({wr.x + wr.width / 2, wr.y}, {wr.x + wr.width / 2, wr.y + wr.height}, 2, frame);
+    void cloud(Vector2 p, float sc, float a) {
+        const float px[] = {-52, -22, 12, 44}, py[] = {-4, -22, -30, -10}, pr[] = {26, 34, 38, 28};
+        Color shade = alpha(rgba(0xc8d8f0ff), a), lit = alpha(WHITE, a);
+        DrawEllipse((int)p.x, (int)(p.y + 6 * sc), 80 * sc, 16 * sc, shade);
+        for (int i = 0; i < 4; i++) DrawCircleV({p.x + px[i] * sc, p.y + py[i] * sc + 4 * sc}, pr[i] * sc, shade);
+        for (int i = 0; i < 4; i++) DrawCircleV({p.x + px[i] * sc, p.y + py[i] * sc}, pr[i] * sc, lit);
+        DrawEllipse((int)p.x, (int)p.y, 78 * sc, 14 * sc, lit);
+    }
+
+    // a row of canal houses; returns nothing, draws `flip` = upside-down reflection
+    void houseRow(float par, float baseY, float sc, Color tint, bool reflect) {
+        const int n = 14;
+        float spacing = 170 * sc * 0.98f, period = n * spacing;
+        float off = std::fmod(scroll_ * par, period);
+        for (int i = 0; i < n * 2; i++) {
+            float x = i * spacing - off;
+            if (x > VW + 200 || x < -260) continue;
+            int k = (i * 5 + (int)(par * 10)) % 6;
+            Texture2D& t = E().tex(TextFormat("spr/house%d", k));
+            float hs = sc * (0.9f + 0.1f * ((i * 7) % 3));
+            float w = t.width * hs, h = t.height * hs;
+            if (!reflect) {
+                DrawTexturePro(t, {0, 0, (float)t.width, (float)t.height}, {x, baseY - h, w, h}, {0, 0}, 0, tint);
+            } else {
+                DrawTexturePro(t, {0, (float)t.height, (float)t.width, -(float)t.height}, {x, baseY, w, h * 0.55f}, {0, 0}, 0, tint);
             }
-        DrawRectangleRec({x + w / 2 - 10, baseY - 36, 20, 36}, darken(rgba(0x2a5a3aff), shade));
-        DrawRectangleRec({x + w / 2 - 14, baseY - 38, 28, 4}, frame);
+        }
     }
 
     void drawWorld() {
-        // sky
-        DrawRectangleGradientV(0, 0, VW, 360, rgba(0x6ab8ffff), rgba(0xd8eeffff));
+        // sky with sun and soft clouds
+        DrawRectangleGradientV(0, 0, VW, 380, rgba(0x5aa8ffff), rgba(0xd8eeffff));
         fx::beginAdd();
-        fx::glow({1040, 90}, 200, alpha(rgba(0xfff0c0ff), 0.6f));
+        fx::glow({1060, 80}, 260, alpha(rgba(0xfff0c0ff), 0.7f));
         fx::endAdd();
-        DrawCircleV({1040, 90}, 40, rgba(0xfff6d0ff));
-        for (int i = 0; i < 5; i++) {
-            float x = std::fmod(i * 310 - scroll_ * 0.03f, 1600.0f);
-            if (x < -200) x += 1600;
-            x -= 150;
-            float y = 60 + i * 23 % 90;
-            for (int k = 0; k < 4; k++) DrawCircleV({x + k * 30.0f, y - (k % 2) * 12}, 24.0f + (k % 2) * 8, alpha(WHITE, 0.9f));
+        DrawCircleV({1060, 80}, 42, rgba(0xfff6d0ff));
+        for (int i = 0; i < 6; i++) {
+            float x = std::fmod(i * 330 - scroll_ * 0.03f - t_ * 6, 1700.0f);
+            if (x < -200) x += 1700;
+            cloud({x - 150, 50.0f + (i * 37) % 90}, 0.6f + (i % 3) * 0.2f, 0.92f);
         }
-        // back row of houses (far, hazier) then the canal-side row
-        for (int layer = 0; layer < 2; layer++) {
-            float par = layer == 0 ? 0.25f : 0.5f, base = layer == 0 ? 300 : 352, sc = layer == 0 ? 0.7f : 1.0f;
-            float off = std::fmod(scroll_ * par, 2400.0f);
-            for (int i = 0; i < 30; i++) {
-                float w = (60 + (i * 37 % 40)) * sc, h = (130 + (i * 53 % 90)) * sc;
-                float x = i * 82 * sc - off;
-                if (x < -120) x += 2400 * (layer == 0 ? 1 : 1);
-                if (x > VW + 50 || x + w < -50) continue;
-                canalHouse(x, base, w, h, i * 7 + layer * 3, layer == 0 ? 0.35f : 0.0f);
-            }
-            if (layer == 0) DrawRectangleGradientV(0, 160, VW, 150, alpha(rgba(0xd8eeffff), 0), alpha(rgba(0xd8eeffff), 0.45f));
-        }
-        // quay + canal water with reflections and passing boats
-        DrawRectangle(0, 352, VW, 10, rgba(0x6a6a72ff));
-        DrawRectangleGradientV(0, 362, VW, 76, rgba(0x2a5a8aff), rgba(0x1a3a5aff));
-        for (int i = 0; i < 22; i++) {
-            float x = std::fmod(i * 97 - scroll_ * 0.55f + std::sin(t_ + i) * 10, 1400.0f) - 60;
-            if (x < -60) x += 1400;
-            DrawLineEx({x, 375 + (i % 5) * 12.0f}, {x + 30, 375 + (i % 5) * 12.0f}, 2, alpha(WHITE, 0.3f));
-        }
-        float bx = std::fmod(1600 - scroll_ * 0.35f + t_ * 40, 2200.0f) - 300;
-        DrawRectangleRounded({bx, 388, 200, 30}, 0.5f, 8, rgba(0x8a5a32ff));
-        DrawRectangleRounded({bx + 30, 370, 120, 22}, 0.3f, 8, rgba(0xe8e2d8ff));
-        for (int k = 0; k < 4; k++) DrawRectangleRec({bx + 40 + k * 26.0f, 375, 16, 10}, rgba(0x3a5a8aff));
-        // trees + railing between canal and road
-        float to = std::fmod(scroll_ * 0.9f, 260.0f);
-        for (float x = -to; x < VW + 260; x += 260) {
-            DrawRectangle((int)x + 18, 340, 10, 104, rgba(0x4a3020ff));
-            DrawCircleV({x + 23, 330}, 44, rgba(0x3a7a3aff));
-            DrawCircleV({x + 5, 312}, 32, rgba(0x4a9a4aff));
-            DrawCircleV({x + 44, 318}, 30, rgba(0x3a8a3aff));
-        }
-        float ro = std::fmod(scroll_, 60.0f);
-        DrawRectangle(0, 436, VW, 5, rgba(0x2a2a30ff));
-        for (float x = -ro; x < VW + 60; x += 60) DrawRectangle((int)x, 422, 4, 20, rgba(0x2a2a30ff));
-        // the road: red fietspad lanes with markings
-        DrawRectangleGradientV(0, 444, VW, VH - 444, rgba(0xa8443aff), rgba(0x7a2a24ff));
-        DrawRectangle(0, 444, VW, 8, rgba(0x9a9aa2ff));
+        // far row (hazy) and near row of canal houses
+        houseRow(0.22f, 318, 0.4f, rgba(0xb0c0e4ff), false);
+        DrawRectangleGradientV(0, 170, VW, 150, alpha(rgba(0xd8eeffff), 0), alpha(rgba(0xd8eeffff), 0.4f));
+        houseRow(0.5f, 352, 0.62f, WHITE, false);
+        // quay: cobbled edge
+        fx::tiled(E().tex("tex/cobble"), {0, 350, (float)VW, 14}, 0.35f, {scroll_ * 0.5f / 0.35f, 0});
+        DrawRectangle(0, 362, VW, 3, rgba(0x2a2a32ff));
+        // canal: water texture + reflections of the houses
+        Rectangle canal{0, 365, (float)VW, 76};
+        fx::tiled(E().tex("tex/water"), canal, 0.9f, {scroll_ * 0.55f / 0.9f + t_ * 8, t_ * 6});
+        E().beginClip(canal);
+        rlPushMatrix();
+        float wob = std::sin(t_ * 2) * 2;
+        rlTranslatef(wob, 0, 0);
+        houseRow(0.5f, 366, 0.62f, alpha(rgba(0x8fb0d8ff), 0.35f), true);
+        rlPopMatrix();
+        E().endClip();
+        DrawRectangleGradientV(0, 365, VW, 18, alpha(BLACK, 0.3f), alpha(BLACK, 0));
+        // tour boat
+        float bx = std::fmod(1800 - scroll_ * 0.3f + t_ * 50, 2400.0f) - 400;
+        fx::sprite(E().tex("spr/boat"), {bx + 170, 404}, 0.62f);
+        // trees along the canal + a black railing
+        float to = std::fmod(scroll_ * 0.9f, 300.0f);
+        Texture2D& tree = E().tex("spr/canaltree");
+        for (float x = -to - 100; x < VW + 300; x += 300) fx::sprite(tree, {x + 90, 344}, 0.78f);
+        float ro = std::fmod(scroll_, 50.0f);
+        DrawRectangle(0, 424, VW, 4, rgba(0x1a1a22ff));
+        DrawRectangle(0, 438, VW, 3, rgba(0x1a1a22ff));
+        for (float x = -ro; x < VW + 50; x += 50) DrawRectangle((int)x, 420, 4, 24, rgba(0x1a1a22ff));
+        // sidewalk tiles, kerb, then the red fietspad
+        fx::tiled(E().tex("tex/cobble"), {0, 444, (float)VW, 14}, 0.3f, {scroll_ / 0.3f, 0}, rgba(0xd8d0d8ff));
+        DrawRectangle(0, 458, VW, 6, rgba(0xb8b8c0ff));
+        DrawRectangle(0, 463, VW, 2, rgba(0x6a6a72ff));
+        fx::tiled(E().tex("tex/fietspad"), {0, 465, (float)VW, VH - 465.0f}, 0.8f, {scroll_ / 0.8f, 0});
+        DrawRectangleGradientV(0, 465, VW, 20, alpha(BLACK, 0.25f), alpha(BLACK, 0));
         float mo = std::fmod(scroll_, 140.0f);
         for (int l = 0; l < 2; l++) {
             float y = (kLaneY[l] + kLaneY[l + 1]) / 2 + 6;
-            for (float x = -mo; x < VW + 140; x += 140) DrawRectangleRec({x, y, 70, 5}, alpha(WHITE, 0.75f));
+            for (float x = -mo; x < VW + 140; x += 140) DrawRectangleRounded({x, y, 70, 5}, 1, 4, alpha(WHITE, 0.8f));
         }
         float so = std::fmod(scroll_, 700.0f);
-        for (float x = -so + 200; x < VW + 700; x += 700) {  // painted bike symbols
-            DrawRing({x, kLaneY[1] + 30}, 10, 13, 0, 360, 20, alpha(WHITE, 0.5f));
-            DrawRing({x + 34, kLaneY[1] + 30}, 10, 13, 0, 360, 20, alpha(WHITE, 0.5f));
-            DrawLineEx({x, kLaneY[1] + 30}, {x + 17, kLaneY[1] + 16}, 3, alpha(WHITE, 0.5f));
-            DrawLineEx({x + 17, kLaneY[1] + 16}, {x + 34, kLaneY[1] + 30}, 3, alpha(WHITE, 0.5f));
+        for (float x = -so + 200; x < VW + 700; x += 700) {
+            Color pc = alpha(WHITE, 0.55f);
+            DrawRing({x, kLaneY[1] + 30}, 10, 13, 0, 360, 20, pc);
+            DrawRing({x + 34, kLaneY[1] + 30}, 10, 13, 0, 360, 20, pc);
+            DrawLineEx({x, kLaneY[1] + 30}, {x + 17, kLaneY[1] + 16}, 3, pc);
+            DrawLineEx({x + 17, kLaneY[1] + 16}, {x + 34, kLaneY[1] + 30}, 3, pc);
         }
     }
 
     void drawThing(const Thing& th) {
-        if (th.gone && !pickup(th.kind)) {
-            if (th.kind != Kind::Tourist) return;
-        }
+        if (th.gone && !pickup(th.kind) && th.kind != Kind::Tourist) return;
         float lane = th.toLane >= 0 && th.laneT > 0 ? lerpf((float)th.lane, (float)th.toLane, easeInOutSine(th.laneT)) : (float)th.lane;
         int li = std::clamp((int)std::round(lane), 0, 2);
         float y = lerpf(kLaneY[(int)std::floor(lane)], kLaneY[std::min(2, (int)std::floor(lane) + 1)], lane - std::floor(lane));
         float s = kLaneS[li];
         float x = th.x;
         if (th.gone && th.kind == Kind::Tourist) y -= 40, x += 30;  // jumped aside
-        fx::softShadow({x, y + 4}, 34 * s, 7 * s, 0.4f);
+        DrawEllipse((int)x + 4, (int)y + 2, 30 * s, 7 * s, alpha(BLACK, pickup(th.kind) ? 0.15f : 0.35f));
+        auto spr = [&](const char* name, float sc, float lift, float rot = 0, bool flip = false) {
+            Texture2D& t = E().tex(name);
+            fx::sprite(t, {x, y - t.height * sc * s / 2 - lift}, sc * s, rot, WHITE, flip);
+        };
         switch (th.kind) {
             case Kind::Tourist: {
-                // tourist with a camera and a map, looking the wrong way
-                float bob = std::sin(t_ * 6 + x * 0.01f) * 2;
-                Color shirt = ColorFromHSV(th.hue, 0.5f, 0.85f);
-                DrawRectangleRounded({x - 12 * s, y - 30 * s, 10 * s, 30 * s}, 0.5f, 6, rgba(0x3a3a5aff));
-                DrawRectangleRounded({x + 2 * s, y - 30 * s, 10 * s, 30 * s}, 0.5f, 6, rgba(0x3a3a5aff));
-                DrawRectangleRounded({x - 20 * s, y - 80 * s + bob, 40 * s, 54 * s}, 0.4f, 8, shirt);
-                DrawCircleV({x, y - 96 * s + bob}, 16 * s, rgba(0xf0c8a0ff));
-                DrawRectangleRounded({x - 18 * s, y - 116 * s + bob, 36 * s, 10 * s}, 1, 6, rgba(0xe8e2d0ff));  // sun hat
-                DrawRectangleRec({x - 10 * s, y - 64 * s + bob, 20 * s, 14 * s}, rgba(0x2a2a30ff));             // camera
-                DrawRectangleRec({x - 34 * s, y - 72 * s + bob, 20 * s, 26 * s}, rgba(0xf4f0e0ff));             // map
-                if (th.toLane >= 0 && th.laneT < 0.05f && th.x < 1100) ui::text("!", x, y - 140 * s, 30, col::gold, ui::Center, true);
+                float bob = std::abs(std::sin(t_ * 6 + x * 0.01f)) * 3;
+                spr(TextFormat("spr/tourist%d", (int)(th.hue / 120) % 3), 0.8f, bob, std::sin(t_ * 6 + x) * 2);
+                if (th.toLane >= 0 && th.laneT < 0.05f && th.x < 1100) ui::textOutline("!", x, y - 150 * s, 34, col::gold, col::outline, 3);
                 break;
             }
-            case Kind::Scooter: {
-                DrawCircleV({x - 24 * s, y - 10 * s}, 11 * s, rgba(0x1a1a20ff));
-                DrawCircleV({x + 24 * s, y - 10 * s}, 11 * s, rgba(0x1a1a20ff));
-                DrawRectangleRounded({x - 30 * s, y - 38 * s, 60 * s, 24 * s}, 0.5f, 8, col::red);
-                DrawLineEx({x - 26 * s, y - 36 * s}, {x - 32 * s, y - 70 * s}, 4 * s, rgba(0x6a6a72ff));
-                DrawCircleV({x + 4 * s, y - 70 * s}, 15 * s, rgba(0x2a2a30ff));  // helmet
-                DrawRectangleRounded({x - 6 * s, y - 60 * s, 22 * s, 30 * s}, 0.4f, 6, rgba(0x2a4a8aff));
+            case Kind::Scooter:
+                spr("spr/scooter", 0.75f, 0, std::sin(t_ * 20) * 1.5f, true);
                 fx::beginAdd();
-                fx::glow({x - 36 * s, y - 46 * s}, 40 * s, alpha(col::gold, 0.6f));
+                fx::glow({x - 58 * s, y - 64 * s}, 50 * s, alpha(col::gold, 0.7f));
                 fx::endAdd();
                 break;
-            }
             case Kind::Rack:
                 for (int i = 0; i < 3; i++) {
                     float bx = x - 60 * s + i * 50 * s;
-                    art::bike({bx - 20 * s, y - 14 * s}, 70 * s, 0.5f, ColorFromHSV(i * 110.0f + 30, 0.6f, 0.6f));
+                    art::bike({bx - 20 * s, y - 14 * s}, 70 * s, 0.5f, ColorFromHSV(i * 110.0f + 30, 0.55f, 0.55f));
                 }
-                DrawRectangleRec({x - 80 * s, y - 34 * s, 160 * s, 5 * s}, rgba(0x9a9aa2ff));
+                DrawRectangleRounded({x - 82 * s, y - 36 * s, 164 * s, 6 * s}, 1, 4, rgba(0xb8b8c8ff));
                 break;
-            case Kind::Bollard:
-                DrawRectangleRounded({x - 7 * s, y - 50 * s, 14 * s, 50 * s}, 0.5f, 6, rgba(0x6a2a24ff));
-                DrawRectangleRec({x - 7 * s, y - 40 * s, 14 * s, 6 * s}, WHITE);
-                DrawCircleV({x, y - 50 * s}, 8 * s, rgba(0x6a2a24ff));
-                break;
+            case Kind::Bollard: spr("spr/bollard", 0.7f, 0); break;
             case Kind::Pothole:
-                DrawEllipse((int)x, (int)y - 2, 36 * s, 10 * s, rgba(0x2a1a14ff));
-                DrawEllipse((int)x, (int)y - 4, 30 * s, 7 * s, rgba(0x3a5a8aff));
+                DrawEllipse((int)x, (int)y - 2, 38 * s, 11 * s, rgba(0x3a1a14ff));
+                DrawEllipse((int)x, (int)y - 4, 32 * s, 8 * s, rgba(0x2a5a8aff));
+                DrawEllipse((int)x - 8, (int)y - 6, 12 * s, 2 * s, alpha(WHITE, 0.4f));
                 break;
-            case Kind::Duck: {
-                float w = std::sin(t_ * 12 + x) * 3;
-                DrawEllipse((int)x, (int)(y - 14 * s), 16 * s, 11 * s, rgba(0xf4f0e8ff));
-                DrawCircleV({x - 13 * s, y - 26 * s + w}, 8 * s, rgba(0x2a7a3aff));
-                DrawTriangle({x - 20 * s, y - 26 * s + w}, {x - 28 * s, y - 23 * s + w}, {x - 20 * s, y - 22 * s + w}, col::orange);
-                DrawTriangle({x - 20 * s, y - 26 * s + w}, {x - 20 * s, y - 22 * s + w}, {x - 28 * s, y - 23 * s + w}, col::orange);
-                break;
-            }
+            case Kind::Duck: spr("spr/duck", 0.7f, std::abs(std::sin(t_ * 10 + x)) * 3, 0, false); break;
             case Kind::Coin: {
                 float sq = std::abs(std::cos(t_ * 4 + x * 0.02f));
                 Vector2 c{x, y - 60 * s + std::sin(t_ * 5 + x * 0.05f) * 4};
-                DrawEllipse((int)c.x, (int)c.y, 13 * s * std::max(0.2f, sq), 13 * s, col::outline);
-                DrawEllipse((int)c.x, (int)c.y, 11 * s * std::max(0.2f, sq), 11 * s, col::gold);
+                fx::beginAdd();
+                fx::glow(c, 22 * s, alpha(col::gold, 0.4f));
+                fx::endAdd();
+                DrawEllipse((int)c.x, (int)c.y, 14 * s * std::max(0.2f, sq), 14 * s, col::outline);
+                DrawEllipse((int)c.x, (int)c.y, 12 * s * std::max(0.2f, sq), 12 * s, col::goldDark);
+                DrawEllipse((int)c.x, (int)c.y, 9 * s * std::max(0.2f, sq), 9 * s, col::gold);
                 break;
             }
             case Kind::Wafel:
+                fx::beginAdd();
+                fx::glow({x, y - 64 * s}, 44, alpha(col::gold, 0.4f));
+                fx::endAdd();
                 art::stroopwafelTop({x, y - 60 * s + std::sin(t_ * 4) * 5}, 22 * s);
                 break;
             case Kind::Boba:
                 fx::beginAdd();
-                fx::glow({x, y - 64 * s}, 40, alpha(col::cyan, 0.5f));
+                fx::glow({x, y - 64 * s}, 48, alpha(col::cyan, 0.5f));
                 fx::endAdd();
                 art::boba({x, y - 60 * s + std::sin(t_ * 4) * 5}, 44 * s);
                 break;
             case Kind::Bell:
                 fx::beginAdd();
-                fx::glow({x, y - 64 * s}, 40, alpha(col::gold, 0.5f));
+                fx::glow({x, y - 64 * s}, 48, alpha(col::gold, 0.5f));
                 fx::endAdd();
-                DrawCircleSector({x, y - 60 * s}, 18 * s, 180, 360, 16, col::gold);
-                DrawRectangleRec({x - 18 * s, y - 60 * s, 36 * s, 6 * s}, darken(col::gold, 0.2f));
-                DrawCircleV({x, y - 52 * s}, 4 * s, col::goldDark);
+                fx::shadedBall({x, y - 62 * s}, 16 * s, col::gold, 2);
+                DrawRectangleRounded({x - 20 * s, y - 50 * s, 40 * s, 7 * s}, 1, 4, col::goldDark);
                 break;
         }
     }

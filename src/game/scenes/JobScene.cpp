@@ -35,11 +35,24 @@ public:
     void lose() { if (!decided()) { lost = true; E().sfx.play(Sfx::Error, 0.7f); } }
 };
 
-void stageBg(Color top, Color bottom) { DrawRectangleGradientV(0, 0, VW, VH, top, bottom); }
+// office wall: gradient, pinstripe wallpaper, a wainscot rail and light from above
+void stageBg(Color top, Color bottom) {
+    DrawRectangleGradientV(0, 0, VW, VH, top, bottom);
+    for (int x = 0; x < VW; x += 36) DrawRectangle(x, 0, 14, VH, alpha(WHITE, 0.035f));
+    DrawRectangle(0, 470, VW, 10, alpha(BLACK, 0.18f));
+    DrawRectangle(0, 468, VW, 3, alpha(WHITE, 0.08f));
+    fx::beginAdd();
+    fx::glow({VW / 2.0f, -60}, 760, alpha(rgba(0xfff0d0ff), 0.16f));
+    fx::endAdd();
+}
 
+// wooden desk/counter with grain, a lit front edge and a shadow on the wall
 void desk(float y, Color c) {
-    DrawRectangleGradientV(0, (int)y, VW, VH - (int)y, c, darken(c, 0.35f));
-    DrawRectangle(0, (int)y, VW, 6, lighten(c, 0.25f));
+    DrawRectangleGradientV(0, (int)y - 24, VW, 24, alpha(BLACK, 0), alpha(BLACK, 0.3f));
+    fx::tiled(E().tex("tex/wood"), {0, y, (float)VW, VH - y}, 0.9f, {0, 0}, lighten(c, 0.35f));
+    DrawRectangleGradientV(0, (int)y, VW, (int)(VH - y), alpha(BLACK, 0), alpha(BLACK, 0.45f));
+    DrawRectangle(0, (int)y, VW, 5, lighten(c, 0.4f));
+    DrawRectangle(0, (int)y + 5, VW, 3, alpha(BLACK, 0.25f));
 }
 
 void bigPrompt(const std::string& s, float y, float size, Color c) { ui::textOutline(s, VW / 2.0f, y, size, c, col::outline, 4); }
@@ -856,6 +869,7 @@ public:
             case Phase::Brief: drawBrief(); break;
             case Phase::Play:
                 micro_->draw(t_);
+                art::vignette(0.35f);
                 drawHud();
                 break;
             case Phase::Result: drawResult(); break;
