@@ -280,7 +280,7 @@ void drawWalls(const Env& e) {
 
     // crown moulding + LED strip
     DrawRectangle((int)kWallL, 0, (int)(kWallR - kWallL), 12, rgba(0x4a2f86ff));
-    for (float x = kWallL; x < kWallR; x += 6) DrawRectangleRec({x, 12, 6, 3}, hue(e.t * 40 + x * 0.35f, 0.75f, 0.4f + 0.6f * e.lights));
+    for (float x = kWallL; x < kWallR; x += 6) DrawRectangleRec({x, 12, 6, 3}, hue(e.t * 40 + x * 0.35f, 0.75f, e.horror ? 0.06f : 0.4f + 0.6f * e.lights));
 }
 
 void drawWindow(const Env& e) {
@@ -483,6 +483,7 @@ void drawBed(const Env& e) {
     art::horse({392, 470}, 0.42f, 0.0f, rgba(0x9a6a44ff), rgba(0x3a2418ff), col::red, "none");
 
     // nightstand + lamp in the corner
+    if (e.horror) return;
     fx::softShadow({95, 591}, 70, 10, 0.5f);
     rrectO({40, 483, 112, 104}, 0.08f, rgba(0x4a3048ff), 3);
     rrect({48, 493, 96, 38}, 0.15f, rgba(0x5a3a58ff));
@@ -548,6 +549,7 @@ void drawDesk(const Env& e) {
     art::boba({1175, 418}, 36);
 
     // PC tower on the floor-right, glass side panel
+    if (e.horror) return;
     Rectangle pc{1196, 326, 74, 160};
     fx::softShadow({pc.x + pc.width / 2, pc.y + pc.height + 2}, 50, 8, 0.6f);
     rrectO(pc, 0.06f, rgba(0x15121cff), 2.5f);
@@ -643,6 +645,10 @@ void addLights(const Env& e) {
     fx::glow({1030, 350}, 360, alpha(scr, 0.55f + 0.3f * e.gaming));
     // neon sign
     fx::glow({445, 140}, 320, alpha(rgba(0xff3d6aff), 0.65f * on));
+    if (e.horror) {
+        fx::glow({640, 380}, 300, alpha(rgba(0x6070c0ff), 0.12f));
+        return;
+    }
     // bedside lamp: reading light awake, dim night light while asleep
     fx::glow({95, 425}, 420, alpha(rgba(0xffa860ff), on > 0.5f ? 0.8f * (1 - d * 0.7f) : 0.45f));
     // LED strip
@@ -681,6 +687,10 @@ void drawBloom(const Env& e) {
     fx::glow({1031, 346}, 170, alpha(scr, 0.25f + 0.25f * e.gaming));
     // LED strip
     for (float x = kWallL + 30; x < kWallR; x += 60) fx::glow({x, 14}, 46, alpha(hue(e.t * 40 + x * 0.35f), 0.45f * on));
+    if (e.horror) {
+        fx::endAdd();
+        return;
+    }
     // PC fans
     fx::glow({1233, 359}, 40, alpha(hue(e.t * 60), 0.5f));
     fx::glow({1233, 409}, 40, alpha(hue(e.t * 60 + 68), 0.5f));

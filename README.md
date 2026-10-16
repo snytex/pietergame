@@ -22,6 +22,7 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Horses** | *Bet*: six horses, with odds from a Monte Carlo simulation of the race. Bet to WIN or on TOP 3. *Ride*: you're the jockey racing Davi and Kira. Alternate LEFT/RIGHT to gallop and press SPACE to jump hurdles. |
 | **Stroopwafel** | Stack stroopwafels on Pieter's coffee cup. Anything hanging over gets sliced off. Perfect drops build a combo, and every 10 layers earns Pieter a real stroopwafel. |
 | **Pieter Beats** | A 4-lane rhythm game on every Pieter song. The charts are generated from the music itself (onset detection + tempo tracking), on Easy, Normal and Hard. Hit notes with D F J K or the arrow keys, hold the long ones, and fill the JUHUH meter for double points. Grades S to F, full combos and personal bests per song. The first play of a song takes a moment while it's analysed; after that it's cached. |
+| **Five Nights at Pieter's** | Halloween special, FNAF 4 style. You're Pieter in his dark room from 12 AM to 6 AM, with no cameras. Run to the doors (A/D), the closet (W) and the bed (S). Use the flashlight (F / left mouse) to chase Davi and Kira out of the halls, but if you *hear* breathing or giggling at a door, hold it shut (SPACE) and don't shine the light. Hold the closet shut against Het Nachtpaard, light the paardjes off the bed, switch off the PC when Kira hacks it (it speeds everyone up), and throw a stroopwafel or boba down the hall (Q) to buy time. Five nights, plus an unlockable Juhuh night. |
 | **Casino** | Roulette (European), Blackjack (Davi deals), Mines and Slots (96.6% RTP, see `tools/slots_rtp.py`). If you go broke, Pieter's pity fund helps you out. |
 
 You earn **Pietercoins** in every mode. Spend them in **Kira's Shop** on Classic powerups, food for Pieter, and cosmetics (hats and trails). Set your powerup loadout and wardrobe in the **Inventory**.
@@ -78,10 +79,11 @@ PG_SCENE=slots PG_SHOT=out.png PG_SHOT_FRAMES=120 PG_MUTE=1 ...    # headless sc
 PG_SCENE=classic PG_GOD=1 PG_SHOT=out.png PG_SHOT_TIME=12 ... # invincible, screenshot after 12s of game time
 PG_SCENE=room PG_HOUR=22 PG_ROOM=sleep ...                       # Pieter Room at night, asleep (also shower/feed/chat/play/sad)
 PG_SCENE=beats PG_BEATS=3:2 PG_BEATS_AUTO=1 ...                  # Pieter Beats: song 3 on Hard, played by a bot
+PG_SCENE=fnap PG_FNAP=3 PG_FNAP_VIEW=closet PG_FNAP_STAGE=0,0,3,0,0 PG_FNAP_LIGHT=1 ...  # Five Nights: frozen setup for screenshots
 PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 
-Scene names: `menu classic room beats horses stroop casino roulette blackjack mines slots shop inventory settings`.
+Scene names: `menu classic room beats fnap horses stroop casino roulette blackjack mines slots shop inventory settings`.
 
 ## License
 

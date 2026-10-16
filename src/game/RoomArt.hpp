@@ -13,6 +13,7 @@ struct Env {
     float lights = 1;     // 1 = awake, room lights on; 0 = lights out (Pieter sleeps)
     float gaming = 0;     // 0..1, how hard the PC is working (PLAY)
     float steam = 0;      // 0..1 shower steam
+    bool horror = false;  // Five Nights at Pieter's: no lamp, LEDs or PC; doors need the side walls clear
 };
 
 float daylight(float hour);  // 0 = night .. 1 = full day

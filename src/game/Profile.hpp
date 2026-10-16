@@ -70,6 +70,8 @@ public:
     int beatsOffsetMs = 0;                    // audio latency calibration
     float beatsSpeed = 1.0f;                  // note scroll speed
     bool beatsHitSounds = true;
+    int fnapNight = 1;      // Five Nights at Pieter's: highest night unlocked (6 = Juhuh night)
+    int fnapBeaten = 0;     // bitmask of nights survived
 
     // settings
     float musicVolume = 0.55f;

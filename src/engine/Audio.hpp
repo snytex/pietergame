@@ -64,6 +64,7 @@ enum class Sfx {
     Click, Hover, Coin, Hurt, Power, Win, Lose, Dash, Boom, Card, Tick, Gem,
     Neigh, Chew, Bubble, Whoosh, Drop, Perfect, Jump, Bell, Spawn, Shoot, Error, Kiss,
     Pop, Snore, Water, Yawn, Boop, Gulp, Buzz, Msg, Send, Key,
+    Breath, Giggle, Heart, Step, Slam, Flash, Scream, Static, MusicBox, Drone, Creak,
     Count
 };
 

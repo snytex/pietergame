@@ -15,7 +15,7 @@
 namespace {
 
 // Dev/testing hooks (all optional):
-//   PG_SCENE=classic|room|beats|horses|stroop|casino|roulette|blackjack|mines|slots|shop|inventory|settings
+//   PG_SCENE=classic|room|beats|fnap|horses|stroop|casino|roulette|blackjack|mines|slots|shop|inventory|settings
 //   PG_SHOT=out.png PG_SHOT_FRAMES=120   save a screenshot after N frames and quit
 //   PG_SHOT_TIME=6.5                     ...or after N seconds of game time
 //   PG_GOD=1 PG_WAVE=10                  Classic: invincible / start at a wave
@@ -24,6 +24,8 @@ namespace {
 //   PG_ROOM=sleep|shower|feed|chat|play|sad   Pieter Room: start in that state
 //   PG_MUTE=1                            silence all audio
 //   PG_BEATS=3:2 PG_BEATS_AUTO=1         Pieter Beats: play song 3 on HARD (and let a bot play it)
+//   PG_FNAP=3 PG_FNAP_VIEW=left PG_FNAP_STAGE=2,0,3,1,1 PG_FNAP_LIGHT=1 PG_FNAP_HOLD=1 PG_FNAP_SCARE=0
+//                                        Five Nights at Pieter's: jump into a night with a frozen setup (screenshots)
 //   PG_BEATS_TEST=1                      analyze every song for Pieter Beats, print tempo + note counts, quit
 //   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
@@ -32,7 +34,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats},
+        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();

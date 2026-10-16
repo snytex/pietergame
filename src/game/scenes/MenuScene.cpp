@@ -89,7 +89,13 @@ public:
         if (ui::button({x0, y3, sw, 54}, "SHOP", col::panelHi, 24)) E().go(makeShop);
         if (ui::button({x0 + sw + 12, y3, sw, 54}, "INVENTORY", col::panelHi, 24)) E().go(makeInventory);
         if (ui::button({x0 + 2 * (sw + 12), y3, sw, 54}, "SETTINGS", col::panelHi, 24)) E().go(makeSettings);
-        if (ui::button({cx - 70, y3 + 66, 140, 40}, "QUIT", rgba(0x5a2035ff), 20)) confirmQuit_ = true;
+        // Halloween special
+        Rectangle fn{x0, y3 + 66, bw * 2 + gap - 152, 44};
+        fx::beginAdd();
+        fx::glow(center(fn), 200, alpha(col::orange, 0.18f + 0.08f * std::sin(t_ * 3)));
+        fx::endAdd();
+        if (ui::button(fn, "FIVE NIGHTS AT PIETER'S", rgba(0xb8420eff), 20)) E().go(makeFnap);
+        if (ui::button({x0 + bw * 2 + gap - 140, y3 + 66, 140, 44}, "QUIT", rgba(0x5a2035ff), 20)) confirmQuit_ = true;
 
         ui::coinCounter(VW - 20, 38, P().coins);
         drawNowPlaying();

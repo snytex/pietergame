@@ -123,6 +123,7 @@ void Profile::save() const {
     f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
     for (auto& [k, b] : beats) f << "b." << k << "=" << b.score << "," << b.acc << "," << b.fc << "\n";
     f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
+    f << "fnapNight=" << fnapNight << "\nfnapBeaten=" << fnapBeaten << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
       << "\nscreenShake=" << screenShake << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
@@ -182,6 +183,8 @@ void Profile::load() {
         else if (k == "beatsOffset") beatsOffsetMs = (int)L();
         else if (k == "beatsSpeed") beatsSpeed = std::clamp(F(), 0.5f, 2.5f);
         else if (k == "beatsHitSounds") beatsHitSounds = L() != 0;
+        else if (k == "fnapNight") fnapNight = std::clamp((int)L(), 1, 6);
+        else if (k == "fnapBeaten") fnapBeaten = (int)L();
         else if (k == "lastPity") lastPity = L();
         else if (k == "introSeen") introSeen = L() != 0;
         else if (k == "musicVolume") musicVolume = F();
