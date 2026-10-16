@@ -36,6 +36,10 @@ else()
   if(UNIX AND NOT APPLE)
     target_link_libraries(pietergame3 PRIVATE m pthread dl)
   endif()
+  if(MINGW)
+    # self-contained .exe: no MinGW runtime DLLs needed, no console window
+    target_link_options(pietergame3 PRIVATE -static -static-libgcc -static-libstdc++ -mwindows)
+  endif()
 endif()
 
 # Copy assets next to the binary so the build folder is self-contained.
