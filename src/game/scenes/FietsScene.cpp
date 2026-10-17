@@ -69,20 +69,28 @@ public:
     void spawnChunk() {
         // a "beat" of obstacles and pickups, harder as the speed goes up
         float hard = clamp01((speed_ - 380) / 520);
-        int pattern = rndi(0, 6);
         float x = spawnX_;
+        int free = rndi(0, 2);
         auto add = [&](Kind k, float dx, int lane) {
             Thing t{k, x + dx, lane};
             if (k == Kind::Scooter) t.speed = -rnd(160, 260);
             if (k == Kind::Tourist) {
                 t.speed = rnd(-40, 30);
                 t.hue = rnd(0, 360);
-                if (chance(0.25f + hard * 0.3f)) t.toLane = std::clamp(lane + (chance(0.5f) ? 1 : -1), 0, 2);
+                if (chance(0.25f + hard * 0.3f)) {
+                    int to = std::clamp(lane + (chance(0.5f) ? 1 : -1), 0, 2);
+                    if (to != free && to != lane) t.toLane = to;  // never wander into the escape lane
+                }
             }
             if (k == Kind::Duck) t.speed = -30;
             things_.push_back(t);
         };
-        int free = rndi(0, 2);
+        // retry until there's always a way through: scooters and dawdling tourists move at their
+        // own speed, so a fresh chunk can line up with an older one and wall off all three lanes
+        for (int attempt = 0;; attempt++) {
+        size_t n0 = things_.size();
+        int pattern = rndi(0, 6);
+        free = rndi(0, 2);
         switch (pattern) {
             case 0:  // two lanes blocked by tourists, coins in the free one
                 for (int l = 0; l < 3; l++)
@@ -117,7 +125,38 @@ public:
                 break;
             }
         }
+        if (passable()) break;
+        things_.resize(n0);
+        if (attempt >= 8) {  // give up on obstacles this beat, just hand out coins
+            for (int i = 0; i < 4; i++) add(Kind::Coin, i * 50.0f, free);
+            break;
+        }
+        }
         spawnX_ += rnd(380, 560) * (1.1f - hard * 0.35f) + speed_ * 0.25f;
+    }
+
+    // Predict when every tall (unjumpable) obstacle reaches the bike and check that at each
+    // moment at least one lane is open, with some slack for the lane switch itself.
+    bool passable() const {
+        struct Block { float t0, t1; int lanes; };
+        std::vector<Block> bl;
+        float end = 0;
+        for (auto& th : things_) {
+            if (th.gone || !tall(th.kind) || th.x < kPlayerX - 80) continue;
+            float rel = std::max(60.0f, speed_ + th.speed);
+            float reach = (th.kind == Kind::Rack ? 70 : 38) + 30;
+            Block b{(th.x - kPlayerX - reach) / rel - 0.2f, (th.x - kPlayerX + reach) / rel + 0.2f, 1 << th.lane};
+            if (th.toLane >= 0) b.lanes |= 1 << th.toLane;
+            bl.push_back(b);
+            end = std::max(end, b.t1);
+        }
+        for (float t = 0; t <= end; t += 0.025f) {
+            int m = 0;
+            for (auto& b : bl)
+                if (t >= b.t0 && t <= b.t1) m |= b.lanes;
+            if (m == 7) return false;
+        }
+        return true;
     }
 
     // ------------------------------------------------------------ update

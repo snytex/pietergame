@@ -325,6 +325,7 @@ void drawWindow(const Env& e) {
         DrawEllipse((int)x - 12, (int)y - 2, 12, 7, alpha(cloud, a));
     }
     skyline(e, night);
+    if (e.outside) e.outside();
     // glass reflection
     quad({kGlass.x + 30, kGlass.y}, {kGlass.x + 70, kGlass.y}, {kGlass.x + 10, kGlass.y + kGlass.height}, {kGlass.x - 30, kGlass.y + kGlass.height},
          alpha(WHITE, 0.06f));

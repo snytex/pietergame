@@ -65,6 +65,7 @@ enum class Sfx {
     Neigh, Chew, Bubble, Whoosh, Drop, Perfect, Jump, Bell, Spawn, Shoot, Error, Kiss,
     Pop, Snore, Water, Yawn, Boop, Gulp, Buzz, Msg, Send, Key,
     Breath, Giggle, Heart, Step, Slam, Flash, Scream, Static, MusicBox, Drone, Creak,
+    Klomp, FietsBel, Carillon, Rain, Wind, Thunder, Whisper, Knock, Monkey, Cymbal, Tinnitus, Scratch, Riser, Sting,
     Count
 };
 

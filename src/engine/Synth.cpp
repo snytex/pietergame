@@ -563,21 +563,28 @@ Patch design(Sfx s, Rng& r) {
              .out(0.25f).verb(0.04f, 0.15f);
             break;
         // ---- Five Nights at Pieter's
-        case Sfx::Breath:  // slow, heavy, a little growly
-            p.add(L(0, 1.0f, O::Noise).bp(900, 1400, 1.2f).env(0.4f, 0.3f).vol(0.5f))
-             .add(L(0, 1.0f, O::Pink).lp(700).env(0.4f, 0.3f).vol(0.4f))
-             .add(L(1.1f, 1.2f, O::Noise).bp(1300, 650, 1).env(0.15f, 0.6f).vol(0.6f))
-             .add(L(1.1f, 1.2f, O::Saw, r.jit(85, 0.08f), 68).uni(2, 25).lp(420).env(0.1f, 0.5f).vol(0.16f))
-             .out(0.6f).verb(0.2f, 0.35f);
+        case Sfx::Breath:  // inhale through the teeth, then a long wet growl out
+            p.add(L(0, 1.1f, O::Noise).bp(700, 1600, 1.4f).env(0.5f, 0.35f).vol(0.45f))
+             .add(L(0, 1.1f, O::Noise).bp(2600, 3400, 3).env(0.5f, 0.3f).vol(0.12f))
+             .add(L(1.15f, 1.5f, O::Noise).bp(1400, 480, 1.1f).env(0.08f, 0.8f).vol(0.6f))
+             .add(L(1.15f, 1.5f, O::Saw, r.jit(78, 0.08f), 56).uni(3, 30).lp(380, 200).drive(2).trem(0.5f, r.range(26, 36)).env(0.1f, 0.7f).vol(0.3f))
+             .add(L(1.15f, 1.2f, O::Crush, r.range(38, 48)).lp(900).env(0.1f, 0.6f).vol(0.12f))
+             .out(0.62f).verb(0.18f, 0.3f, 0.6f);
             break;
-        case Sfx::Giggle:  // hihihi, falling, with a long eerie echo
+        case Sfx::Giggle: {  // "hihihi": a little girl's voice (formants on a buzzy source) with a ghost an octave down
+            float at = 0;
             for (int i = 0; i < 5; i++) {
-                float at = i * 0.11f, f = r.jit(920, 0.03f) * std::pow(0.94f, (float)i);
-                p.add(L(at, 0.08f, O::Saw, f, f * 0.9f).bp(2400, -1, 3).vib(1, 25).env(0.005f, 0.03f).vol(0.45f))
-                 .add(L(at, 0.07f, O::Noise).bp(3500, -1, 2).env(0.005f, 0.03f).vol(0.1f));
+                float f = r.jit(640, 0.03f) * std::pow(0.95f, (float)i);
+                p.add(L(at, 0.04f, O::Noise).bp(2800, -1, 1.5f).env(0.003f, 0.02f).vol(0.16f))
+                 .add(L(at + 0.025f, 0.085f, O::Saw, f, f * 0.92f).vib(0.8f, 22).bp(420, -1, 4).env(0.006f, 0.04f).vol(0.5f))
+                 .add(L(at + 0.025f, 0.085f, O::Saw, f, f * 0.92f).vib(0.8f, 22).bp(2300, -1, 6).env(0.006f, 0.04f).vol(0.36f))
+                 .add(L(at + 0.025f, 0.085f, O::Saw, f, f * 0.92f).vib(0.8f, 22).bp(3100, -1, 8).env(0.006f, 0.04f).vol(0.18f))
+                 .add(L(at + 0.06f, 0.1f, O::Saw, f * 0.5f, f * 0.44f).bp(900, -1, 3).env(0.01f, 0.05f).vol(0.13f).pan(r.bi() * 0.6f));
+                at += r.jit(0.12f, 0.15f);
             }
-            p.out(0.5f).echo(0.3f, 0.16f, 0.4f).verb(0.35f, 0.7f);
+            p.out(0.5f).echo(0.32f, 0.19f, 0.45f).verb(0.42f, 0.78f);
             break;
+        }
         case Sfx::Heart:  // lub-dub
             p.add(L(0, 0.13f, O::Sine, 72, 45).drop(1, 0.02f).dec(0.04f).vol(0.9f))
              .add(L(0.19f, 0.11f, O::Sine, 62, 40).drop(1, 0.02f).dec(0.035f).vol(0.7f))
@@ -600,12 +607,16 @@ Patch design(Sfx s, Rng& r) {
              .add(L(0, 0.02f, O::Square, 2200, 1500).pw(0.3f).curve(3).vol(0.3f))
              .out(0.3f).verb(0.05f, 0.15f);
             break;
-        case Sfx::Scream:  // jumpscare: detuned, distorted, too loud on purpose
-            p.add(L(0, 1.4f, O::Saw, r.jit(720, 0.05f), 480).uni(6, 60).vib(2, 17).drive(4).bp(1800, 1100, 0.8f).env(0.005f, 0.3f).vol(0.7f))
-             .add(L(0, 1.4f, O::Saw, 1450, 900).uni(4, 80).vib(3, 23).drive(3).hp(1000).env(0.005f, 0.3f).vol(0.4f))
-             .add(L(0, 1.4f, O::Noise).bp(3000, -1, 0.6f).env(0.005f, 0.3f).vol(0.5f))
-             .add(L(0, 0.6f, O::Sine, 80, 30).drop(1, 0.03f).vol(0.8f))
-             .out(0.95f).verb(0.2f, 0.5f);
+        case Sfx::Scream:  // jumpscare: a screaming "AAA" formant voice, a metal screech, a crash and a sub drop
+            for (float fm : {800.0f, 1250.0f, 2600.0f})
+                p.add(L(0, 1.5f, O::Saw, r.jit(560, 0.05f), 380).glide(0.6f).uni(5, 70).vib(1.5f, 19).bp(fm, fm * 0.85f, 3).drive(3).env(0.004f, 0.35f)
+                          .vol(fm < 1000 ? 0.7f : fm < 2000 ? 0.55f : 0.35f));
+            p.add(L(0, 1.3f, O::Sine, r.jit(1900, 0.04f), 1150).fm(1.414f, 9, 3).vib(2.5f, 23).drive(2).hp(700).env(0.004f, 0.3f).vol(0.35f))
+             .add(L(0, 0.9f, O::Noise).hp(3500).dec(0.25f).vol(0.45f))
+             .add(L(0, 1.5f, O::Noise).bp(2400, 1500, 0.7f).env(0.004f, 0.3f).vol(0.4f))
+             .add(L(0, 1.4f, O::Saw, 55, 40).uni(4, 40).drive(4).lp(700, 250).env(0.004f, 0.4f).vol(0.5f))
+             .add(L(0, 0.9f, O::Sine, 90, 28).drop(1.5f, 0.03f).dec(0.3f).vol(0.9f))
+             .out(0.97f).verb(0.22f, 0.55f);
             break;
         case Sfx::Static:
             p.add(L(0, 1.2f, O::Noise).hp(800).trem(0.3f, 13).env(0.02f, 0.2f).vol(0.5f))
@@ -625,18 +636,155 @@ Patch design(Sfx s, Rng& r) {
             p.out(0.45f).echo(0.2f, 0.21f, 0.35f).verb(0.35f, 0.7f);
             break;
         }
-        case Sfx::Drone:  // room tone; retriggered so the copies overlap
-            p.add(L(0, 4, O::Saw, 55).uni(3, 15).lp(220, 180).env(1.2f, 1.2f).vol(0.5f))
-             .add(L(0, 4, O::Sine, 82.4f).trem(0.3f, 0.2f).env(1.2f, 1.2f).vol(0.3f))
-             .add(L(0, 4, O::Pink).lp(500).env(1.2f, 1.2f).vol(0.25f))
-             .add(L(0, 4, O::Sine, r.jit(1567, 0.01f), 1480).vib(0.3f, 0.5f).env(1.5f, 1.5f).vol(0.035f))
-             .out(0.35f).verb(0.4f, 0.8f);
+        case Sfx::Drone:  // room tone: a beating minor second, sub, a breathing wind band and a glassy cluster up high
+            p.add(L(0, 4, O::Sine, 55).env(1.2f, 1.2f).vol(0.4f))
+             .add(L(0, 4, O::Sine, 58.3f).env(1.2f, 1.2f).vol(0.3f))
+             .add(L(0, 4, O::Saw, 41.2f).uni(3, 12).lp(160).env(1.2f, 1.2f).vol(0.35f))
+             .add(L(0, 4, O::Pink).bp(r.range(250, 400), r.range(600, 900), 2).trem(0.5f, 0.3f).env(1.2f, 1.2f).vol(0.35f))
+             .add(L(0, 4, O::Sine, r.jit(1567, 0.01f), 1480).vib(0.3f, 0.5f).env(1.5f, 1.5f).vol(0.03f))
+             .add(L(0, 4, O::Sine, r.jit(1661, 0.01f), 1700).vib(0.25f, 0.37f).env(1.5f, 1.5f).vol(0.025f))
+             .out(0.38f).verb(0.45f, 0.85f);
             break;
         case Sfx::Creak:  // wooden creak
             p.add(L(0, 0.6f, O::Saw, r.jit(140, 0.1f), 110).bp(900, 600, 4).trem(0.6f, 35).env(0.05f, 0.2f).vol(0.6f))
              .add(L(0, 0.6f, O::Square, 280, 240).pw(0.15f).bp(1400, -1, 5).trem(0.7f, 47).vol(0.15f))
              .out(0.45f).verb(0.3f, 0.5f);
             break;
+        case Sfx::Klomp:  // a wooden clog on the hallway tiles: hollow heel, then toe, long hall reverb
+            for (int k = 0; k < 2; k++) {
+                float at = k * r.range(0.07f, 0.1f), g = k ? 0.6f : 1;
+                p.add(L(at, 0.06f, O::Noise).bp(r.jit(1150, 0.1f), -1, 6).dec(0.012f).vol(0.7f * g))
+                 .add(L(at, 0.07f, O::Sine, r.jit(720, 0.06f), 480).dec(0.018f).vol(0.45f * g))
+                 .add(L(at, 0.12f, O::Sine, 190, 120).dec(0.03f).vol(0.35f * g));
+            }
+            p.out(0.5f).verb(0.5f, 0.75f, 0.45f);
+            break;
+        case Sfx::FietsBel: {  // "tring tring": the classic Dutch bike bell, rattling clapper
+            float f = r.jit(2100, 0.015f);
+            const float ratio[] = {1, 2.32f, 4.1f, 6.0f}, gain[] = {0.5f, 0.3f, 0.15f, 0.08f}, dcy[] = {0.6f, 0.35f, 0.2f, 0.12f};
+            for (int k = 0; k < 2; k++)
+                for (int i = 0; i < 4; i++)
+                    p.add(L(k * 0.3f, 1.1f, O::Sine, f * ratio[i]).dec(dcy[i]).trem(0.45f, 30 + i * 3).vol(gain[i]));
+            p.out(0.45f).echo(0.12f, 0.23f, 0.3f).verb(0.4f, 0.8f);
+            break;
+        }
+        case Sfx::Carillon: {  // the church tower's beiaard plays the Wilhelmus, slightly out of tune
+            const int mel[] = {62, 67, 67, 69, 71, 72, 74, 76, 72, 74};
+            const float len[] = {0.5f, 0.5f, 0.38f, 0.38f, 0.38f, 0.38f, 0.5f, 0.38f, 0.38f, 0.9f};
+            float at = 0;
+            for (int i = 0; i < 10; i++) {
+                float f = hz(mel[i] - 0.4f) * r.jit(1, 0.004f);
+                // bell partials: hum, prime, the carillon's minor third, fifth, nominal
+                const float rt[] = {0.5f, 1, 1.2f, 1.5f, 2, 2.97f}, gn[] = {0.3f, 0.45f, 0.3f, 0.12f, 0.25f, 0.08f}, dc[] = {2.2f, 1.4f, 1.0f, 0.7f, 0.6f, 0.3f};
+                for (int k = 0; k < 6; k++) p.add(L(at, 3, O::Sine, f * rt[k]).dec(dc[k]).env(0.002f, 0.3f).vol(gn[k]));
+                at += len[i];
+            }
+            p.out(0.5f).verb(0.5f, 0.9f, 0.3f);
+            break;
+        }
+        case Sfx::Rain:  // a few seconds of rain on the window; retriggered so copies overlap
+            p.add(L(0, 4, O::Pink).lp(3200).env(1.0f, 1.0f).vol(0.5f))
+             .add(L(0, 4, O::Noise).hp(6000).trem(0.3f, 0.7f).env(1.0f, 1.0f).vol(0.12f));
+            for (int i = 0; i < 70; i++) {
+                float at = r.range(0.3f, 3.6f), f = r.range(1600, 4200);
+                p.add(L(at, 0.03f, O::Sine, f, f * 0.6f).dec(0.006f).pan(r.bi() * 0.9f).vol(r.range(0.05f, 0.18f)));
+            }
+            for (int i = 0; i < 4; i++)  // gutter drips
+                p.add(L(r.range(0.5f, 3.4f), 0.08f, O::Sine, r.range(700, 1000), 1400).glide(0.5f).dec(0.02f).pan(0.6f).vol(0.25f));
+            p.out(0.4f).verb(0.2f, 0.4f);
+            break;
+        case Sfx::Wind:  // a gust howling past the window
+            p.add(L(0, 5, O::Pink).bp(r.range(250, 350), r.range(700, 900), 2.5f).trem(0.4f, 0.4f).env(1.8f, 2.0f).pan(-0.6f, 0.6f).vol(0.6f))
+             .add(L(0.5f, 4.5f, O::Noise).bp(r.range(900, 1100), 500, 6).env(1.5f, 1.8f).pan(0.5f, -0.5f).vol(0.3f))
+             .add(L(0.8f, 4, O::Sine, r.range(560, 640), r.range(700, 800)).vib(0.6f, 0.8f).lp(1200).env(1.5f, 1.5f).vol(0.05f))
+             .out(0.45f).verb(0.3f, 0.7f);
+            break;
+        case Sfx::Thunder: {  // close crack, then rolling rumbles
+            p.add(L(0, 0.35f, O::Noise).hp(1200).drive(3).dec(0.07f).vol(0.8f))
+             .add(L(0, 0.5f, O::Crush, 900, 200).dec(0.1f).vol(0.4f))
+             .add(L(0, 4.5f, O::Pink).lp(420, 110).dec(1.4f).vol(0.9f))
+             .add(L(0, 3.5f, O::Sine, 42, 30).trem(0.6f, 3).dec(1.0f).vol(0.6f));
+            for (int i = 0; i < 4; i++)
+                p.add(L(r.range(0.3f, 2.5f), 1.5f, O::Pink).lp(r.range(200, 400)).dec(0.4f).pan(r.bi() * 0.7f).vol(r.range(0.4f, 0.7f)));
+            p.out(0.9f).verb(0.35f, 0.9f, 0.6f);
+            break;
+        }
+        case Sfx::Whisper: {  // breathy syllables ("pie-ter...") drifting past one ear
+            float at = 0, side = r.bi() > 0 ? 1.0f : -1.0f;
+            int n = 2 + (int)(r.f() * 3);
+            for (int i = 0; i < n; i++) {
+                float d = r.range(0.16f, 0.3f), f1 = r.range(300, 750), f2 = r.range(1200, 2600);
+                p.add(L(at, d * 0.35f, O::Noise).bp(r.range(3500, 5500), -1, 2).env(0.01f, 0.03f).pan(side * 0.8f).vol(0.25f))
+                 .add(L(at + d * 0.2f, d, O::Noise).bp(f1, f1 * 0.9f, 7).env(0.03f, 0.08f).pan(side * 0.8f, side * 0.4f).vol(0.7f))
+                 .add(L(at + d * 0.2f, d, O::Noise).bp(f2, f2 * 0.85f, 9).env(0.03f, 0.08f).pan(side * 0.8f, side * 0.4f).vol(0.55f));
+                at += d + r.range(0.05f, 0.18f);
+            }
+            p.out(0.4f).echo(0.2f, 0.27f, 0.4f).verb(0.5f, 0.85f);
+            break;
+        }
+        case Sfx::Knock:  // three knocks on a wooden door
+            for (int k = 0; k < 3; k++) {
+                float at = k * r.range(0.2f, 0.26f);
+                p.add(L(at, 0.12f, O::Sine, r.jit(170, 0.05f), 105).drop(0.8f, 0.01f).dec(0.03f).vol(0.9f))
+                 .add(L(at, 0.06f, O::Noise).bp(900, -1, 2).dec(0.012f).vol(0.6f))
+                 .add(L(at, 0.2f, O::Sine, 95).dec(0.06f).vol(0.4f));
+            }
+            p.out(0.75f).verb(0.3f, 0.55f);
+            break;
+        case Sfx::Monkey: {  // "OOH OOH AAH AAH" turning into a shriek
+            float at = 0;
+            for (int i = 0; i < 5; i++) {
+                bool ah = i >= 2;
+                float f = r.jit(ah ? 820 : 460, 0.05f) * (1 + i * 0.08f), d = ah ? 0.16f : 0.13f;
+                float fa = ah ? 1100 : 550, fb = ah ? 1700 : 950;
+                p.add(L(at, d, O::Saw, f * 0.85f, f * 1.25f).glide(0.6f).vib(0.6f, 18).bp(fa, -1, 4).drive(1.5f).env(0.01f, 0.05f).vol(0.6f))
+                 .add(L(at, d, O::Saw, f * 0.85f, f * 1.25f).glide(0.6f).vib(0.6f, 18).bp(fb, -1, 6).env(0.01f, 0.05f).vol(0.4f))
+                 .add(L(at, d * 0.5f, O::Noise).bp(2500, -1, 2).env(0.005f, 0.03f).vol(0.12f));
+                at += d + 0.05f;
+            }
+            p.add(L(at, 0.55f, O::Saw, r.jit(1500, 0.04f), 1050).vib(1.8f, 21).bp(1800, 1300, 3).drive(2.5f).env(0.01f, 0.25f).vol(0.6f))
+             .add(L(at, 0.55f, O::Saw, r.jit(1500, 0.04f), 1050).vib(1.8f, 21).bp(3000, -1, 5).env(0.01f, 0.25f).vol(0.25f))
+             .out(0.7f).verb(0.3f, 0.6f);
+            break;
+        }
+        case Sfx::Cymbal:  // a wind-up toy monkey clashing its cymbals
+            p.add(L(0, 0.012f, O::Noise).hp(2000).vol(0.6f))
+             .add(L(0, 0.7f, O::Noise).hp(3500).bp(7000, -1, 0.8f).dec(0.18f).vol(0.5f))
+             .add(L(0, 0.7f, O::Sine, r.jit(820, 0.03f)).fm(1.414f, 7, 2).dec(0.2f).vol(0.35f))
+             .add(L(0, 0.7f, O::Sine, r.jit(1330, 0.03f)).fm(1.73f, 5, 1).dec(0.15f).vol(0.25f))
+             .add(L(0.04f, 0.2f, O::Square, 40).pw(0.3f).lp(800).trem(0.8f, 35).vol(0.1f))  // the clockwork
+             .out(0.5f).verb(0.25f, 0.5f);
+            break;
+        case Sfx::Tinnitus:  // ears ringing after a scare
+            p.add(L(0, 4, O::Sine, r.jit(6200, 0.02f)).env(0.05f, 1.5f).dec(1.8f, 0.2f).vol(0.25f))
+             .add(L(0, 4, O::Sine, r.jit(4100, 0.02f)).vib(0.05f, 3).env(0.3f, 1.5f).dec(1.4f).vol(0.1f))
+             .add(L(0, 1.5f, O::Pink).lp(300).dec(0.4f).vol(0.4f))
+             .out(0.3f);
+            break;
+        case Sfx::Scratch:  // claws on the inside of a wooden door
+            for (int k = 0; k < 4; k++) {
+                float at = k * r.range(0.18f, 0.3f), d = r.range(0.12f, 0.22f);
+                p.add(L(at, d, O::Noise).bp(r.range(2500, 3800), r.range(1500, 2200), 4).trem(0.7f, r.range(60, 110)).env(0.01f, 0.05f).vol(0.6f))
+                 .add(L(at, d, O::Saw, r.range(200, 300), r.range(160, 220)).bp(1100, -1, 5).trem(0.6f, 70).env(0.01f, 0.05f).vol(0.15f));
+            }
+            p.out(0.45f).verb(0.25f, 0.4f);
+            break;
+        case Sfx::Riser:  // tension rising, cut off dead
+            p.add(L(0, 3, O::Saw, 110, 233).glide(2).uni(7, 40).lp(300, 4000).env(1.8f, 0.01f).curve(0).vol(0.45f))
+             .add(L(0, 3, O::Noise).hp(400, 6000).env(2.2f, 0.01f).curve(0).vol(0.25f))
+             .add(L(0, 3, O::Sine, 55, 110).glide(2).env(1.5f, 0.01f).curve(0).vol(0.35f))
+             .add(L(0, 3, O::Sine, 1760, 1661).trem(0.8f, 9).env(2.0f, 0.01f).curve(0).vol(0.04f))
+             .out(0.55f);
+            break;
+        case Sfx::Sting: {  // dissonant cluster hit when you see something you shouldn't
+            for (float m : {48.0f, 49.0f, 54.0f, 55.0f, 61.0f})
+                p.add(L(0, 2.2f, O::Saw, hz(m)).uni(3, 18).lp(3000, 600).env(0.004f, 0.6f).dec(0.5f, 0.25f).vol(0.3f));
+            p.add(L(0, 2.0f, O::Saw, hz(91), hz(90)).vib(0.5f, 7).hp(1500).env(0.01f, 0.6f).dec(0.6f, 0.2f).vol(0.12f))
+             .add(L(0, 0.8f, O::Sine, 70, 32).drop(1, 0.03f).dec(0.25f).vol(0.9f))
+             .add(L(0, 0.4f, O::Noise).lp(5000, 400).dec(0.08f).vol(0.4f))
+             .out(0.75f).verb(0.45f, 0.8f);
+            break;
+        }
         case Sfx::Count: break;
     }
     if (p.layers.empty()) p.add(L(0, 0.01f, O::Sine).vol(0));
@@ -649,7 +797,9 @@ const char* name(Sfx s) {
     static const char* names[] = {"click", "hover", "coin", "hurt", "power", "win", "lose", "dash", "boom", "card", "tick", "gem",
                                   "neigh", "chew", "bubble", "whoosh", "drop", "perfect", "jump", "bell", "spawn", "shoot", "error", "kiss",
                                   "pop", "snore", "water", "yawn", "boop", "gulp", "buzz", "msg", "send", "key",
-                                  "breath", "giggle", "heart", "step", "slam", "flash", "scream", "static", "musicbox", "drone", "creak"};
+                                  "breath", "giggle", "heart", "step", "slam", "flash", "scream", "static", "musicbox", "drone", "creak",
+                                  "klomp", "fietsbel", "carillon", "rain", "wind", "thunder", "whisper", "knock", "monkey", "cymbal", "tinnitus",
+                                  "scratch", "riser", "sting"};
     static_assert(sizeof(names) / sizeof(names[0]) == (size_t)Sfx::Count);
     return names[(int)s];
 }

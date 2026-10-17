@@ -10,6 +10,10 @@
 //           closet shut to push him back.
 //   Paardjes - little plush horses that gather on the bed. Light chases them off;
 //           three at once is game over.
+//   Monkey Man - (night 2+) presses his face against the bedroom window. Don't
+//           stare: look at him too long and he bangs on the glass, which wakes the
+//           whole house and pulls Davi and Kira closer. The toy monkey on the desk
+//           clashes its cymbals while he's out there.
 //   Lures  - throw a stroopwafel (Davi) or a boba (Kira) down the hall to send
 //           them back and keep them busy. Uses your inventory, once per door per night.
 #include "engine/Fx.hpp"
@@ -175,6 +179,83 @@ void jackOLantern(Vector2 c, float r, float t, float flicker) {
     fx::endAdd();
 }
 
+// The Monkey Man, face pressed against the glass. angry: 0 staring .. 1 screaming
+void monkeyMan(Vector2 c, float r, float t, float angry) {
+    Color fur = rgba(0x24160eff), skin = rgba(0x6e5040ff), dark = rgba(0x0a0604ff);
+    float jaw = angry * (0.6f + 0.4f * std::sin(t * 40));
+    // tufts, ears, head
+    for (int i = 0; i < 7; i++) {
+        float a = -PI / 2 + (i - 3) * 0.32f;
+        DrawTriangle(c + fromAngle(a - 0.2f, r * 0.85f), c + fromAngle(a, r * 1.25f), c + fromAngle(a + 0.2f, r * 0.85f), fur);
+        DrawTriangle(c + fromAngle(a + 0.2f, r * 0.85f), c + fromAngle(a, r * 1.25f), c + fromAngle(a - 0.2f, r * 0.85f), fur);
+    }
+    for (int k : {-1, 1}) {
+        DrawCircleV({c.x + k * r * 0.98f, c.y - r * 0.05f}, r * 0.33f, fur);
+        DrawCircleV({c.x + k * r * 0.98f, c.y - r * 0.05f}, r * 0.2f, skin);
+    }
+    DrawCircleV(c, r, fur);
+    // face mask: two eye lobes + muzzle
+    for (int k : {-1, 1}) DrawCircleV({c.x + k * r * 0.3f, c.y - r * 0.12f}, r * 0.36f, skin);
+    DrawEllipse((int)c.x, (int)(c.y + r * 0.34f + jaw * r * 0.08f), r * 0.52f, r * (0.36f + jaw * 0.1f), skin);
+    DrawEllipse((int)c.x, (int)(c.y - r * 0.4f), r * 0.66f, r * 0.13f, fur);  // heavy brow
+    // eyes: deep sockets
+    for (int k : {-1, 1}) {
+        DrawCircleV({c.x + k * r * 0.28f, c.y - r * 0.14f}, r * 0.13f, dark);
+        DrawCircleV({c.x + k * r * 0.28f, c.y - r * 0.14f}, r * 0.05f, rgba(0xffe080ff));
+    }
+    for (int k : {-1, 1}) DrawEllipse((int)(c.x + k * r * 0.09f), (int)(c.y + r * 0.18f), r * 0.05f, r * 0.035f, dark);
+    // mouth: a line, or a screaming hole with fangs
+    Vector2 m{c.x, c.y + r * 0.46f};
+    if (jaw < 0.05f) {
+        DrawLineEx({m.x - r * 0.25f, m.y}, {m.x + r * 0.25f, m.y}, std::max(1.5f, r * 0.04f), dark);
+    } else {
+        DrawEllipse((int)m.x, (int)(m.y + r * 0.05f), r * 0.3f, r * (0.06f + 0.18f * jaw), dark);
+        Color fang = rgba(0xe8dcc0ff);
+        for (int k : {-1, 1}) {
+            Vector2 a{m.x + k * r * 0.2f, m.y - r * 0.02f}, b{m.x + k * r * 0.12f, m.y - r * 0.02f}, tip{m.x + k * r * 0.16f, m.y + r * 0.14f * jaw};
+            DrawTriangle(a, b, tip, fang);
+            DrawTriangle(b, a, tip, fang);
+        }
+    }
+}
+
+// A windmill on the polder, black against the sky
+void windmill(Vector2 base, float s, float t, Color c) {
+    DrawTriangle({base.x - 13 * s, base.y}, {base.x + 13 * s, base.y}, {base.x + 7 * s, base.y - 62 * s}, c);
+    DrawTriangle({base.x - 13 * s, base.y}, {base.x + 7 * s, base.y - 62 * s}, {base.x - 7 * s, base.y - 62 * s}, c);
+    DrawCircleSector({base.x, base.y - 62 * s}, 9 * s, 180, 360, 10, c);
+    Vector2 hub{base.x, base.y - 60 * s};
+    for (int i = 0; i < 4; i++) {
+        float a = t * 0.5f + i * PI / 2;
+        Vector2 d = fromAngle(a, 1), n{-d.y, d.x};
+        Vector2 p0 = hub + d * (6 * s), p1 = hub + d * (42 * s);
+        DrawLineEx(hub, p1, 2.2f * s, c);
+        // lattice sail on one side of the stock
+        Vector2 q0 = p0 + n * (7 * s), q1 = p1 + n * (7 * s);
+        DrawLineEx(q0, q1, 1.2f * s, c);
+        for (int k = 0; k <= 5; k++) DrawLineEx(Vector2Lerp(p0, p1, k / 5.0f), Vector2Lerp(q0, q1, k / 5.0f), 1.0f * s, c);
+    }
+    DrawCircleV(hub, 2.5f * s, c);
+}
+
+// The wind-up toy monkey on the desk. clash: 0..1, cymbals closing
+void toyMonkey(Vector2 feet, float s, float clash) {
+    Color fur = rgba(0x6a4428ff), face = rgba(0xd8b088ff), gold = rgba(0xe0b040ff);
+    DrawEllipse((int)feet.x, (int)(feet.y - 14 * s), 11 * s, 14 * s, fur);
+    DrawRectangleRec({feet.x - 10 * s, feet.y - 20 * s, 20 * s, 9 * s}, rgba(0xb02030ff));  // little red vest
+    DrawCircleV({feet.x, feet.y - 34 * s}, 10 * s, fur);
+    for (int k : {-1, 1}) DrawCircleV({feet.x + k * 10 * s, feet.y - 36 * s}, 4 * s, face);
+    DrawEllipse((int)feet.x, (int)(feet.y - 31 * s), 6 * s, 5 * s, face);
+    DrawRectangleRec({feet.x - 5 * s, feet.y - 49 * s, 10 * s, 6 * s}, rgba(0xb02030ff));  // fez
+    for (int k : {-1, 1}) {
+        DrawCircleV({feet.x + k * 3 * s, feet.y - 36 * s}, 1.6f * s, BLACK);
+        float x = feet.x + k * lerpf(20, 5, clash) * s;
+        DrawLineEx({feet.x + k * 8 * s, feet.y - 20 * s}, {x, feet.y - 22 * s}, 3 * s, fur);
+        DrawEllipse((int)x, (int)(feet.y - 22 * s), 2.5f * s, 9 * s, gold);
+        DrawEllipse((int)x, (int)(feet.y - 22 * s), 1.2f * s, 4 * s, lighten(gold, 0.4f));
+    }
+}
+
 // ====================================================================== scene
 
 class FnapScene : public Scene {
@@ -216,6 +297,7 @@ public:
         SetTextureFilter(lm_.texture, TEXTURE_FILTER_BILINEAR);
         env_.horror = true;
         env_.lights = 0;
+        env_.outside = [this] { outsideWindow(); };
         env_.hour = 1;
 
         // dev hooks for screenshots: PG_FNAP=<night 1-6> starts playing at once,
@@ -244,13 +326,16 @@ public:
             if (const char* tt = std::getenv("PG_FNAP_T")) nightT_ = (float)std::atof(tt);
             if (std::getenv("PG_FNAP_INTRO")) phase_ = Phase::Intro;
             if (const char* sc = std::getenv("PG_FNAP_SCARE")) jumpscare((Who)std::clamp(std::atoi(sc), 0, 3));
+            if (std::getenv("PG_FNAP_MONKEY")) { monkeyOn_ = true; monkeyRise_ = 1; }
+            if (std::getenv("PG_FNAP_BOLT")) { devBolt_ = true; thunderT_ = 999; }
         }
     }
 
     void exit() override {
         // the music box, drone and friends are long one-shots: cut them so they
         // don't play over the menu music
-        for (Sfx x : {Sfx::MusicBox, Sfx::Drone, Sfx::Breath, Sfx::Giggle, Sfx::Heart, Sfx::Static, Sfx::Scream, Sfx::Creak, Sfx::Step})
+        for (Sfx x : {Sfx::MusicBox, Sfx::Drone, Sfx::Breath, Sfx::Giggle, Sfx::Heart, Sfx::Static, Sfx::Scream, Sfx::Creak, Sfx::Step,
+                  Sfx::Rain, Sfx::Wind, Sfx::Thunder, Sfx::Carillon, Sfx::Whisper, Sfx::Riser, Sfx::Sting, Sfx::Tinnitus, Sfx::Monkey})
             E().sfx.stop(x);
         P().save();
     }
@@ -259,7 +344,7 @@ public:
     struct Hall {
         int stage = 0;        // 0 away, 1 end of the hall, 2 halfway, 3 right at the door
         float moveT = 0, attackT = 0, heldT = 0, needHold = 0, flashT = 0, stunT = 0, cueT = 0;
-        bool lureUsed = false, hidden = false;
+        bool lureUsed = false, hidden = false, seen = false;  // seen: the stinger already played for this approach
         float lureAnim = -1;  // >= 0 while a lure is flying down the hall
     };
 
@@ -290,6 +375,14 @@ public:
         phase_ = Phase::Intro;
         introT_ = 0;
         introNote_ = n == 0;
+        lastHour_ = 0;
+        monkeyOn_ = false;
+        monkeyRise_ = 0;
+        monkeyNext_ = rnd(35, 60);
+        whisperT_ = rnd(12, 25);
+        knockT_ = rnd(30, 55);
+        subT_ = 0;
+        clashAnim_ = 0;
     }
 
     int level(int base) const { return base + (hour() >= 2) + (hour() >= 4); }
@@ -309,10 +402,14 @@ public:
         phase_ = Phase::Scare;
         scareWho_ = w;
         scareT_ = 0;
+        for (Sfx x : {Sfx::Riser, Sfx::MusicBox, Sfx::Whisper}) E().sfx.stop(x);
         E().sfx.play(Sfx::Scream, 1.0f);
+        E().sfx.play(Sfx::Sting, 0.8f, 0.9f);
         E().sfx.play(Sfx::Boom, 0.8f);
+        if (w == Who::Paardjes) E().sfx.play(Sfx::Neigh, 0.9f, 0.6f);
         E().shake(30);
         E().aberrate(0.03f);
+        E().flash(WHITE, 0.7f);
     }
 
     void winNight() {
@@ -370,11 +467,15 @@ public:
             case Phase::Play: updatePlay(dt); break;
             case Phase::Scare:
                 scareT_ += dt;
-                if (scareT_ < 1.2f) E().shake(6);
+                if (scareT_ < 1.2f) {
+                    E().shake(6);
+                    E().aberrate(0.02f * (1 - scareT_ / 1.2f));
+                }
                 if (scareT_ > 1.5f) {
                     phase_ = Phase::GameOver;
                     overT_ = 0;
                     E().sfx.play(Sfx::Static, 0.7f);
+                    E().sfx.play(Sfx::Tinnitus, 0.6f);
                 }
                 break;
             case Phase::GameOver:
@@ -403,6 +504,45 @@ public:
             droneT_ = 3.2f;
             E().sfx.play(Sfx::Drone, 0.55f, rnd(0.97f, 1.03f));
         }
+        // it's always raining in Holland
+        rainT_ -= dt;
+        if (rainT_ <= 0) {
+            rainT_ = 3.1f;
+            bool inside = phase_ == Phase::Play && view_ != View::Center;  // the window is in the bedroom
+            E().sfx.play(Sfx::Rain, inside ? 0.22f : 0.4f, rnd(0.95f, 1.05f), 0.25f);
+        }
+        windT_ -= dt;
+        if (windT_ <= 0) {
+            windT_ = rnd(7, 16);
+            E().sfx.play(Sfx::Wind, rnd(0.25f, 0.45f), rnd(0.85f, 1.15f));
+        }
+        // lightning, and the thunder a moment later
+        thunderT_ -= dt;
+        if (thunderT_ <= 0) {
+            thunderT_ = rnd(20, 42);
+            boltT_ = 0;
+            thunderDelay_ = rnd(0.15f, 1.3f);
+        }
+        if (devBolt_) boltT_ = 0.2f;
+        else if (boltT_ >= 0) {
+            boltT_ += dt;
+            if (thunderDelay_ > 0 && boltT_ >= thunderDelay_) {
+                thunderDelay_ = -1;
+                E().sfx.play(Sfx::Thunder, rnd(0.6f, 0.9f), rnd(0.85f, 1.1f), rnd(-0.4f, 0.4f));
+                E().shake(3);
+            }
+            if (boltT_ > 3) boltT_ = -1;
+        }
+    }
+
+    // flicker pattern of a lightning strike: flash, dip, second flash, fade
+    float lightning() const {
+        if (boltT_ < 0) return 0;
+        float t = boltT_;
+        if (t < 0.06f) return 1;
+        if (t < 0.11f) return 0.15f;
+        if (t < 0.17f) return 0.85f;
+        return 0.85f * std::exp(-(t - 0.17f) * 7);
     }
 
     void updateTitle(float dt) {
@@ -488,6 +628,7 @@ public:
                     h.moveT = (s == 0 ? 4.6f : 4.0f) * rnd(0.8f, 1.2f);
                     if (rndi(1, 20) <= lvl) {
                         h.stage++;
+                        h.seen = false;
                         if (h.stage == 3) {
                             h.attackT = std::max(4.5f, 8.5f - night_ * 0.6f);
                             h.heldT = 0;
@@ -495,11 +636,24 @@ public:
                             h.cueT = 0;
                         } else {
                             if (s == 1 && h.stage == 2) h.hidden = rndi(0, 100) < 30;
-                            E().sfx.play(Sfx::Step, here ? 0.5f : 0.25f, 0.85f, s == 0 ? -0.7f : 0.7f);
-                            if (!here) caption(s == 0 ? "[ footsteps - left hall ]" : "[ footsteps - right hall ]", col::muted, 2);
+                            // Davi clomps around in his klompen; Kira rings the bell of the omafiets in the hall
+                            float near = here ? 0.6f : h.stage == 2 ? 0.35f : 0.2f;
+                            if (s == 0) {
+                                E().sfx.play(Sfx::Klomp, near, rnd(0.9f, 1.05f), -0.7f);
+                                klompEcho_ = 0.45f;
+                            } else {
+                                E().sfx.play(Sfx::FietsBel, near * 0.7f, rnd(0.78f, 0.86f), 0.7f);
+                            }
+                            if (!here) caption(s == 0 ? "[ klompen clacking - left hall ]" : "[ a bike bell rings - right hall ]", col::muted, 2);
                         }
                     }
                 }
+            }
+            // seeing them (flashlight or lightning) for the first time this approach: stinger
+            if (here && (h.stage == 1 || h.stage == 2) && !h.hidden && !h.seen && ((light && !hold) || lightning() > 0.5f) && !devFreeze_) {
+                h.seen = true;
+                E().sfx.play(Sfx::Sting, h.stage == 2 ? 0.65f : 0.35f, rnd(0.95f, 1.05f), s == 0 ? -0.3f : 0.3f);
+                if (h.stage == 2) E().aberrate(0.008f);
             }
             // flashlight in the hall
             if (here && light && !hold) {
@@ -552,6 +706,7 @@ public:
                 horseT_ = 6.0f * rnd(0.8f, 1.2f);
                 if (rndi(1, 20) <= level(ai.horse) + (paardjes_ >= 2 ? 3 : 0)) {
                     horse_++;
+                    if (horse_ >= 2) E().sfx.play(Sfx::Scratch, horse_ >= 3 ? 0.5f : 0.25f, rnd(0.9f, 1.1f));
                     if (horse_ >= 3) {
                         E().sfx.play(Sfx::Creak, 0.45f, 0.7f);
                         caption("[ something scratching inside the closet ]", col::orange);
@@ -623,6 +778,7 @@ public:
                     pcOn_ = true;
                     pcSongT_ = 0;
                     E().sfx.play(Sfx::Static, 0.5f);
+                    clash();
                 }
             }
         }
@@ -634,6 +790,10 @@ public:
             }
             caption("[ a music box is playing from the PC ]", col::violet, 0.3f);
         }
+
+        updateMonkey(dt);
+        if (phase_ != Phase::Play) return;
+        events(dt);
 
         // --- heartbeat speeds up with danger
         float dg = danger();
@@ -649,6 +809,107 @@ public:
         flashScare_ = std::max(0.0f, flashScare_ - dt * 2);
 
         if (E().backPressed()) phase_ = Phase::Title;
+    }
+
+    void clash() {
+        clashAnim_ = 1;
+        E().sfx.play(Sfx::Cymbal, view_ == View::Center ? 0.45f : 0.22f, rnd(0.95f, 1.05f), 0.5f);
+    }
+
+    // The Monkey Man at the window: harmless, unless you keep looking at him.
+    void updateMonkey(float dt) {
+        clashAnim_ = std::max(0.0f, clashAnim_ - dt * 5);
+        bool watching = view_ == View::Center && moveT_ <= 0;
+        if (!monkeyOn_) {
+            monkeyRise_ = damp(monkeyRise_, 0, 6, dt);
+            monkeyBang_ = std::max(0.0f, monkeyBang_ - dt * 2);
+            if (night_ < 1 || devFreeze_) return;
+            monkeyNext_ -= dt;
+            if (monkeyNext_ <= 0) {
+                monkeyOn_ = true;
+                monkeyT_ = monkeyStare_ = 0;
+                riser_ = false;
+                E().sfx.play(Sfx::Knock, 0.12f, 1.9f, 0.5f);  // tik tik on the glass
+                caption("[ tik... tik... something at the window ]", col::orange, 3);
+            }
+            return;
+        }
+        monkeyT_ += dt;
+        monkeyRise_ = damp(monkeyRise_, 1, 3, dt);
+        if (std::fmod(monkeyT_, 1.3f) < dt) clash();
+        if (watching) {
+            monkeyStare_ += dt;
+            if (monkeyStare_ > 1.6f && !riser_) {
+                riser_ = true;
+                E().sfx.play(Sfx::Riser, 0.5f);
+                caption("[ don't look at him ]", col::red, 2);
+            }
+        } else if (riser_) {
+            riser_ = false;
+            monkeyStare_ = std::min(monkeyStare_, 1.0f);
+            E().sfx.stop(Sfx::Riser);
+        }
+        if (monkeyStare_ >= 4.6f) {
+            // BANG BANG BANG: the whole house is awake now
+            monkeyOn_ = false;
+            monkeyBang_ = 1;
+            monkeyNext_ = rnd(40, 70) - night_ * 4;
+            E().sfx.stop(Sfx::Riser);
+            E().sfx.play(Sfx::Knock, 1.0f, 0.7f, 0.5f);
+            E().sfx.play(Sfx::Monkey, 0.9f, rnd(0.9f, 1.05f), 0.4f);
+            E().sfx.play(Sfx::Boom, 0.4f, 1.4f);
+            clash();
+            E().shake(14);
+            E().aberrate(0.012f);
+            for (auto& h : hall_)
+                if (h.stage < 2 && h.stunT <= 0) {
+                    h.stage++;
+                    h.seen = false;
+                }
+            caption("[ the Monkey Man woke up the whole house ]", col::red, 3.5f);
+        } else if (monkeyT_ > 11) {
+            monkeyOn_ = false;
+            monkeyNext_ = rnd(40, 70) - night_ * 4;
+            caption("[ the window is empty again ]", col::muted);
+        }
+    }
+
+    // Things that go bump in the night: the church bells, whispers, knocking, flashes.
+    void events(float dt) {
+        if (hour() != lastHour_) {
+            lastHour_ = hour();
+            if (lastHour_ > 0 && lastHour_ < 6) {
+                E().sfx.play(Sfx::Carillon, 0.4f, 0.98f);
+                caption("[ the church carillon plays - " + clockText() + " ]", col::gold, 4);
+                hourPulse_ = 1;
+            }
+        }
+        hourPulse_ = std::max(0.0f, hourPulse_ - dt * 0.5f);
+        if (klompEcho_ > 0 && (klompEcho_ -= dt) <= 0) E().sfx.play(Sfx::Klomp, 0.15f, rnd(0.88f, 0.95f), -0.8f);
+        if (night_ >= 1) {
+            whisperT_ -= dt;
+            if (whisperT_ <= 0) {
+                whisperT_ = rnd(14, 32) - night_ * 1.5f;
+                E().sfx.play(Sfx::Whisper, rnd(0.3f, 0.5f), rnd(0.9f, 1.1f));
+                caption("[ whispering... \"pieter...\" ]", col::muted, 2);
+            }
+        }
+        if (night_ >= 2) {  // knocking at a door - maybe nobody's there
+            knockT_ -= dt;
+            if (knockT_ <= 0) {
+                knockT_ = rnd(28, 55);
+                bool left = chance(0.5f);
+                E().sfx.play(Sfx::Knock, 0.45f, rnd(0.9f, 1.05f), left ? -0.8f : 0.8f);
+                caption(left ? "[ knocking - left door ]" : "[ knocking - right door ]", col::muted, 2);
+            }
+        }
+        // when things get bad you start seeing faces
+        subT_ = std::max(0.0f, subT_ - dt);
+        if (danger() > 0.5f && subT_ <= 0 && chance(dt * 0.04f * (1 + night_ * 0.3f))) {
+            subT_ = 0.07f;
+            subFace_ = rndi(0, 2);
+            E().sfx.play(Sfx::Static, 0.25f, 1.3f);
+        }
     }
 
     float danger() const {
@@ -703,6 +964,10 @@ public:
         fx::glow({70, 330}, 230, alpha(rgba(0x6878d8ff), 0.45f));  // moonlight spilling in from both halls
         fx::glow({VW - 70.0f, 330}, 230, alpha(rgba(0x6878d8ff), 0.45f));
         if (pcOn_) fx::glow({1030, 350}, 420, alpha(std::fmod(t_, 0.5f) < 0.25f ? col::pink : col::red, 0.8f));
+        if (float L = lightning(); L > 0) {
+            fx::glow({975, 190}, 900, alpha(rgba(0xc8d4ffff), 0.9f * L));
+            fx::glow({975, 600}, 500, alpha(rgba(0xc8d4ffff), 0.5f * L));
+        }
         fx::endAdd();
         rlPopMatrix();
         EndTextureMode();
@@ -710,6 +975,7 @@ public:
 
     // ============================================================ draw: shared
     void darkness(float level, bool light) {
+        level *= 1 - 0.6f * lightning();
         // pitch black except for the flashlight
         if (!light || flicker_ > 0) {
             DrawRectangle(-50, -50, VW + 100, VH + 100, alpha(BLACK, level));
@@ -761,7 +1027,7 @@ public:
 
     void drawHud() {
         // clock
-        ui::textShadow(clockText(), VW - 30, 44, 44, rgba(0xf4ecffff), ui::Right, true, 3);
+        ui::textShadow(clockText(), VW - 30, 44, 44, mix(rgba(0xf4ecffff), col::gold, hourPulse_), ui::Right, true, 3);
         ui::text("NIGHT " + std::to_string(night_ + 1), VW - 30, 82, 18, col::muted, ui::Right, true);
         // lures
         for (int s = 0; s < 2; s++) {
@@ -831,6 +1097,67 @@ public:
         for (int s = 0; s < 2; s++)
             if (hall_[s].stage >= 2 && !hall_[s].hidden) eyesOnly(s, doorEyePos_[s], hall_[s].stage == 3 ? 120 : 80, hall_[s].stage == 3 ? 0.9f : 0.6f, t_);
         if (horse_ >= 2) eyesOnly(2, {655 - 26, 296}, 60, 0.3f + 0.2f * horse_, t_);
+        // the lightning lights up the halls behind the doors, and shows who's standing in them
+        if (float L = lightning(); L > 0.2f)
+            for (int s = 0; s < 2; s++) {
+                quad(doorQuad_[s][0], doorQuad_[s][1], doorQuad_[s][2], doorQuad_[s][3], alpha(rgba(0x9aa8e0ff), 0.55f * L), alpha(rgba(0x404870ff), 0.4f * L));
+                if (hall_[s].stage == 3) {
+                    Vector2 c = doorEyePos_[s];
+                    Color k = alpha(BLACK, 0.9f * L);
+                    DrawCircleV({c.x, c.y}, 26, k);
+                    DrawRectangleRounded({c.x - 34, c.y + 22, 68, 150}, 0.4f, 6, k);
+                    for (int a : {-1, 1}) DrawLineEx({c.x + a * 30, c.y + 40}, {c.x + a * 44, c.y + 170}, 12, k);
+                }
+            }
+        if (monkeyRise_ > 0.3f) {
+            fx::beginAdd();
+            for (int k : {-1, 1}) {
+                Vector2 e = monkeyHead() + Vector2{k * kMonkeyR * 0.28f, -kMonkeyR * 0.14f};
+                fx::glow(e, 18, alpha(rgba(0xffb020ff), 0.6f * monkeyRise_));
+                fx::glow(e, 5, alpha(WHITE, 0.8f * monkeyRise_));
+            }
+            fx::endAdd();
+        }
+    }
+
+    static constexpr float kMonkeyR = 44;
+    Vector2 monkeyHead() const {
+        Rectangle g = room::kWindowGlass;
+        float bang = monkeyBang_ > 0 ? std::sin(monkeyBang_ * 40) * 4 : 0;
+        return {g.x + 70 + std::sin(t_ * 0.7f) * 6 + bang, g.y + g.height + 70 - lerpf(0, 150, easeOutCubic(clamp01(monkeyRise_)))};
+    }
+
+    // drawn behind the glass of the bedroom window
+    void outsideWindow() {
+        Rectangle g = room::kWindowGlass;
+        float L = lightning();
+        if (L > 0) DrawRectangleRec(g, alpha(rgba(0xd8e0ffff), 0.75f * L));
+        if (L > 0.5f && std::fmod(t_ * 7, 1) < 0.5f) {  // the bolt itself
+            Vector2 p{g.x + 150, g.y};
+            for (int i = 0; i < 6; i++) {
+                Vector2 q = p + Vector2{(hash(i + std::floor(thunderT_)) - 0.5f) * 30, g.height / 6};
+                DrawLineEx(p, q, 2, alpha(WHITE, L));
+                p = q;
+            }
+        }
+        windmill({g.x + 170, g.y + g.height + 2}, 0.9f, t_, rgba(0x0a0618ff));
+        if (monkeyRise_ > 0.02f || monkeyBang_ > 0) {
+            Vector2 h = monkeyHead();
+            float angry = std::max(monkeyBang_, riser_ ? clamp01((monkeyStare_ - 1.6f) / 3) * 0.5f : 0);
+            // hands on the glass
+            for (int k : {-1, 1}) {
+                Vector2 hand{h.x + k * 66, h.y + 30 - (monkeyBang_ > 0 ? std::abs(std::sin(monkeyBang_ * 20)) * 16 : 0)};
+                DrawEllipse((int)hand.x, (int)hand.y, 14, 17, rgba(0x4a3428ff));
+                for (int f = 0; f < 4; f++) DrawLineEx(hand, hand + Vector2{(f - 1.5f) * 7.0f, -26}, 6, rgba(0x4a3428ff));
+            }
+            monkeyMan(h, kMonkeyR, t_, angry);
+        }
+        // rain running down the glass
+        for (int i = 0; i < 26; i++) {
+            float x = g.x + hash(i + 0.3f) * g.width, sp = 120 + hash(i + 5.0f) * 120;
+            float y = g.y - 20 + std::fmod(t_ * sp + hash(i + 2.0f) * 400, g.height + 40);
+            DrawLineEx({x, y}, {x - 2, y + 12}, 1.2f, alpha(rgba(0xc0d0ffff), 0.25f));
+        }
     }
 
     void closetCenter() {
@@ -864,6 +1191,7 @@ public:
         closetCenter();
         room::drawBed(env_);
         room::drawDesk(env_);
+        toyMonkey({922, 450}, 1.1f, clashAnim_);
         // Kira's prank on the monitor
         Rectangle mon{926, 286, 210, 120};
         if (pcOn_) {
@@ -880,6 +1208,11 @@ public:
         DrawTexturePro(lm_.texture, {0, 0, (float)lm_.texture.width, -(float)lm_.texture.height}, {0, 0, (float)VW, (float)VH}, {0, 0}, 0, WHITE);
         EndBlendMode();
         room::drawBloom(env_);
+        if (float L = lightning(); L > 0) {
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawRectangle(-100, -100, VW + 200, VH + 200, alpha(rgba(0x8090c0ff), 0.18f * L));
+            EndBlendMode();
+        }
         centerEyes();
         // hotspots
         if (moveT_ <= 0 && phase_ == Phase::Play) hotspots();
@@ -937,21 +1270,48 @@ public:
         DrawRectangle(-60, -20, VW + 120, VH + 40, rgba(0x2a1a50ff));
         for (int x = -60; x < VW + 60; x += 48) DrawRectangle(x, -20, 22, VH + 40, alpha(WHITE, 0.02f));
         // light switch + a poster
-        float sx = side == 0 ? 1080 : 200;
+        float sx = side == 0 ? 1080 : 236;
         DrawRectangleRounded({sx - 18, 330, 36, 56}, 0.2f, 6, rgba(0xd8d0e0ff));
         DrawRectangleRounded({sx - 6, 344, 12, 26}, 0.3f, 6, rgba(0xa098b0ff));
-        Rectangle poster{side == 0 ? 1030.0f : 40.0f, 90, 210, 150};
-        DrawRectangleRec(poster, rgba(0x15121cff));
-        ui::text(side == 0 ? "JUHUH" : "SKIBIDI", poster.x + poster.width / 2, poster.y + 60, 40, col::pink, ui::Center, true);
-        ui::text(side == 0 ? "horse gang" : "pieter", poster.x + poster.width / 2, poster.y + 104, 20, col::muted, ui::Center, true);
+        if (side == 0) {
+            // a Delft blue tegeltje with a house saying. It changes as the nights go on.
+            Rectangle tile{1050, 120, 170, 170};
+            DrawRectangleRec({tile.x + 6, tile.y + 8, tile.width, tile.height}, alpha(BLACK, 0.4f));
+            DrawRectangleRec(tile, rgba(0xe8eef8ff));
+            DrawRectangleLinesEx(shrink(tile, 8), 3, rgba(0x2a4aa8ff));
+            for (Vector2 c : {Vector2{tile.x + 20, tile.y + 20}, {tile.x + tile.width - 20, tile.y + 20}, {tile.x + 20, tile.y + tile.height - 20},
+                              {tile.x + tile.width - 20, tile.y + tile.height - 20}})
+                DrawPoly(c, 4, 7, 45, rgba(0x2a4aa8ff));
+            bool late = night_ >= 3;
+            Color ink = rgba(0x1e3a90ff);
+            ui::text("Oost west,", tile.x + tile.width / 2, tile.y + 62, 22, ink, ui::Center, true);
+            ui::text(late ? "niemand" : "thuis", tile.x + tile.width / 2, tile.y + 92, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
+            ui::text(late ? "komt thuis" : "best", tile.x + tile.width / 2, tile.y + 122, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
+        } else {
+            // gig poster: Monkey Men live in the Paradiso
+            Rectangle poster{24, 110, 180, 230};
+            DrawRectangleRec({poster.x + 6, poster.y + 8, poster.width, poster.height}, alpha(BLACK, 0.4f));
+            DrawRectangleRec(poster, rgba(0xd8c070ff));
+            DrawRectangleRec(shrink(poster, 10), rgba(0x1a1210ff));
+            monkeyMan({poster.x + poster.width / 2, poster.y + 92}, 42, t_, 0.6f);
+            ui::text("MONKEY MEN", poster.x + poster.width / 2, poster.y + 166, 22, rgba(0xffd84aff), ui::Center, true);
+            ui::text("live @ Paradiso", poster.x + poster.width / 2, poster.y + 190, 15, rgba(0xe8e0d0ff), ui::Center, true);
+            ui::text("31 OKT  -  UITVERKOCHT", poster.x + poster.width / 2, poster.y + 210, 11, rgba(0xff6a4aff), ui::Center, true);
+        }
 
         E().beginClip({kOpening.x + pan.x, kOpening.y, kOpening.width, kOpening.height});
         // far wall + window with the moon
         Vector2 ftl = hallPt(-1, -1, 1), fbr = hallPt(1, 1, 1);
         DrawRectangleV(ftl, fbr - ftl, rgba(0x1c1430ff));
         Rectangle win{kVPx - 26, kVPy - 44, 52, 62};
-        DrawRectangleRec(win, rgba(0x1a2050ff));
+        float L = lightning();
+        DrawRectangleRec(win, mix(rgba(0x1a2050ff), rgba(0xd8e0ffff), L));
         DrawCircleV({win.x + 34, win.y + 18}, 9, rgba(0xfff6d8ff));
+        windmill({win.x + 16, win.y + win.height}, 0.4f, t_, rgba(0x0a0618ff));
+        for (int i = 0; i < 6; i++) {
+            float x = win.x + hash(i + 1.7f) * win.width, y = win.y + std::fmod(t_ * 60 + hash(i) * 80, win.height);
+            DrawLineEx({x, y}, {x - 1, y + 5}, 1, alpha(rgba(0xc0d0ffff), 0.3f));
+        }
         DrawLineEx({win.x + win.width / 2, win.y}, {win.x + win.width / 2, win.y + win.height}, 3, rgba(0x0c0814ff));
         DrawLineEx({win.x, win.y + win.height / 2}, {win.x + win.width, win.y + win.height / 2}, 3, rgba(0x0c0814ff));
         DrawRectangleLinesEx(win, 3, rgba(0x0c0814ff));
@@ -982,6 +1342,18 @@ public:
                 DrawEllipse((int)p.x + (int)(6 * s), (int)p.y, 6 * s, 18 * s, rgba(0x2a4aa8ff));
                 DrawEllipse((int)p.x + (int)(6 * s), (int)p.y, 3 * s, 9 * s, rgba(0xe8eef8ff));
             }
+            // Davi's klompen by the wall. When they're gone, he's wearing them.
+            if (hall_[0].stage == 0) {
+                float kd = 0.22f, ks = hallScale(kd);
+                Vector2 k = hallPt(-0.86f, 1, kd);
+                for (int i = 0; i < 2; i++) {
+                    Vector2 c{k.x + i * 46 * ks, k.y - 14 * ks - i * 4 * ks};
+                    DrawEllipse((int)c.x, (int)(c.y + 12 * ks), 30 * ks, 8 * ks, alpha(BLACK, 0.4f));
+                    DrawEllipse((int)c.x, (int)c.y, 30 * ks, 13 * ks, rgba(0xe8c040ff));
+                    DrawEllipse((int)(c.x + 14 * ks), (int)(c.y - 9 * ks), 13 * ks, 6 * ks, rgba(0x2a1a10ff));
+                    DrawEllipse((int)(c.x - 10 * ks), (int)(c.y - 2 * ks), 7 * ks, 4 * ks, rgba(0xc83020ff));
+                }
+            }
             float d = 0.72f, s = hallScale(d);
             Vector2 p = hallPt(-1, -0.2f, d);
             DrawRectangleRec({p.x + 2, p.y - 30 * s, 14 * s, 50 * s}, rgba(0x6a4a2aff));
@@ -1000,6 +1372,24 @@ public:
             float rs = hallScale(0.7f);
             DrawLineEx(rack, {rack.x, rack.y + 120 * rs}, 4 * rs, rgba(0x5a3a2aff));
             DrawRectangleRec({rack.x - 12 * rs, rack.y + 8 * rs, 20 * rs, 50 * rs}, rgba(0xff7a1aff));  // orange Koningsdag scarf
+        }
+        // tulips in a vase, wilting a little more every night
+        {
+            float d = 0.3f, s = hallScale(d);
+            Vector2 v = hallPt(side == 0 ? 0.78f : -0.78f, 1, d);
+            DrawRectangleRounded({v.x - 14 * s, v.y - 50 * s, 28 * s, 50 * s}, 0.4f, 6, rgba(0x2a4aa8ff));
+            DrawRectangleRounded({v.x - 9 * s, v.y - 38 * s, 18 * s, 16 * s}, 0.4f, 6, rgba(0xe8eef8ff));
+            float droop = 0.15f + night_ * 0.22f;
+            for (int i = 0; i < 3; i++) {
+                float a = -PI / 2 + (i - 1) * 0.35f + droop * (i - 1 >= 0 ? 1 : -1) * (0.6f + i * 0.3f);
+                Vector2 b{v.x + (i - 1) * 5 * s, v.y - 50 * s};
+                Vector2 m = b + fromAngle(-PI / 2 + (i - 1) * 0.2f, 34 * s), tip = m + fromAngle(a + droop, 26 * s);
+                DrawLineEx(b, m, 2.5f * s, rgba(0x2a4a2aff));
+                DrawLineEx(m, tip, 2.5f * s, rgba(0x2a4a2aff));
+                Color petal = mix(rgba(0xc81a30ff), rgba(0x3a1a20ff), clamp01(night_ / 5.0f));
+                DrawEllipse((int)tip.x, (int)tip.y, 7 * s, 9 * s, petal);
+            }
+            if (night_ >= 2) DrawEllipse((int)(v.x + 16 * s), (int)(v.y - 2 * s), 5 * s, 2 * s, rgba(0x5a1a20ff));  // a fallen petal
         }
         // ceiling lamp (off)
         Vector2 lamp = hallPt(0, -1, 0.45f);
@@ -1168,6 +1558,11 @@ public:
             case View::Bed: drawBed(); break;
         }
         if (flashScare_ > 0) DrawRectangle(0, 0, VW, VH, alpha(WHITE, 0.15f * flashScare_));
+        if (subT_ > 0) {  // a face, for two frames
+            DrawRectangle(0, 0, VW, VH, alpha(BLACK, 0.6f));
+            nightmare(subFace_, {VW / 2.0f + rnd(-40, 40), VH / 2.0f + 20}, 330, rnd(-10, 10), 1, t_);
+            staticScreen(0.3f);
+        }
         fx_.draw();
         // running between spots: fade through black
         if (moveT_ > 0) DrawRectangle(0, 0, VW, VH, alpha(BLACK, 1 - std::abs(moveT_ - 0.15f) / 0.15f));
@@ -1226,10 +1621,12 @@ public:
             {1, "KIRA  (right door)", "Same, but she GIGGLES, can hide from the light, and hacks the PC: turn it off (E) or everyone gets faster."},
             {2, "HET NACHTPAARD  (closet)", "He grows while you look away. Hold the closet shut (SPACE) to push him back. Don't look when he's out."},
             {-1, "PAARDJES  (bed)", "Little plush horses gather on the bed. Shine your light on them. Three at once is game over."},
+            {-2, "THE MONKEY MAN  (window)", "Tik tik on the glass? Don't stare at him. Look away, or he wakes up the whole house."},
         };
-        for (int i = 0; i < 4; i++) {
-            float y = r.y + 82 + i * 72;
+        for (int i = 0; i < 5; i++) {
+            float y = r.y + 76 + i * 60;
             if (lines[i].face >= 0) nightmare(lines[i].face, {r.x + 50, y + 8}, 26, 0, 0.8f, t_);
+            else if (lines[i].face == -2) monkeyMan({r.x + 50, y + 10}, 22, t_, 0);
             else art::horse({r.x + 30, y + 30}, 0.3f, 0, rgba(0x6a4a30ff), rgba(0x1a1008ff), col::violet, "none");
             ui::text(lines[i].who, r.x + 92, y - 8, 17, col::text, ui::Left, true);
             ui::paragraph(lines[i].how, {r.x + 92, y + 6, r.width - 120, 0}, 15, col::muted);
@@ -1264,8 +1661,9 @@ public:
                                    "W = closet. If the horse is in there, hold it shut.",
                                    "S = bed. Light the paardjes away before there are 3.",
                                    "If the PC starts playing music: go to the room, press E.",
+                                   "Monkey Man at the window?? DON'T LOOK. Mama says doe normaal.",
                                    "Survive till 6 AM. Ik ben niet bang. (ik ben bang)"};
-            for (int i = 0; i < 7; i++) ui::paragraph(rules[i], {n.x + 30, n.y + 82 + i * 42.0f, n.width - 60, 0}, 18, ink);
+            for (int i = 0; i < 8; i++) ui::paragraph(rules[i], {n.x + 30, n.y + 78 + i * 38.0f, n.width - 60, 0}, 18, ink);
             rlPopMatrix();
             if (introT_ > 1.5f) ui::text("click or SPACE to begin", VW / 2.0f, 690, 18, alpha(col::text, 0.5f + 0.5f * std::sin(t_ * 4)), ui::Center, true);
         }
@@ -1276,8 +1674,9 @@ public:
         float k = scareT_;
         DrawRectangle(0, 0, VW, VH, std::fmod(k, 0.12f) < 0.06f ? rgba(0x200004ff) : BLACK);
         Vector2 off{rnd(-30, 30), rnd(-30, 30)};
-        float grow = easeOutCubic(clamp01(k / 0.25f));
-        float r = lerpf(120, 520, grow) + std::sin(k * 50) * 10;
+        float grow = easeOutCubic(clamp01(k / 0.2f));
+        float lunge = easeOutCubic(clamp01((k - 0.7f) / 0.15f));  // and a second lunge, right into your face
+        float r = lerpf(120, 520, grow) + lunge * 260 + std::sin(k * 50) * 10;
         fx::beginAdd();
         fx::glow({VW / 2.0f, VH / 2.0f}, 700, alpha(col::red, 0.4f));
         fx::endAdd();
@@ -1290,6 +1689,12 @@ public:
             int f = scareWho_ == Who::Davi ? 0 : scareWho_ == Who::Kira ? 1 : 2;
             nightmare(f, Vector2{VW / 2.0f, VH / 2.0f + 40} + off, r, std::sin(k * 40) * 10, 1, t_);
         }
+        // the picture tears
+        for (int i = 0; i < 5; i++) {
+            float y = hash(std::floor(k * 20) + i) * VH, h = 6 + hash(i * 3.0f + std::floor(k * 20)) * 30;
+            DrawRectangle(0, (int)y, VW, (int)h, alpha(i % 2 ? rgba(0xff2030ff) : BLACK, 0.35f));
+        }
+        if (k < 0.05f || (k > 0.7f && k < 0.74f)) DrawRectangle(0, 0, VW, VH, alpha(WHITE, 0.7f));
         staticScreen(0.25f);
         grain(0.15f);
     }
@@ -1305,7 +1710,7 @@ public:
         float a = clamp01((overT_ - 0.5f) / 0.5f);
         float jitter = std::fmod(t_, 2.1f) < 0.06f ? 8.0f : 0.0f;
         fx::gradientText("GAME OVER", VW / 2.0f + jitter, 110, 90, alpha(rgba(0xff6a6aff), a), alpha(rgba(0x8a0a1aff), a), 6);
-        const char* who = f == 0 ? "Davi got you." : f == 1 ? "Kira got you. HIHIHI." : scareWho_ == Who::Paardjes ? "The paardjes called the big horse." : "Het Nachtpaard came out of the closet.";
+        const char* who = f == 0 ? (monkeyBang_ > 0 || night_ % 2 ? "Davi got you. The Monkey Men saw everything." : "Davi got you.") : f == 1 ? "Kira got you. HIHIHI." : scareWho_ == Who::Paardjes ? "The paardjes called the big horse." : "Het Nachtpaard came out of the closet.";
         const char* tip = scareWho_ == Who::Davi    ? "Tip: breathing at the door means HOLD SPACE. The light makes it worse."
                           : scareWho_ == Who::Kira  ? "Tip: giggling at the door = hold it shut. And switch off the PC fast."
                           : scareWho_ == Who::Horse ? "Tip: check the closet often and hold it shut until it's quiet."
@@ -1375,6 +1780,10 @@ private:
     float pcT_ = 0, pcSongT_ = 0;
     float doorAnim_ = 0, flicker_ = 0, heartT_ = 0, heartPulse_ = 0, flashScare_ = 0;
     bool wasLight_ = false, wasHold_ = false;
+    float rainT_ = 0, windT_ = 4, thunderT_ = 12, boltT_ = -1, thunderDelay_ = -1, whisperT_ = 20, knockT_ = 40, subT_ = 0, hourPulse_ = 0, klompEcho_ = 0;
+    int lastHour_ = 0, subFace_ = 0;
+    bool monkeyOn_ = false, riser_ = false, devBolt_ = false;
+    float monkeyNext_ = 50, monkeyT_ = 0, monkeyStare_ = 0, monkeyRise_ = 0, monkeyBang_ = 0, clashAnim_ = 0;
     bool devLight_ = false, devHold_ = false, devFreeze_ = false;
     Who scareWho_ = Who::Davi;
     long long reward_ = 0;

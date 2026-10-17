@@ -5,6 +5,8 @@
 
 #include "engine/Core.hpp"
 
+#include <functional>
+
 namespace pg::room {
 
 struct Env {
@@ -14,7 +16,10 @@ struct Env {
     float gaming = 0;     // 0..1, how hard the PC is working (PLAY)
     float steam = 0;      // 0..1 shower steam
     bool horror = false;  // Five Nights at Pieter's: no lamp, LEDs or PC; doors need the side walls clear
+    std::function<void()> outside;  // extra drawing behind the window glass (clipped to it), in front of the skyline
 };
+
+inline constexpr Rectangle kWindowGlass{872, 102, 206, 166};
 
 float daylight(float hour);  // 0 = night .. 1 = full day
 Color ambient(const Env& e);  // light-map clear colour
