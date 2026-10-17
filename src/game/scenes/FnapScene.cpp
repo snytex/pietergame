@@ -39,7 +39,7 @@ enum class Who { Davi, Kira, Horse, Paardjes };
 
 struct NightAI { int davi, kira, horse, paardjes, pc; };
 const NightAI kAI[6] = {{3, 2, 0, 2, 0}, {5, 5, 3, 4, 3}, {8, 7, 6, 6, 5}, {11, 11, 9, 8, 7}, {14, 14, 12, 10, 9}, {18, 18, 16, 14, 11}};
-const char* kNightTag[6] = {"Welkom thuis", "Kira is awake", "Het paard ontwaakt", "Niemand slaapt", "De laatste nacht", "JUHUH NIGHT"};
+const char* kNightTag[6] = {"Welcome home", "Kira is awake", "The horse awakens", "Nobody sleeps", "The last night", "JUHUH NIGHT"};
 
 // Nightmare faces: where the eyes and mouth are on each portrait (portrait radius = 1)
 struct Face { const char* tex; Vector2 eye[2]; int eyes; Vector2 mouth; float mouthW; Color glow; };
@@ -1274,7 +1274,7 @@ public:
         DrawRectangleRounded({sx - 18, 330, 36, 56}, 0.2f, 6, rgba(0xd8d0e0ff));
         DrawRectangleRounded({sx - 6, 344, 12, 26}, 0.3f, 6, rgba(0xa098b0ff));
         if (side == 0) {
-            // a Delft blue tegeltje with a house saying. It changes as the nights go on.
+            // a Delft blue tile with a house saying. It changes as the nights go on.
             Rectangle tile{1050, 120, 170, 170};
             DrawRectangleRec({tile.x + 6, tile.y + 8, tile.width, tile.height}, alpha(BLACK, 0.4f));
             DrawRectangleRec(tile, rgba(0xe8eef8ff));
@@ -1284,9 +1284,9 @@ public:
                 DrawPoly(c, 4, 7, 45, rgba(0x2a4aa8ff));
             bool late = night_ >= 3;
             Color ink = rgba(0x1e3a90ff);
-            ui::text("Oost west,", tile.x + tile.width / 2, tile.y + 62, 22, ink, ui::Center, true);
-            ui::text(late ? "niemand" : "thuis", tile.x + tile.width / 2, tile.y + 92, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
-            ui::text(late ? "komt thuis" : "best", tile.x + tile.width / 2, tile.y + 122, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
+            ui::text(late ? "NOBODY" : "HOME", tile.x + tile.width / 2, tile.y + 62, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
+            ui::text(late ? "COMES" : "SWEET", tile.x + tile.width / 2, tile.y + 92, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
+            ui::text("HOME", tile.x + tile.width / 2, tile.y + 122, 22, late ? rgba(0x8a1020ff) : ink, ui::Center, true);
         } else {
             // gig poster: Monkey Men live in the Paradiso
             Rectangle poster{24, 110, 180, 230};
@@ -1431,8 +1431,8 @@ public:
                 Rectangle sign{d.x + d.width / 2 - 170, d.y + 120, 340, 110};
                 DrawRectangleRec(sign, rgba(0xe8e0d0ff));
                 DrawRectangleLinesEx(sign, 4, col::red);
-                ui::text("VERBODEN", sign.x + sign.width / 2, sign.y + 36, 38, col::red, ui::Center, true);
-                ui::text("TOEGANG", sign.x + sign.width / 2, sign.y + 78, 30, col::outline, ui::Center, true);
+                ui::text("KEEP", sign.x + sign.width / 2, sign.y + 36, 38, col::red, ui::Center, true);
+                ui::text("OUT", sign.x + sign.width / 2, sign.y + 78, 30, col::outline, ui::Center, true);
                 Vector2 knob{side == 0 ? d.x + d.width - 50 : d.x + 50, d.y + 420};
                 DrawCircleV(knob, 16, col::goldDark);
                 DrawCircleV({knob.x - 4, knob.y - 4}, 6, col::gold);
@@ -1502,7 +1502,7 @@ public:
         if (dw > 120) {  // stickers on the left door
             Rectangle st{c.x + 60, c.y + 120, 150, 60};
             DrawRectangleRounded(st, 0.3f, 8, rgba(0xe8e0d0ff));
-            ui::text("NIET OPENEN", st.x + st.width / 2, st.y + 30, 20, col::red, ui::Center, true);
+            ui::text("DO NOT OPEN", st.x + st.width / 2, st.y + 30, 20, col::red, ui::Center, true);
         }
         rlPopMatrix();
         bool light = lightOn();
@@ -1619,8 +1619,8 @@ public:
         struct L { int face; const char* who; const char* how; } lines[] = {
             {0, "DAVI  (left door)", "Light the hall to chase him off. Hear BREATHING at the door? Hold SPACE until he leaves. Never shine the light."},
             {1, "KIRA  (right door)", "Same, but she GIGGLES, can hide from the light, and hacks the PC: turn it off (E) or everyone gets faster."},
-            {2, "HET NACHTPAARD  (closet)", "He grows while you look away. Hold the closet shut (SPACE) to push him back. Don't look when he's out."},
-            {-1, "PAARDJES  (bed)", "Little plush horses gather on the bed. Shine your light on them. Three at once is game over."},
+            {2, "THE NIGHT HORSE  (closet)", "He grows while you look away. Hold the closet shut (SPACE) to push him back. Don't look when he's out."},
+            {-1, "PLUSH HORSES  (bed)", "Little plush horses gather on the bed. Shine your light on them. Three at once is game over."},
             {-2, "THE MONKEY MAN  (window)", "Tik tik on the glass? Don't stare at him. Look away, or he wakes up the whole house."},
         };
         for (int i = 0; i < 5; i++) {
@@ -1659,10 +1659,10 @@ public:
                                    "F / left mouse = flashlight. Light them in the hall = they run.",
                                    "BREATHING or GIGGLING at the door? HOLD SPACE. NO LIGHT!!",
                                    "W = closet. If the horse is in there, hold it shut.",
-                                   "S = bed. Light the paardjes away before there are 3.",
+                                   "S = bed. Light the plush horses away before there are 3.",
                                    "If the PC starts playing music: go to the room, press E.",
-                                   "Monkey Man at the window?? DON'T LOOK. Mama says doe normaal.",
-                                   "Survive till 6 AM. Ik ben niet bang. (ik ben bang)"};
+                                   "Monkey Man at the window?? DON'T LOOK AT HIM.",
+                                   "Survive till 6 AM. I'm not scared. (I'm scared)"};
             for (int i = 0; i < 8; i++) ui::paragraph(rules[i], {n.x + 30, n.y + 78 + i * 38.0f, n.width - 60, 0}, 18, ink);
             rlPopMatrix();
             if (introT_ > 1.5f) ui::text("click or SPACE to begin", VW / 2.0f, 690, 18, alpha(col::text, 0.5f + 0.5f * std::sin(t_ * 4)), ui::Center, true);
@@ -1710,11 +1710,11 @@ public:
         float a = clamp01((overT_ - 0.5f) / 0.5f);
         float jitter = std::fmod(t_, 2.1f) < 0.06f ? 8.0f : 0.0f;
         fx::gradientText("GAME OVER", VW / 2.0f + jitter, 110, 90, alpha(rgba(0xff6a6aff), a), alpha(rgba(0x8a0a1aff), a), 6);
-        const char* who = f == 0 ? (monkeyBang_ > 0 || night_ % 2 ? "Davi got you. The Monkey Men saw everything." : "Davi got you.") : f == 1 ? "Kira got you. HIHIHI." : scareWho_ == Who::Paardjes ? "The paardjes called the big horse." : "Het Nachtpaard came out of the closet.";
+        const char* who = f == 0 ? (monkeyBang_ > 0 || night_ % 2 ? "Davi got you. The Monkey Men saw everything." : "Davi got you.") : f == 1 ? "Kira got you. HIHIHI." : scareWho_ == Who::Paardjes ? "The plush horses called the big horse." : "The Night Horse came out of the closet.";
         const char* tip = scareWho_ == Who::Davi    ? "Tip: breathing at the door means HOLD SPACE. The light makes it worse."
                           : scareWho_ == Who::Kira  ? "Tip: giggling at the door = hold it shut. And switch off the PC fast."
                           : scareWho_ == Who::Horse ? "Tip: check the closet often and hold it shut until it's quiet."
-                                                    : "Tip: look at the bed now and then and light up every paardje.";
+                                                    : "Tip: look at the bed now and then and light up every plush horse.";
         ui::text(who, VW / 2.0f, 470, 26, alpha(col::text, a), ui::Center, true);
         ui::text(tip, VW / 2.0f, 506, 17, alpha(col::muted, a), ui::Center, true);
         ui::text(std::string("Night ") + std::to_string(night_ + 1) + "  -  " + clockText(), VW / 2.0f, 536, 16, alpha(col::orange, a), ui::Center, true);
@@ -1739,7 +1739,7 @@ public:
             fx::beginAdd();
             fx::glow({VW / 2.0f, 440}, 400, alpha(col::gold, 0.25f * a));
             fx::endAdd();
-            fx::gradientText("GOEDEMORGEN!", VW / 2.0f, 430, 60, alpha(rgba(0xfff3a0ff), a), alpha(col::orange, a), 5);
+            fx::gradientText("GOOD MORNING!", VW / 2.0f, 430, 60, alpha(rgba(0xfff3a0ff), a), alpha(col::orange, a), 5);
             ui::text("Night " + std::to_string(night_ + 1) + " survived", VW / 2.0f, 484, 22, alpha(col::text, a), ui::Center, true);
             ui::coin({VW / 2.0f - 90, 524}, 14);
             ui::text("+" + fmtNum(reward_) + " Pietercoins", VW / 2.0f - 68, 524, 22, alpha(col::gold, a), ui::Left, true);

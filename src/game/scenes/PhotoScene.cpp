@@ -35,24 +35,24 @@ struct Species {
 };
 
 const Species kSp[] = {
-    {"Ree", "spr/ani_deer", 170, 250, 0, Pose::Leap, true, false, false},
-    {"Wild zwijn", "spr/ani_boar", 100, 220, 0, Pose::Dip, false, true, false},
-    {"Vos", "spr/ani_fox", 92, 320, 0, Pose::Leap, true, false, false},
-    {"Konijn", "spr/ani_rabbit", 62, 120, 0, Pose::Hop, true, true, false},
-    {"Eekhoorn", "spr/ani_squirrel", 64, 200, 0, Pose::Hop, true, true, false},
-    {"Grote bonte specht", "spr/ani_woodpecker", 70, 450, 0, Pose::Dip, false, false, false},
-    {"Het Paard", nullptr, 160, 777, -1, Pose::Rear, false, false, false},
-    {"Koe", "spr/ani_cow", 150, 100, 1, Pose::Dip, false, true, false},
-    {"Schaap", "spr/ani_sheep", 92, 110, 1, Pose::Hop, false, true, false},
-    {"Ooievaar", "spr/ani_stork", 160, 280, 1, Pose::Dip, false, false, false},
-    {"Blauwe reiger", "spr/ani_heron", 170, 260, 1, Pose::Dip, true, false, false},
-    {"Haas", "spr/ani_hare", 74, 240, 1, Pose::Leap, true, false, false},
-    {"Wilde eend", "spr/duck", 44, 70, 1, Pose::Dip, false, true, false},
-    {"Zeehond", "spr/ani_seal", 74, 300, 2, Pose::Roll, false, false, false},
-    {"Lepelaar", "spr/ani_spoonbill", 150, 300, 2, Pose::Dip, true, false, false},
-    {"Scholekster", "spr/ani_oyster", 66, 150, 2, Pose::Hop, true, true, false},
-    {"Strandkrab", "spr/ani_crab", 34, 90, 2, Pose::Hop, false, true, false},
-    {"Bruinvis", "spr/ani_porpoise", 70, 600, 2, Pose::Jump, false, false, false},
+    {"Roe Deer", "spr/ani_deer", 170, 250, 0, Pose::Leap, true, false, false},
+    {"Wild Boar", "spr/ani_boar", 100, 220, 0, Pose::Dip, false, true, false},
+    {"Fox", "spr/ani_fox", 92, 320, 0, Pose::Leap, true, false, false},
+    {"Rabbit", "spr/ani_rabbit", 62, 120, 0, Pose::Hop, true, true, false},
+    {"Red Squirrel", "spr/ani_squirrel", 64, 200, 0, Pose::Hop, true, true, false},
+    {"Woodpecker", "spr/ani_woodpecker", 70, 450, 0, Pose::Dip, false, false, false},
+    {"The Horse", nullptr, 160, 777, -1, Pose::Rear, false, false, false},
+    {"Cow", "spr/ani_cow", 150, 100, 1, Pose::Dip, false, true, false},
+    {"Sheep", "spr/ani_sheep", 92, 110, 1, Pose::Hop, false, true, false},
+    {"Stork", "spr/ani_stork", 160, 280, 1, Pose::Dip, false, false, false},
+    {"Grey Heron", "spr/ani_heron", 170, 260, 1, Pose::Dip, true, false, false},
+    {"Hare", "spr/ani_hare", 74, 240, 1, Pose::Leap, true, false, false},
+    {"Mallard", "spr/duck", 44, 70, 1, Pose::Dip, false, true, false},
+    {"Seal", "spr/ani_seal", 74, 300, 2, Pose::Roll, false, false, false},
+    {"Spoonbill", "spr/ani_spoonbill", 150, 300, 2, Pose::Dip, true, false, false},
+    {"Oystercatcher", "spr/ani_oyster", 66, 150, 2, Pose::Hop, true, true, false},
+    {"Beach Crab", "spr/ani_crab", 34, 90, 2, Pose::Hop, false, true, false},
+    {"Porpoise", "spr/ani_porpoise", 70, 600, 2, Pose::Jump, false, false, false},
 };
 constexpr int kSpecies = sizeof(kSp) / sizeof(kSp[0]);
 
@@ -63,11 +63,11 @@ struct Route {
     std::vector<int> common, rare;
 };
 const Route kRoutes[3] = {
-    {"De Veluwe", "Bos en heide. Herten, zwijnen en wie weet...", rgba(0x7ab8e8ff), rgba(0xe8f0d8ff), rgba(0x4a6a4aff), rgba(0x8a5a8aff), rgba(0x6a8a3aff),
+    {"De Veluwe", "Forest and heath. Deer, boars and who knows...", rgba(0x7ab8e8ff), rgba(0xe8f0d8ff), rgba(0x4a6a4aff), rgba(0x8a5a8aff), rgba(0x6a8a3aff),
      {0, 1, 2, 3, 4, 0, 1, 3}, {5, 6}},
-    {"De Polder", "Molens, sloten en heel veel koeien.", rgba(0x5a9ae8ff), rgba(0xd8ecf8ff), rgba(0x6a9a5aff), rgba(0x5a9a3aff), rgba(0x4a8a2aff),
+    {"De Polder", "Windmills, ditches and lots of cows.", rgba(0x5a9ae8ff), rgba(0xd8ecf8ff), rgba(0x6a9a5aff), rgba(0x5a9a3aff), rgba(0x4a8a2aff),
      {7, 8, 9, 10, 11, 12, 7, 8, 12}, {6, 9}},
-    {"De Wadden", "Wad, zand en zon die ondergaat.", rgba(0x5a4a9aff), rgba(0xffb070ff), rgba(0x3a5a8aff), rgba(0xd8b888ff), rgba(0xe8c898ff),
+    {"De Wadden", "Mudflats, sand and a setting sun.", rgba(0x5a4a9aff), rgba(0xffb070ff), rgba(0x3a5a8aff), rgba(0xd8b888ff), rgba(0xe8c898ff),
      {13, 14, 15, 16, 13, 15, 16}, {17}},
 };
 
@@ -111,8 +111,8 @@ public:
     }
 
     Presence presence() const override {
-        if (phase_ == Phase::Ride) return {"Natuurfotograaf", std::string(kRoutes[route_].name) + " - " + std::to_string(photos_.size()) + "/24 photos"};
-        return {"Natuurfotograaf", "Looking at the photo album"};
+        if (phase_ == Phase::Ride) return {"Nature Photographer", std::string(kRoutes[route_].name) + " - " + std::to_string(photos_.size()) + "/24 photos"};
+        return {"Nature Photographer", "Looking at the photo album"};
     }
 
     void enter() override {
@@ -280,7 +280,7 @@ public:
                 a.flip = chance(0.5f);
             }
         }
-        fx_.floatText("fwiet!", E().mouse(), WHITE, 22);
+        fx_.floatText("fweet!", E().mouse(), WHITE, 22);
     }
 
     struct Bread { Vector2 p, v; int layer; float targetY; };
@@ -415,7 +415,7 @@ public:
             ph.subjects.push_back({a.sp, score, a.pose, a.alert > 0, size, cen, vis});
         }
         if (ph.subjects.empty()) {
-            ph.notes.push_back("Geen dier te zien...");
+            ph.notes.push_back("No animal in sight...");
             return;
         }
         int best = 0;
@@ -431,15 +431,15 @@ public:
         ph.stars = rel > 2.0f ? 5 : rel > 1.3f ? 4 : rel > 0.8f ? 3 : rel > 0.45f ? 2 : 1;
         // what the judge says
         bool special = m.pose == kSp[m.sp].special || m.pose == Pose::Jump || (m.sp == 6 && m.pose == Pose::Rear);
-        if (special) ph.notes.push_back(m.pose == Pose::Leap ? "Sprong! x2" : m.pose == Pose::Dip ? "Aan het eten! x2" : m.pose == Pose::Roll ? "Rolt rond! x2" : m.pose == Pose::Jump ? "Uit het water! x2" : m.pose == Pose::Rear ? "Steigert! x2" : "Actie! x2");
-        else if (m.alert) ph.notes.push_back("Kijkt op! x1.35");
-        if (m.size < 0.06f) ph.notes.push_back("Te ver weg");
-        else if (m.size > 0.18f && m.size < 0.75f) ph.notes.push_back("Mooi in beeld");
-        else if (m.size >= 0.75f) ph.notes.push_back("Te dichtbij");
-        if (m.center > 0.8f) ph.notes.push_back("Perfect gecentreerd");
-        if (m.visible < 0.9f) ph.notes.push_back("Afgesneden");
-        if (counts[m.sp] >= 3) ph.notes.push_back("Groepsfoto!");
-        if (kSp[m.sp].route < 0 || m.sp == 5 || m.sp == 17) ph.notes.push_back("ZELDZAAM!");
+        if (special) ph.notes.push_back(m.pose == Pose::Leap ? "Leaping! x2" : m.pose == Pose::Dip ? "Eating! x2" : m.pose == Pose::Roll ? "Rolling around! x2" : m.pose == Pose::Jump ? "Out of the water! x2" : m.pose == Pose::Rear ? "Rearing up! x2" : "Action! x2");
+        else if (m.alert) ph.notes.push_back("Looking up! x1.35");
+        if (m.size < 0.06f) ph.notes.push_back("Too far away");
+        else if (m.size > 0.18f && m.size < 0.75f) ph.notes.push_back("Nicely framed");
+        else if (m.size >= 0.75f) ph.notes.push_back("Too close");
+        if (m.center > 0.8f) ph.notes.push_back("Perfectly centered");
+        if (m.visible < 0.9f) ph.notes.push_back("Cut off");
+        if (counts[m.sp] >= 3) ph.notes.push_back("Group photo!");
+        if (kSp[m.sp].route < 0 || m.sp == 5 || m.sp == 17) ph.notes.push_back("RARE!");
     }
 
     void shoot() {
@@ -808,7 +808,7 @@ public:
         Rectangle strip{16, 12, 330, 54};
         DrawRectangleRounded(strip, 0.3f, 8, alpha(col::bgDeep, 0.75f));
         ui::text(TextFormat("FILM %d/%d", kFilm - n, kFilm), strip.x + 14, strip.y + 18, 18, n >= kFilm ? col::red : WHITE, ui::Left, true);
-        ui::text(TextFormat("BROOD %d   FLUITEN %s", bread_, whistleT_ > 0 ? "..." : "OK"), strip.x + 14, strip.y + 40, 13, col::muted, ui::Left, true);
+        ui::text(TextFormat("BREAD %d   WHISTLE %s", bread_, whistleT_ > 0 ? "..." : "OK"), strip.x + 14, strip.y + 40, 13, col::muted, ui::Left, true);
         for (int i = 0; i < std::min(n, 4); i++) {
             const Photo& p = photos_[n - 1 - i];
             float slide = i == 0 ? (1 - clamp01((0.4f - shotCd_) / 0.3f)) : 0;
@@ -826,14 +826,14 @@ public:
             float a = clamp01((7 - rideT_) / 1.5f);
             Rectangle hp{VW / 2.0f - 330, VH - 74.0f, 660, 50};
             DrawRectangleRounded(hp, 0.4f, 8, alpha(col::bgDeep, 0.7f * a));
-            ui::text("CLICK = foto   SCROLL = zoom   SPACE = fluiten   Q / RECHTS = brood   A/D = trager/sneller", VW / 2.0f, hp.y + 25, 15, alpha(WHITE, a), ui::Center, true);
+            ui::text("CLICK = photo   SCROLL = zoom   SPACE = whistle   Q / RIGHT CLICK = bread   A/D = slower/faster", VW / 2.0f, hp.y + 25, 15, alpha(WHITE, a), ui::Center, true);
         }
     }
 
     void drawTitle() {
         art::purpleBackdrop(t_);
-        fx::gradientText("NATUURFOTOGRAAF", VW / 2.0f, 70, 64, rgba(0xd8ffd0ff), col::green, 5);
-        ui::text("Pak je camera. Kies een route.", VW / 2.0f, 120, 20, col::muted, ui::Center, true);
+        fx::gradientText("NATURE PHOTOGRAPHER", VW / 2.0f, 70, 64, rgba(0xd8ffd0ff), col::green, 5);
+        ui::text("Grab your camera. Pick a route.", VW / 2.0f, 120, 20, col::muted, ui::Center, true);
         int unlocked = std::clamp(P().stats.fotoRoute, 1, 3);
         for (int i = 0; i < 3; i++) {
             Rectangle r{110 + i * 360.0f, 170, 340, 360};
@@ -861,28 +861,28 @@ public:
                     total++;
                     found += (P().stats.fotoSpecies >> s) & 1;
                 }
-            ui::text(TextFormat("%d/%d soorten gefotografeerd", found, total), r.x + 20, r.y + 320, 14, col::green, ui::Left, true);
+            ui::text(TextFormat("%d/%d species photographed", found, total), r.x + 20, r.y + 320, 14, col::green, ui::Left, true);
             if (!open) {
                 DrawRectangleRounded(r, 0.08f, 10, alpha(col::bgDeep, 0.75f));
                 ui::text("LOCKED", r.x + r.width / 2, r.y + 150, 30, col::muted, ui::Center, true);
-                ui::text("Score 1400+ op de vorige route", r.x + r.width / 2, r.y + 184, 14, col::muted, ui::Center, true);
+                ui::text("Score 1400+ on the previous route", r.x + r.width / 2, r.y + 184, 14, col::muted, ui::Center, true);
             } else if (hov && E().mousePressed()) {
                 E().consumeClick();
                 startRide(i);
                 return;
             }
         }
-        ui::text(TextFormat("Beste rit: %d punten", P().stats.fotoBest), VW / 2.0f, 566, 18, col::gold, ui::Center, true);
-        if (ui::button({VW / 2.0f - 150, 600, 300, 56}, "NATUURGIDS", rgba(0x2a8a4aff), 22)) phase_ = Phase::Guide;
+        ui::text(TextFormat("Best ride: %d points", P().stats.fotoBest), VW / 2.0f, 566, 18, col::gold, ui::Center, true);
+        if (ui::button({VW / 2.0f - 150, 600, 300, 56}, "FIELD GUIDE", rgba(0x2a8a4aff), 22)) phase_ = Phase::Guide;
         if (ui::backButton()) E().go(makeMenu);
     }
 
     void drawGuide() {
         art::purpleBackdrop(t_);
-        fx::gradientText("NATUURGIDS", VW / 2.0f, 60, 56, rgba(0xd8ffd0ff), col::green, 4);
+        fx::gradientText("FIELD GUIDE", VW / 2.0f, 60, 56, rgba(0xd8ffd0ff), col::green, 4);
         int got = 0;
         for (int i = 0; i < kSpecies; i++) got += (P().stats.fotoSpecies >> i) & 1;
-        ui::text(TextFormat("%d van de %d soorten", got, kSpecies), VW / 2.0f, 104, 18, col::muted, ui::Center, true);
+        ui::text(TextFormat("%d of %d species", got, kSpecies), VW / 2.0f, 104, 18, col::muted, ui::Center, true);
         for (int i = 0; i < kSpecies; i++) {
             Rectangle r{70 + (i % 6) * 192.0f, 140 + (i / 6) * 176.0f, 180, 164};
             bool have = (P().stats.fotoSpecies >> i) & 1;
@@ -897,7 +897,7 @@ public:
                 art::horse({c.x - 10, c.y + 46}, 0.55f, 0, have ? rgba(0xa0582aff) : rgba(0x0a0612ff), have ? rgba(0x3a2010ff) : rgba(0x0a0612ff), have ? col::violet : rgba(0x0a0612ff), "none");
             }
             ui::text(have ? kSp[i].name : "???", r.x + r.width / 2, r.y + 140, 15, have ? WHITE : col::muted, ui::Center, true);
-            if (kSp[i].route < 0 || kSp[i].value >= 450) ui::text("zeldzaam", r.x + r.width / 2, r.y + 156, 11, col::gold, ui::Center, true);
+            if (kSp[i].route < 0 || kSp[i].value >= 450) ui::text("rare", r.x + r.width / 2, r.y + 156, 11, col::gold, ui::Center, true);
         }
         if (ui::backButton()) phase_ = Phase::Title;
     }
@@ -907,18 +907,18 @@ public:
     void drawAlbum(bool interactive = true) {
         albumT_ += GetFrameTime();
         art::purpleBackdrop(t_);
-        fx::gradientText("FOTOBOEK", 260, 54, 52, rgba(0xd8ffd0ff), col::green, 4);
-        ui::text(std::string(kRoutes[route_].name) + "  -  " + std::to_string(photos_.size()) + " foto's", 260, 98, 18, col::muted, ui::Center, true);
+        fx::gradientText("PHOTO ALBUM", 260, 54, 52, rgba(0xd8ffd0ff), col::green, 4);
+        ui::text(std::string(kRoutes[route_].name) + "  -  " + std::to_string(photos_.size()) + " photos", 260, 98, 18, col::muted, ui::Center, true);
         // score summary
         Rectangle sm{560, 20, 690, 110};
         ui::panel(sm, alpha(col::panel, 0.95f), 0.15f, alpha(col::green, 0.5f));
         ui::textShadow(TextFormat("%d", (int)(total_ * clamp01(albumT_ / 1.2f))), sm.x + 30, sm.y + 46, 46, WHITE, ui::Left, true, 3);
-        ui::text(TextFormat("punten  -  %d soorten (+%d)", speciesGot_, speciesGot_ * 50), sm.x + 30, sm.y + 84, 15, col::muted, ui::Left, true);
+        ui::text(TextFormat("points  -  %d species (+%d)", speciesGot_, speciesGot_ * 50), sm.x + 30, sm.y + 84, 15, col::muted, ui::Left, true);
         ui::coin({sm.x + 420, sm.y + 40}, 14);
         ui::text("+" + fmtNum(coins_), sm.x + 442, sm.y + 40, 24, col::gold, ui::Left, true);
-        if (recordBest_) ui::text("NIEUW RECORD!", sm.x + 420, sm.y + 74, 15, col::gold, ui::Left, true);
-        if (unlocked_) ui::text("Nieuwe route vrijgespeeld!", sm.x + 420, sm.y + 94, 14, col::green, ui::Left, true);
-        if (!newSpecies_.empty()) ui::text(TextFormat("%d nieuw in de Natuurgids", (int)newSpecies_.size()), sm.x + 600, sm.y + 74, 13, col::green, ui::Center, true);
+        if (recordBest_) ui::text("NEW RECORD!", sm.x + 420, sm.y + 74, 15, col::gold, ui::Left, true);
+        if (unlocked_) ui::text("New route unlocked!", sm.x + 420, sm.y + 94, 14, col::green, ui::Left, true);
+        if (!newSpecies_.empty()) ui::text(TextFormat("%d new in the Field Guide", (int)newSpecies_.size()), sm.x + 600, sm.y + 74, 13, col::green, ui::Center, true);
         // the photos
         for (size_t i = 0; i < photos_.size(); i++) {
             float pop = easeOutBack(clamp01((albumT_ - i * 0.04f) / 0.3f));
@@ -942,9 +942,9 @@ public:
                 E().sfx.play(Sfx::Click, 0.4f);
             }
         }
-        if (photos_.empty()) ui::text("Je hebt geen enkele foto gemaakt...", VW / 2.0f, 360, 24, col::muted, ui::Center, true);
+        if (photos_.empty()) ui::text("You didn't take a single photo...", VW / 2.0f, 360, 24, col::muted, ui::Center, true);
         if (!interactive) return;
-        if (ui::button({VW / 2.0f - 270, 650, 250, 56}, "NOG EEN RIT", rgba(0x2a8a4aff), 22)) startRide(route_);
+        if (ui::button({VW / 2.0f - 270, 650, 250, 56}, "RIDE AGAIN", rgba(0x2a8a4aff), 22)) startRide(route_);
         if (ui::button({VW / 2.0f + 20, 650, 250, 56}, "ROUTES", col::panelHi, 22)) phase_ = Phase::Title;
     }
 
@@ -957,18 +957,18 @@ public:
         DrawTexturePro(p.rt.texture, {0, 0, (float)kPhotoW, -(float)kPhotoH}, r, {0, 0}, 0, WHITE);
         Rectangle info{860, 90, 360, 432};
         ui::panel(info, alpha(col::panel, 0.97f), 0.06f, alpha(col::green, 0.5f));
-        ui::text(p.main >= 0 ? kSp[p.subjects[p.main].sp].name : "Leeg landschap", info.x + 24, info.y + 36, 26, WHITE, ui::Left, true);
+        ui::text(p.main >= 0 ? kSp[p.subjects[p.main].sp].name : "Empty landscape", info.x + 24, info.y + 36, 26, WHITE, ui::Left, true);
         for (int s = 0; s < 5; s++) DrawPoly({info.x + 34 + s * 30.0f, info.y + 78}, 5, 13, -90 + 36, s < p.stars ? col::gold : rgba(0x4a3a6aff));
         ui::textShadow(TextFormat("%d", (int)p.score), info.x + 24, info.y + 128, 40, col::gold, ui::Left, true, 2);
-        ui::text("punten", info.x + 30 + ui::measure(TextFormat("%d", (int)p.score), 40, true), info.y + 134, 16, col::muted, ui::Left, true);
+        ui::text("points", info.x + 30 + ui::measure(TextFormat("%d", (int)p.score), 40, true), info.y + 134, 16, col::muted, ui::Left, true);
         float y = info.y + 180;
         for (auto& n : p.notes) {
-            bool good = n.find("x") != std::string::npos || n == "Mooi in beeld" || n == "Perfect gecentreerd" || n == "Groepsfoto!" || n == "ZELDZAAM!";
+            bool good = n.find("x") != std::string::npos || n == "Nicely framed" || n == "Perfectly centered" || n == "Group photo!" || n == "RARE!";
             ui::text((good ? "+ " : "- ") + n, info.x + 24, y, 17, good ? col::green : col::orange, ui::Left, true);
             y += 30;
         }
-        if (p.subjects.size() > 1) ui::text(TextFormat("ook in beeld: %d dier(en)", (int)p.subjects.size() - 1), info.x + 24, y + 10, 14, col::muted, ui::Left, true);
-        ui::text(TextFormat("foto %d / %d  -  klik om terug te gaan", detail_ + 1, (int)photos_.size()), r.x, r.y + r.height + 34, 15, col::muted, ui::Left, true);
+        if (p.subjects.size() > 1) ui::text(TextFormat("also in the shot: %d animal(s)", (int)p.subjects.size() - 1), info.x + 24, y + 10, 14, col::muted, ui::Left, true);
+        ui::text(TextFormat("photo %d / %d  -  click to go back", detail_ + 1, (int)photos_.size()), r.x, r.y + r.height + 34, 15, col::muted, ui::Left, true);
         if (IsKeyPressed(KEY_RIGHT)) detail_ = std::min((int)photos_.size() - 1, detail_ + 1);
         if (IsKeyPressed(KEY_LEFT)) detail_ = std::max(0, detail_ - 1);
         if (E().mousePressed()) {
@@ -990,7 +990,7 @@ public:
                 drawRideHud();
                 if (rideT_ > kRouteTime - 5) {
                     float a = clamp01((rideT_ - (kRouteTime - 5)) / 0.5f);
-                    ui::textOutline(TextFormat("Rit eindigt over %d...", (int)(kRouteTime - rideT_) + 1), VW / 2.0f, 110, 34, alpha(WHITE, a), alpha(col::outline, a), 3);
+                    ui::textOutline(TextFormat("Ride ends in %d...", (int)(kRouteTime - rideT_) + 1), VW / 2.0f, 110, 34, alpha(WHITE, a), alpha(col::outline, a), 3);
                 }
                 break;
         }

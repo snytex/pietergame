@@ -33,7 +33,7 @@ constexpr Rectangle kRoomWindow{1146, 110, 122, 300};
 constexpr Rectangle kCup{1010, 640, 54, 70};
 
 enum App { Loader, Huiswerk, Cam, Gram, Boba, Defender, Trash, Popup, Update, AppCount };
-const char* kAppName[AppCount] = {"PieterHax Loader", "Wiskunde.docx", "PieterCam", "Pietergram", "BobaBezorgd", "PieterDefender", "Prullenbak", "!!!", "PieterOS Update"};
+const char* kAppName[AppCount] = {"PieterHax Loader", "Homework.docx", "PieterCam", "Pietergram", "BobaDelivery", "PieterDefender", "Recycle Bin", "!!!", "PieterOS Update"};
 const Color kAppCol[AppCount] = {rgba(0x1a8a3aff), rgba(0x2a5bd7ff), rgba(0x3a3a4aff), rgba(0xc2418aff), rgba(0xd8822aff), rgba(0x2a9ad8ff), rgba(0x6a6a7aff), rgba(0xc81a2aff), rgba(0x2a6ad8ff)};
 const char* kIconLetter[AppCount] = {"H", "W", "C", "P", "B", "D", "T", "!", "U"};
 
@@ -154,8 +154,8 @@ void gorilla(Vector2 c, float s, float bang, float t) {
 class CheatsScene : public Scene {
 public:
     Presence presence() const override {
-        if (phase_ == Phase::Play) return {"Cheats Downloaden", TextFormat("PieterHax %d%% - don't get caught", (int)(pct() * 100))};
-        return {"Cheats Downloaden", "Thinking about it..."};
+        if (phase_ == Phase::Play) return {"Cheat Downloader", TextFormat("PieterHax %d%% - don't get caught", (int)(pct() * 100))};
+        return {"Cheat Downloader", "Thinking about it..."};
     }
 
     void enter() override {
@@ -320,7 +320,7 @@ public:
         check_.warn = warn;
         check_.watch = delivery ? 2.2f : w == Who::Papa ? 3.8f : 3.0f;
         check_.delivery = delivery;
-        caption(delivery ? "[ footsteps... \"JE BOBA IS ER!\" ]" : w == Who::Papa ? "[ heavy footsteps on the stairs ]" : w == Who::Mama ? "[ footsteps on the stairs ]" : "[ sneaky little footsteps ]");
+        caption(delivery ? "[ footsteps... \"YOUR BOBA IS HERE!\" ]" : w == Who::Papa ? "[ heavy footsteps on the stairs ]" : w == Who::Mama ? "[ footsteps on the stairs ]" : "[ sneaky little footsteps ]");
     }
 
     void startGorilla() {
@@ -328,7 +328,7 @@ public:
         gor_.on = true;
         blinds_ = std::min(blinds_, 0.0f);
         E().sfx.play(Sfx::Knock, 0.45f, 0.75f, 0.9f);
-        note("Raam", "Er klopt iets op je raam...", col::orange);
+        note("Window", "Something is knocking on your window...", col::orange);
     }
 
     void startRat() {
@@ -339,7 +339,7 @@ public:
         popT_ = 0.5f;
         E().sfx.play(Sfx::Static, 0.6f);
         E().sfx.play(Sfx::Error, 0.6f, 0.7f);
-        note("PieterDefender", "RAT gedetecteerd! Je muis wordt overgenomen. Scan nu!", col::red);
+        note("PieterDefender", "RAT detected! Someone is taking over your mouse. Scan now!", col::red);
     }
 
     void interrupt(Intr i) {
@@ -353,8 +353,8 @@ public:
         resumeBtn_ = {rnd(0.15f, 0.65f), rnd(0.55f, 0.75f)};
         if (i == Intr::DiskFull) trashFull_ = true;
         E().sfx.play(Sfx::Error, 0.45f);
-        note("PieterHax Loader", i == Intr::Lost ? "Download gepauzeerd: verbinding verbroken." : i == Intr::Captcha ? "Download gepauzeerd: captcha vereist."
-                                  : i == Intr::Blocked ? "PieterDefender blokkeert PieterHax!" : "Schijf vol! Leeg de prullenbak.", col::orange);
+        note("PieterHax Loader", i == Intr::Lost ? "Download paused: connection lost." : i == Intr::Captcha ? "Download paused: captcha required."
+                                  : i == Intr::Blocked ? "PieterDefender is blocking PieterHax!" : "Disk full! Empty the recycle bin.", col::orange);
     }
 
     void caught(const std::string& line) {
@@ -394,22 +394,22 @@ public:
         int n = msgScript_++;
         Msg m;
         switch (n % 9) {
-            case 0: m = {"Kira", "heb je PieterHax al?? iedereen heeft het al", {{"bijna!", 0, 0}, {"shhh mama kan meelezen", 0, 0}}}; break;
+            case 0: m = {"Kira", "do you have PieterHax yet?? everyone has it", {{"almost!", 0, 0}, {"shhh mom can read this", 0, 0}}}; break;
             case 1:
-                m = {"Mama", "Pieter, ben je je huiswerk aan het maken?",
-                     {{"Ja mam! Wiskunde.", -5, 0}, {"ehh... ja hoor", 6, 0}, {"Nee ik download cheats", 45, 0}}, 22, 15};
+                m = {"Mom", "Pieter, are you doing your homework?",
+                     {{"Yes mom! Math.", -5, 0}, {"uhh... sure", 6, 0}, {"No, I'm downloading cheats", 45, 0}}, 22, 15};
                 break;
-            case 2: m = {"Onbekend", "GRATIS ROBUX!!! klik hier: bit.ly/p13ter-r0bux", {{"klik de link", 0, 1}, {"blokkeren", 0, 0}}}; break;
-            case 3: m = {"Davi", "yo let op, je pa wilde zo even komen kijken", {{"thanks bro", 0, 2}, {"ok", 0, 2}}}; break;
-            case 4: m = {"Het Paard", "JUHUH", {{"JUHUH", 0, 0}, {"wie ben jij", 0, 0}}}; break;
+            case 2: m = {"Unknown", "FREE ROBUX!!! click here: bit.ly/p13ter-r0bux", {{"click the link", 0, 1}, {"block", 0, 0}}}; break;
+            case 3: m = {"Davi", "yo heads up, your dad is about to come check on you", {{"thanks bro", 0, 2}, {"ok", 0, 2}}}; break;
+            case 4: m = {"The Horse", "JUHUH", {{"JUHUH", 0, 0}, {"who are you", 0, 0}}}; break;
             case 5:
-                m = {"Papa", "Waarom is de wifi zo traag? Wat ben je aan het downloaden?",
-                     {{"Windows updates!", 0, 0}, {"Een wiskunde-app", -3, 0}, {"Niks!!!", 12, 0}}, 20, 18};
+                m = {"Dad", "Why is the wifi so slow? What are you downloading?",
+                     {{"Windows updates!", 0, 0}, {"A math app", -3, 0}, {"Nothing!!!", 12, 0}}, 20, 18};
                 break;
-            case 6: m = {"Davi", "tip: als de download vastloopt moet je hem handmatig hervatten", {{"weet ik", 0, 0}}}; break;
-            case 7: m = {"Kira", "Monkey Men gezien bij jou in de straat??", {{"wat", 0, 0}, {"dat verklaart die gorilla", 0, 0}}}; break;
+            case 6: m = {"Davi", "tip: if the download gets stuck you have to resume it manually", {{"i know", 0, 0}}}; break;
+            case 7: m = {"Kira", "did you see the Monkey Men on your street??", {{"what", 0, 0}, {"that explains the gorilla", 0, 0}}}; break;
             default:
-                m = {"Mama", "Eten is over 10 minuten klaar! Kom je zo?", {{"Ja!", -2, 0}, {"Nog even...", 4, 0}}, 25, 8};
+                m = {"Mom", "Dinner is ready in 10 minutes! Are you coming?", {{"Yes!", -2, 0}, {"In a minute...", 4, 0}}, 25, 8};
                 break;
         }
         pushMsg(m);
@@ -417,19 +417,19 @@ public:
 
     void answer(Msg& m, const Reply& r) {
         m.answered = true;
-        msgs_.push_back({"Jij", r.text, {}, 0, 0, true, true});
+        msgs_.push_back({"You", r.text, {}, 0, 0, true, true});
         susp_ = std::max(0.0f, susp_ + r.susp);
         E().sfx.play(Sfx::Send, 0.4f);
         if (r.susp >= 40) {
             E().sfx.play(Sfx::Lose, 0.5f);
-            note("Pietergram", "Mama: WAT?! Ik kom naar boven.", col::red);
+            note("Pietergram", "Mom: WHAT?! I'm coming upstairs.", col::red);
             startCheck(Who::Mama, warnTime());
         }
         if (r.effect == 1) startRat();
         if (r.effect == 2) {
             nextCheck_ = 6;
             nextWho_ = 1;
-            note("Pietergram", "Davi heeft je gewaarschuwd: Papa komt zo.", col::cyan);
+            note("Pietergram", "Davi warned you: Dad is coming soon.", col::cyan);
         }
     }
 
@@ -454,7 +454,7 @@ public:
                 if (phaseT_ > 2.6f) {
                     check_.on = false;
                     nextCheck_ = rnd(20, 32) * (diff_ == 2 ? 0.75f : 1);
-                    if (susp_ >= 100) lose("Huisarrest! Geen PC voor een maand.");
+                    if (susp_ >= 100) lose("Grounded! No PC for a month.");
                     else phase_ = Phase::Play;
                 }
                 return;
@@ -514,8 +514,8 @@ public:
             for (auto& w : wins_) pops += w.app == Popup;
             if (popT_ <= 0 && pops < 5) {
                 popT_ = rnd(2.5f, 4.5f);
-                const char* txt[] = {"HACKED BY xX_P1ET3R_Xx", "Uw bestanden worden versleuteld...", "Webcam wordt gedeeld met 1.337 kijkers",
-                                     "Betaal 0.5 Bitcoin aan RATtenkoning", "Uw wachtwoord is: wachtwoord123"};
+                const char* txt[] = {"HACKED BY xX_P1ET3R_Xx", "Your files are being encrypted...", "Webcam is being shared with 1,337 viewers",
+                                     "Pay 0.5 Bitcoin to the RAT King", "Your password is: password123"};
                 open(Popup, txt[rndi(0, 4)]);
             }
         } else {
@@ -540,7 +540,7 @@ public:
         if (got_ >= total_) {
             got_ = total_;
             E().sfx.play(Sfx::Perfect, 0.7f);
-            note("PieterHax Loader", "Download voltooid! Klik op INSTALLEREN.", col::green);
+            note("PieterHax Loader", "Download complete! Click INSTALL.", col::green);
         }
         if (!ratDone_ && pct() > ratAt_) {
             ratDone_ = true;
@@ -558,10 +558,10 @@ public:
         if (std::fmod(playT_, 9.0f) < dt && energy_ > 0) E().sfx.play(Sfx::Gulp, 0.15f, rnd(0.9f, 1.1f));
         if (energy_ <= 25 && !tiredWarned_) {
             tiredWarned_ = true;
-            note("Pieter", "Ik word moe... boba bijbestellen!", col::orange);
+            note("Pieter", "I'm getting tired... order more boba!", col::orange);
         }
         if (energy_ <= 0) {
-            lose("Pieter is in slaap gevallen achter zijn bureau.");
+            lose("Pieter fell asleep at his desk.");
             return;
         }
         if (delivery_ > 0) {
@@ -592,7 +592,7 @@ public:
             gor_.knockT -= dt;
             if (blinds_ >= 0.95f) {
                 gor_.on = false;
-                note("Raam", "Gordijnen dicht. De gorilla druipt af.", col::muted);
+                note("Window", "Blinds closed. The gorilla wanders off.", col::muted);
             } else {
                 if (gor_.knockT <= 0) {
                     gor_.knockT = gor_.banging ? 0.7f : 1.8f;
@@ -603,7 +603,7 @@ public:
                     gor_.banging = true;
                     E().sfx.play(Sfx::Monkey, 0.7f, 0.55f, 0.9f);
                     susp_ += 8;
-                    caption("[ BONK BONK BONK - \"Wat is dat voor herrie?!\" ]");
+                    caption("[ BONK BONK BONK - \"What is that noise?!\" ]");
                     if (!check_.on) {
                         nextWho_ = 1;
                         nextCheck_ = 1.5f;
@@ -631,7 +631,7 @@ public:
                 if (m.deadline <= 0) {
                     m.answered = true;
                     susp_ += m.missPenalty;
-                    note("Pietergram", m.from + " vindt het verdacht dat je niet antwoordt.", col::orange);
+                    note("Pietergram", m.from + " thinks it's suspicious that you're not answering.", col::orange);
                 }
             }
         }
@@ -648,7 +648,7 @@ public:
             if (updateT_ <= 0) forcedRestart();
         }
         susp_ = std::clamp(susp_ - dt * 0.4f, 0.0f, 120.0f);  // suspicion slowly fades
-        if (susp_ >= 100) lose("Te verdacht. Mama heeft de wifi-kabel meegenomen.");
+        if (susp_ >= 100) lose("Too suspicious. Mom took the wifi cable.");
     }
 
     void forcedRestart() {
@@ -689,7 +689,7 @@ public:
             case 2: {
                 // they look at your screen the whole time they're in the doorway
                 if (suspiciousVisible()) {
-                    const char* lines[3] = {"PIETER! Wat is dat?!", "WAT. IS. DIT.", "IK ZEG HET TEGEN PAPA!"};
+                    const char* lines[3] = {"PIETER! What is that?!", "WHAT. IS. THIS.", "I'M TELLING DAD!"};
                     caught(lines[(int)c.who]);
                     return;
                 }
@@ -700,13 +700,13 @@ public:
                         energy_ = 100;
                         tiredWarned_ = false;
                         E().sfx.play(Sfx::Gulp, 0.6f);
-                        note("Zus", "Hier is je boba. Je bent me wat schuldig.", col::gold);
+                        note("Sister", "Here's your boba. You owe me.", col::gold);
                     } else if (t && t->app == Huiswerk && homework_ > 0.05f) {
                         susp_ = std::max(0.0f, susp_ - 15);
-                        caption(c.who == Who::Papa ? "[ Papa: \"Goed bezig, jongen.\" ]" : c.who == Who::Mama ? "[ Mama: \"Zo, lekker bezig!\" ]" : "[ Zus: \"Saai hoor, huiswerk.\" ]");
+                        caption(c.who == Who::Papa ? "[ Dad: \"Good job, son.\" ]" : c.who == Who::Mama ? "[ Mom: \"Look at you, working hard!\" ]" : "[ Sister: \"Boring. Homework.\" ]");
                     } else {
                         susp_ += 5;
-                        caption(c.who == Who::Zus ? "[ Zus: \"Wat doe je eigenlijk?\" ]" : "[ \"Hmm. Wat ben je aan het doen?\" ]");
+                        caption(c.who == Who::Zus ? "[ Sister: \"What are you even doing?\" ]" : "[ \"Hmm. What are you up to?\" ]");
                     }
                 }
                 if (c.t >= c.watch) {
@@ -917,7 +917,7 @@ public:
             DrawRectangleRec({w.x, y + 6, w.width, 2}, rgba(0x9a9080ff));
         }
         bool hov = CheckCollisionPointRec(cur_, w) && phase_ == Phase::Play;
-        if (hov && blinds_ < 0.9f) ui::textShadow("DICHT", w.x + w.width / 2, w.y + w.height + 24, 18, WHITE, ui::Center, true, 2);
+        if (hov && blinds_ < 0.9f) ui::textShadow("CLOSE", w.x + w.width / 2, w.y + w.height + 24, 18, WHITE, ui::Center, true, 2);
         // desk
         DrawRectangle(0, 610, VW, 110, rgba(0x5a3a24ff));
         fx::tiled(E().tex("tex/wood"), {0, 612, (float)VW, 108}, 0.6f, {0, 0}, rgba(0xc89870ff));
@@ -959,7 +959,7 @@ public:
         DrawRectangleRounded({c.x - 4, c.y + 2, c.width + 8, 8}, 1, 6, rgba(0xf4ecffff));
         DrawLineEx({c.x + c.width * 0.6f, c.y + 4}, {c.x + c.width * 0.75f, c.y - 34}, 6, col::pink);
         ui::text(TextFormat("%d%%", (int)energy_), c.x + c.width / 2, c.y - 46, 15, lvl < 0.25f ? col::red : col::text, ui::Center, true);
-        ui::text("ENERGIE", c.x + c.width / 2, c.y - 62, 11, col::muted, ui::Center, true);
+        ui::text("ENERGY", c.x + c.width / 2, c.y - 62, 11, col::muted, ui::Center, true);
     }
 
     // ============================================================ draw: desktop
@@ -1117,17 +1117,17 @@ public:
             DrawLineEx({std::max(bar.x, x), bar.y + bar.height}, {std::min(bar.x + bar.width * p, x + 14), bar.y}, 6, alpha(WHITE, 0.12f));
         DrawRectangleLinesEx(bar, 1.5f, col::green);
         ui::text(TextFormat("%d%%", (int)(p * 100)), bar.x + bar.width / 2, bar.y + 13, 15, WHITE, ui::Center, true);
-        ui::text(TextFormat("%.0f / %.0f MB   %s", got_, total_, intr_ != Intr::None ? "GEPAUZEERD" : got_ >= total_ ? "KLAAR" : TextFormat("%.1f MB/s", speed_)),
+        ui::text(TextFormat("%.0f / %.0f MB   %s", got_, total_, intr_ != Intr::None ? "PAUSED" : got_ >= total_ ? "DONE" : TextFormat("%.1f MB/s", speed_)),
                  c.x + 16, c.y + 88, 13, col::green, ui::Left, false);
         float y = c.y + 108;
         if (got_ >= total_) {
             if (installT_ < 0) {
-                if (btn(w, {c.x + c.width / 2 - 90, y + 20, 180, 44}, "INSTALLEREN", rgba(0x1a8a3aff), 18)) {
+                if (btn(w, {c.x + c.width / 2 - 90, y + 20, 180, 44}, "INSTALL", rgba(0x1a8a3aff), 18)) {
                     installT_ = 0;
                     E().sfx.play(Sfx::Power, 0.6f);
                 }
             } else {
-                ui::text("Installeren... niet uitzetten!", c.x + 16, y + 20, 15, col::gold, ui::Left, true);
+                ui::text("Installing... do not turn off!", c.x + 16, y + 20, 15, col::gold, ui::Left, true);
                 DrawRectangleRec({c.x + 16, y + 40, (c.width - 32) * clamp01(installT_ / 6), 10}, col::gold);
             }
             return;
@@ -1145,13 +1145,13 @@ public:
         DrawRectangleRoundedLinesEx(panel, 0.1f, 6, 1.5f, col::orange);
         switch (intr_) {
             case Intr::Lost: {
-                ui::text("Verbinding verbroken.", panel.x + 14, panel.y + 18, 15, col::orange, ui::Left, true);
+                ui::text("Connection lost.", panel.x + 14, panel.y + 18, 15, col::orange, ui::Left, true);
                 Rectangle b{panel.x + (panel.width - 150) * resumeBtn_.x, panel.y + 40 + (panel.height - 90) * (resumeBtn_.y - 0.55f) * 2, 150, 36};
-                if (btn(w, b, "HERVATTEN", rgba(0x1a8a3aff))) intr_ = Intr::None;
+                if (btn(w, b, "RESUME", rgba(0x1a8a3aff))) intr_ = Intr::None;
                 break;
             }
             case Intr::Captcha: {
-                ui::text("Bewijs dat je geen robot bent:", panel.x + 14, panel.y + 16, 14, col::orange, ui::Left, true);
+                ui::text("Prove you are not a robot:", panel.x + 14, panel.y + 16, 14, col::orange, ui::Left, true);
                 Rectangle cap{panel.x + 14, panel.y + 32, 170, 46};
                 DrawRectangleRec(cap, rgba(0xe8e0d0ff));
                 for (int i = 0; i < 6; i++) DrawLineEx({cap.x, cap.y + hashf(i) * cap.height}, {cap.x + cap.width, cap.y + hashf(i + 9) * cap.height}, 2, alpha(rgba(0x6a4a8aff), 0.5f));
@@ -1161,19 +1161,19 @@ public:
                 DrawRectangleRec(in, rgba(0x0a140eff));
                 DrawRectangleLinesEx(in, 1.5f, col::green);
                 ui::text(captchaIn_ + (std::fmod(t_, 1) < 0.5f ? "_" : ""), in.x + 8, in.y + 17, 18, col::green, ui::Left, true);
-                ui::text("typ de code, ENTER", panel.x + 200, panel.y + 86, 11, col::muted, ui::Left, true);
+                ui::text("type the code, ENTER", panel.x + 200, panel.y + 86, 11, col::muted, ui::Left, true);
                 if (btn(w, {panel.x + 14, panel.y + 88, 110, 28}, "OK", rgba(0x1a8a3aff), 13)) submitCaptcha();
                 break;
             }
             case Intr::Blocked:
-                ui::text("PieterDefender heeft PieterHax geblokkeerd.", panel.x + 14, panel.y + 18, 14, col::orange, ui::Left, true);
-                ui::text("Open PieterDefender en klik op TOESTAAN.", panel.x + 14, panel.y + 40, 13, WHITE, ui::Left, false);
+                ui::text("PieterDefender has blocked PieterHax.", panel.x + 14, panel.y + 18, 14, col::orange, ui::Left, true);
+                ui::text("Open PieterDefender and click ALLOW.", panel.x + 14, panel.y + 40, 13, WHITE, ui::Left, false);
                 if (btn(w, {panel.x + 14, panel.y + 62, 190, 32}, "Open PieterDefender", kAppCol[Defender], 13)) open(Defender);
                 break;
             case Intr::DiskFull:
-                ui::text("Schijf C: is vol (0 KB vrij).", panel.x + 14, panel.y + 18, 15, col::orange, ui::Left, true);
-                ui::text("Leeg de prullenbak om verder te gaan.", panel.x + 14, panel.y + 40, 13, WHITE, ui::Left, false);
-                if (btn(w, {panel.x + 14, panel.y + 62, 170, 32}, "Open Prullenbak", kAppCol[Trash], 13)) open(Trash);
+                ui::text("Drive C: is full (0 KB free).", panel.x + 14, panel.y + 18, 15, col::orange, ui::Left, true);
+                ui::text("Empty the recycle bin to continue.", panel.x + 14, panel.y + 40, 13, WHITE, ui::Left, false);
+                if (btn(w, {panel.x + 14, panel.y + 62, 170, 32}, "Open Recycle Bin", kAppCol[Trash], 13)) open(Trash);
                 break;
             default: break;
         }
@@ -1189,20 +1189,20 @@ public:
         for (int i = 0; i < 5; i++) ui::text(tools[i], c.x + 16 + i * 30, c.y + 13, 13, rgba(0x3a3a4aff), ui::Left, true);
         Rectangle page{c.x + 30, c.y + 36, c.width - 60, c.height + 200};
         DrawRectangleRec(page, WHITE);
-        ui::text("Wiskunde - Hoofdstuk 7", page.x + 24, page.y + 26, 18, rgba(0x1a1a2aff), ui::Left, true);
+        ui::text("Math - Chapter 7", page.x + 24, page.y + 26, 18, rgba(0x1a1a2aff), ui::Left, true);
         static const char* body =
-            "Opgave 1. Los op: 2x + 7 = 19. Eerst haal ik 7 aan beide kanten weg, dan krijg ik 2x = 12, dus x = 6. "
-            "Opgave 2. Een stroopwafel heeft een diameter van 9 cm. Bereken de omtrek: pi keer 9 is ongeveer 28,3 cm. "
-            "Opgave 3. Davi fietst 15 km per uur. Hoe lang doet hij over 6 km? 6 gedeeld door 15 is 0,4 uur, dat is 24 minuten. "
-            "Opgave 4. Een boba kost 6,50 euro. Kira koopt er drie. Dat is 19,50 euro. Opgave 5. Teken de grafiek van y = x kwadraat. "
-            "Opgave 6. Het paard rent 60 km per uur en roept JUHUH. Opgave 7. Bewijs dat Pieter de beste is. Bewijs: dat is gewoon zo.";
+            "Exercise 1. Solve: 2x + 7 = 19. First I subtract 7 from both sides, which gives 2x = 12, so x = 6. "
+            "Exercise 2. A stroopwafel is 9 cm across. Work out the circumference: pi times 9 is about 28.3 cm. "
+            "Exercise 3. Davi bikes at 15 km per hour. How long does 6 km take him? 6 divided by 15 is 0.4 hours, that's 24 minutes. "
+            "Exercise 4. A boba costs 6.50 euros. Kira buys three. That's 19.50 euros. Exercise 5. Draw the graph of y = x squared. "
+            "Exercise 6. The horse runs 60 km per hour and yells JUHUH. Exercise 7. Prove that Pieter is the best. Proof: he just is.";
         std::string s(body);
         size_t n = (size_t)(homework_ * s.size());
         float h = ui::paragraph(s.substr(0, n) + (std::fmod(t_, 1) < 0.5f ? "|" : ""), {page.x + 24, page.y + 48, page.width - 48, 0}, 14, rgba(0x2a2a3aff));
         (void)h;
-        if (homework_ < 0.02f) ui::text("(typ iets om huiswerk te 'maken')", page.x + 24, page.y + 60, 13, rgba(0x9a9aaaff), ui::Left, false);
+        if (homework_ < 0.02f) ui::text("(type anything to 'do' your homework)", page.x + 24, page.y + 60, 13, rgba(0x9a9aaaff), ui::Left, false);
         DrawRectangleRec({c.x, c.y + c.height - 20, c.width, 20}, rgba(0xdde0eaff));
-        ui::text(TextFormat("Pagina 1 van 1   %d woorden", (int)(n / 6)), c.x + 10, c.y + c.height - 10, 11, rgba(0x5a5a6aff), ui::Left, false);
+        ui::text(TextFormat("Page 1 of 1   %d words", (int)(n / 6)), c.x + 10, c.y + c.height - 10, 11, rgba(0x5a5a6aff), ui::Left, false);
     }
 
     void appCam(Win& w, Rectangle c) {
@@ -1258,7 +1258,7 @@ public:
                     return;
                 }
             }
-            if (pending->deadline > 0) ui::text(TextFormat("antwoord binnen %ds!", (int)pending->deadline + 1), c.x + c.width - 10, by - 10, 11, col::red, ui::Right, true);
+            if (pending->deadline > 0) ui::text(TextFormat("answer within %ds!", (int)pending->deadline + 1), c.x + c.width - 10, by - 10, 11, col::red, ui::Right, true);
             y = by - 22;
         }
         for (int i = (int)msgs_.size() - 1; i >= 0 && y > c.y; i--) {
@@ -1271,13 +1271,13 @@ public:
             ui::text(m.from, b.x + 10, b.y + 10, 11, m.mine ? alpha(WHITE, 0.8f) : kAppCol[Gram], ui::Left, true);
             ui::paragraph(m.text, {b.x + 10, b.y + 20, wdt - 20, 0}, 13, m.mine ? WHITE : rgba(0x2a1a2aff));
         }
-        if (msgs_.empty()) ui::text("Geen berichten", c.x + c.width / 2, c.y + 40, 14, col::muted, ui::Center, true);
+        if (msgs_.empty()) ui::text("No messages", c.x + c.width / 2, c.y + 40, 14, col::muted, ui::Center, true);
     }
 
     void appBoba(Win& w, Rectangle c) {
         DrawRectangleRec(c, rgba(0xfff4e8ff));
-        ui::text("BobaBezorgd", c.x + 16, c.y + 22, 20, kAppCol[Boba], ui::Left, true);
-        ui::text(TextFormat("Saldo: EUR %.2f", money_), c.x + c.width - 16, c.y + 22, 13, rgba(0x5a3a2aff), ui::Right, true);
+        ui::text("BobaDelivery", c.x + 16, c.y + 22, 20, kAppCol[Boba], ui::Left, true);
+        ui::text(TextFormat("Balance: EUR %.2f", money_), c.x + c.width - 16, c.y + 22, 13, rgba(0x5a3a2aff), ui::Right, true);
         const char* names[] = {"Brown Sugar", "Taro", "Matcha"};
         const Color teas[] = {col::boba, rgba(0xb08ad8ff), rgba(0x8ac86aff)};
         for (int i = 0; i < 3; i++) {
@@ -1295,17 +1295,17 @@ public:
         }
         float y = c.y + 190;
         if (delivery_ > 0) {
-            ui::text(TextFormat("Bezorger is onderweg... %ds", (int)delivery_ + 1), c.x + 16, y + 16, 15, kAppCol[Boba], ui::Left, true);
+            ui::text(TextFormat("Driver is on the way... %ds", (int)delivery_ + 1), c.x + 16, y + 16, 15, kAppCol[Boba], ui::Left, true);
             DrawRectangleRounded({c.x + 16, y + 34, (c.width - 32), 10}, 1, 6, rgba(0xf0e0d0ff));
             DrawRectangleRounded({c.x + 16, y + 34, (c.width - 32) * (1 - delivery_ / 28), 10}, 1, 6, kAppCol[Boba]);
             return;
         }
         bool can = money_ >= 6.5f;
-        if (btn(w, {c.x + 16, y + 10, c.width - 32, 42}, can ? "BESTELLEN  -  EUR 6,50" : "Saldo te laag", kAppCol[Boba], 16, can)) {
+        if (btn(w, {c.x + 16, y + 10, c.width - 32, 42}, can ? "ORDER  -  EUR 6.50" : "Not enough money", kAppCol[Boba], 16, can)) {
             money_ -= 6.5f;
             delivery_ = 28;
             E().sfx.play(Sfx::Coin, 0.5f);
-            note("BobaBezorgd", "Bestelling geplaatst! Je zus brengt hem naar boven.", kAppCol[Boba]);
+            note("BobaDelivery", "Order placed! Your sister will bring it upstairs.", kAppCol[Boba]);
         }
     }
 
@@ -1315,43 +1315,43 @@ public:
         Color st = rat_ ? col::red : col::green;
         DrawCircleV({c.x + 50, c.y + 50}, 26, st);
         ui::text(rat_ ? "!" : "OK", c.x + 50, c.y + 50, 20, WHITE, ui::Center, true);
-        ui::text(rat_ ? "Bedreiging gevonden: RAT" : "Je PC is beschermd", c.x + 90, c.y + 40, 16, rgba(0x1a2a3aff), ui::Left, true);
-        ui::text(rat_ ? "Iemand bestuurt je muis!" : "Geen bedreigingen", c.x + 90, c.y + 62, 12, rgba(0x5a6a7aff), ui::Left, false);
+        ui::text(rat_ ? "Threat found: RAT" : "Your PC is protected", c.x + 90, c.y + 40, 16, rgba(0x1a2a3aff), ui::Left, true);
+        ui::text(rat_ ? "Someone is controlling your mouse!" : "No threats", c.x + 90, c.y + 62, 12, rgba(0x5a6a7aff), ui::Left, false);
         if (scanning) {
             scanT_ += GetFrameTime();
             DrawRectangleRounded({c.x + 20, c.y + 100, c.width - 40, 14}, 1, 6, rgba(0xd0e0eaff));
             DrawRectangleRounded({c.x + 20, c.y + 100, (c.width - 40) * clamp01(scanT_ / 4.5f), 14}, 1, 6, kAppCol[Defender]);
-            ui::text("Scannen...", c.x + 20, c.y + 128, 13, rgba(0x1a2a3aff), ui::Left, true);
+            ui::text("Scanning...", c.x + 20, c.y + 128, 13, rgba(0x1a2a3aff), ui::Left, true);
             if (scanT_ >= 4.5f) {
                 scanT_ = -1;
                 if (rat_) {
                     rat_ = false;
                     std::erase_if(wins_, [](const Win& x) { return x.app == Popup; });
                     E().sfx.play(Sfx::Perfect, 0.6f);
-                    note("PieterDefender", "RAT verwijderd. Je muis is weer van jou.", col::green);
+                    note("PieterDefender", "RAT removed. Your mouse is yours again.", col::green);
                 }
             }
-        } else if (btn(w, {c.x + 20, c.y + 96, 150, 36}, "SCAN NU", kAppCol[Defender])) {
+        } else if (btn(w, {c.x + 20, c.y + 96, 150, 36}, "SCAN NOW", kAppCol[Defender])) {
             scanT_ = 0;
         }
         if (intr_ == Intr::Blocked) {
             Rectangle r{c.x + 14, c.y + c.height - 80, c.width - 28, 66};
             DrawRectangleRounded(r, 0.15f, 6, rgba(0xfff0d8ff));
-            ui::text("Geblokkeerd: PieterHax.exe", r.x + 10, r.y + 16, 13, col::orange, ui::Left, true);
-            if (btn(w, {r.x + r.width - 120, r.y + 24, 110, 34}, "TOESTAAN", col::orange, 13)) {
+            ui::text("Blocked: PieterHax.exe", r.x + 10, r.y + 16, 13, col::orange, ui::Left, true);
+            if (btn(w, {r.x + r.width - 120, r.y + 24, 110, 34}, "ALLOW", col::orange, 13)) {
                 intr_ = Intr::None;
-                note("PieterDefender", "PieterHax.exe toegestaan. (Gevaarlijk!)", col::orange);
+                note("PieterDefender", "PieterHax.exe allowed. (Dangerous!)", col::orange);
             }
         }
     }
 
     void appTrash(Win& w, Rectangle c) {
         DrawRectangleRec(c, rgba(0xf4f2f8ff));
-        const char* files[] = {"oude_memes (2.1 GB)", "fortnite_clips (3.4 GB)", "juhuh_remix_final_FINAL.mp3", "huiswerk_echt.docx"};
+        const char* files[] = {"old_memes (2.1 GB)", "fortnite_clips (3.4 GB)", "juhuh_remix_final_FINAL.mp3", "homework_real.docx"};
         bool full = trashFull_;
         for (int i = 0; i < 4 && full; i++) ui::text(files[i], c.x + 20, c.y + 24 + i * 22, 13, rgba(0x2a2a3aff), ui::Left, false);
-        if (!full) ui::text("De prullenbak is leeg.", c.x + 20, c.y + 30, 14, rgba(0x6a6a7aff), ui::Left, true);
-        if (btn(w, {c.x + 20, c.y + c.height - 56, 170, 38}, "LEEGMAKEN", rgba(0xc8283aff), 15, full)) {
+        if (!full) ui::text("The recycle bin is empty.", c.x + 20, c.y + 30, 14, rgba(0x6a6a7aff), ui::Left, true);
+        if (btn(w, {c.x + 20, c.y + c.height - 56, 170, 38}, "EMPTY", rgba(0xc8283aff), 15, full)) {
             trashFull_ = false;
             E().sfx.play(Sfx::Whoosh, 0.6f, 0.6f);
             if (intr_ == Intr::DiskFull) intr_ = Intr::None;
@@ -1361,20 +1361,20 @@ public:
     void appPopup(Win& w, Rectangle c) {
         DrawRectangleRec(c, std::fmod(t_ + w.id, 0.4f) < 0.2f ? rgba(0xffe0e0ff) : rgba(0xfff0c0ff));
         ui::paragraph(w.msg, {c.x + 14, c.y + 14, c.width - 28, 0}, 15, rgba(0x8a0a1aff));
-        ui::text("sluit dit venster (X) of scan met PieterDefender", c.x + 14, c.y + c.height - 16, 11, rgba(0x5a2a2aff), ui::Left, false);
+        ui::text("close this window (X) or scan with PieterDefender", c.x + 14, c.y + c.height - 16, 11, rgba(0x5a2a2aff), ui::Left, false);
     }
 
     void appUpdate(Win& w, Rectangle c) {
         DrawRectangleRec(c, rgba(0xeef2fcff));
-        ui::text("PieterOS moet opnieuw opstarten", c.x + 16, c.y + 24, 16, rgba(0x1a2a4aff), ui::Left, true);
-        ui::text(TextFormat("Herstart automatisch over %d seconden.", (int)updateT_ + 1), c.x + 16, c.y + 48, 13, rgba(0x4a5a7aff), ui::Left, false);
+        ui::text("PieterOS needs to restart", c.x + 16, c.y + 24, 16, rgba(0x1a2a4aff), ui::Left, true);
+        ui::text(TextFormat("Restarting automatically in %d seconds.", (int)updateT_ + 1), c.x + 16, c.y + 48, 13, rgba(0x4a5a7aff), ui::Left, false);
         if (btn(w, {c.x + 16, c.y + c.height - 52, 160, 36}, "LATER", kAppCol[Update])) {
             updateOn_ = false;
             nextUpdate_ = rnd(45, 70);
             close(w.id);
             return;
         }
-        if (btn(w, {c.x + c.width - 176, c.y + c.height - 52, 160, 36}, "Nu herstarten", rgba(0x8a8a9aff))) forcedRestart();
+        if (btn(w, {c.x + c.width - 176, c.y + c.height - 52, 160, 36}, "Restart now", rgba(0x8a8a9aff))) forcedRestart();
     }
 
     // ============================================================ draw: overlays
@@ -1389,7 +1389,7 @@ public:
     void drawHudBar() {
         // suspicion meter above the monitor
         Rectangle r{20, 20, 120, 12};
-        ui::text("VERDENKING", r.x, r.y - 2, 11, col::muted, ui::Left, true);
+        ui::text("SUSPICION", r.x, r.y - 2, 11, col::muted, ui::Left, true);
         Rectangle bar{20, 34, 120, 14};
         DrawRectangleRounded(bar, 1, 6, col::bgDeep);
         float k = clamp01(susp_ / 100);
@@ -1400,7 +1400,7 @@ public:
         DrawRectangleRounded({20, 82, 120, 14}, 1, 6, col::bgDeep);
         DrawRectangleRounded({20, 82, 120 * pct(), 14}, 1, 6, intr_ != Intr::None ? col::orange : col::green);
         ui::text(TextFormat("%d%%", (int)(pct() * 100)), 146, 89, 12, WHITE, ui::Left, true);
-        if (intr_ != Intr::None && std::fmod(t_, 0.8f) < 0.5f) ui::text("GEPAUZEERD", 20, 108, 11, col::orange, ui::Left, true);
+        if (intr_ != Intr::None && std::fmod(t_, 0.8f) < 0.5f) ui::text("PAUSED", 20, 108, 11, col::orange, ui::Left, true);
         if (captionT_ > 0) {
             float a = clamp01(captionT_ / 0.4f);
             float wdt = ui::measure(captionText_, 16, true) + 30;
@@ -1413,19 +1413,19 @@ public:
         art::purpleBackdrop(t_);
         Rectangle p{VW / 2.0f - 380, 60, 760, 600};
         ui::panel(p, alpha(col::panel, 0.96f), 0.06f, alpha(col::green, 0.6f));
-        fx::gradientText("CHEATS DOWNLOADEN", VW / 2.0f, p.y + 56, 56, rgba(0xc0ffd0ff), col::green, 4);
+        fx::gradientText("CHEAT DOWNLOADER", VW / 2.0f, p.y + 56, 56, rgba(0xc0ffd0ff), col::green, 4);
         ui::text("Get PieterHax onto the PC. Don't let anyone find out.", VW / 2.0f, p.y + 104, 18, col::muted, ui::Center, true);
         const char* rules[] = {
             "Drag windows by the title bar. _ minimises, the square maximises, X closes. Double-click desktop icons.",
             "Footsteps? Look at PieterCam: the door is behind you. Minimise PieterHax and every pop-up before it opens.",
-            "Homework in front when they look = bonus. Type anything in Wiskunde.docx.",
+            "Homework in front when they look = bonus. Type anything in Homework.docx.",
             "Download stuck? Resume it, type the captcha, allow it in PieterDefender or empty the recycle bin.",
             "Gorilla at the window: click the window to close the blinds before the noise wakes the house.",
             "RAT: your mouse is not yours anymore. Scan with PieterDefender.",
-            "Boba = energy. Order more in BobaBezorgd. Answer Mama on Pietergram!",
+            "Boba = energy. Order more in BobaDelivery. Answer Mom on Pietergram!",
         };
         for (int i = 0; i < 7; i++) ui::paragraph(rules[i], {p.x + 50, p.y + 140 + i * 46.0f, p.width - 100, 0}, 15, col::text);
-        const char* diffs[] = {"MAKKELIJK", "NORMAAL", "PAPA MODUS"};
+        const char* diffs[] = {"EASY", "NORMAL", "DAD MODE"};
         const Color dc[] = {rgba(0x2a8a4aff), rgba(0xd8822aff), rgba(0xc81a2aff)};
         for (int i = 0; i < 3; i++)
             if (ui::button({p.x + 40 + i * 230.0f, p.y + p.height - 100, 220, 62}, diffs[i], dc[i], 22)) start(i);
@@ -1438,8 +1438,8 @@ public:
         Vector2 feet{VW / 2.0f, VH + 210.0f};
         person(caughtWho_, feet, 2.6f * k, 1, t_);
         ui::textOutline(caughtLine_, VW / 2.0f, 110, 60 * k, col::red, col::outline, 6);
-        ui::textShadow(TextFormat("VERDENKING %d%%", (int)susp_), VW / 2.0f, 170, 26, WHITE, ui::Center, true, 3);
-        ui::text("(PieterHax is even weggeklikt en de download is terug gezet)", VW / 2.0f, 205, 16, col::muted, ui::Center, true);
+        ui::textShadow(TextFormat("SUSPICION %d%%", (int)susp_), VW / 2.0f, 170, 26, WHITE, ui::Center, true, 3);
+        ui::text("(PieterHax got closed and the download lost some progress)", VW / 2.0f, 205, 16, col::muted, ui::Center, true);
     }
 
     void drawEnd(bool won) {
@@ -1448,15 +1448,15 @@ public:
         float k = easeOutBack(clamp01(phaseT_ / 0.4f));
         p.y += (1 - k) * 60;
         ui::panel(p, alpha(col::panel, 0.97f), 0.08f, alpha(won ? col::green : col::red, 0.6f));
-        ui::textOutline(won ? "GEINSTALLEERD!" : "BETRAPT!", VW / 2.0f, p.y + 66, 64, won ? rgba(0xc0ffd0ff) : rgba(0xffb0b0ff), col::outline, 5);
-        ui::text(won ? "PieterHax staat erop. Nu nog leren gamen." : loseWhy_, VW / 2.0f, p.y + 124, 19, col::muted, ui::Center, true);
-        ui::text(TextFormat("Download: %d%%   Verdenking: %d%%   Betrapt: %dx", (int)(pct() * 100), (int)susp_, caughtCount_), VW / 2.0f, p.y + 170, 17, WHITE, ui::Center, true);
+        ui::textOutline(won ? "INSTALLED!" : "BUSTED!", VW / 2.0f, p.y + 66, 64, won ? rgba(0xc0ffd0ff) : rgba(0xffb0b0ff), col::outline, 5);
+        ui::text(won ? "PieterHax is installed. Now you just need to get good." : loseWhy_, VW / 2.0f, p.y + 124, 19, col::muted, ui::Center, true);
+        ui::text(TextFormat("Download: %d%%   Suspicion: %d%%   Caught: %dx", (int)(pct() * 100), (int)susp_, caughtCount_), VW / 2.0f, p.y + 170, 17, WHITE, ui::Center, true);
         if (won) {
             ui::coin({VW / 2.0f - 100, p.y + 220}, 15);
             ui::text("+" + fmtNum(reward_) + " Pietercoins", VW / 2.0f - 76, p.y + 220, 24, col::gold, ui::Left, true);
         }
         if (phaseT_ > 0.6f) {
-            if (ui::button({p.x + 50, p.y + 300, 250, 62}, "OPNIEUW", rgba(0x2a8a4aff), 24)) start(diff_);
+            if (ui::button({p.x + 50, p.y + 300, 250, 62}, "RETRY", rgba(0x2a8a4aff), 24)) start(diff_);
             if (ui::button({p.x + 340, p.y + 300, 250, 62}, "MENU", col::panelHi, 24)) E().go(makeMenu);
         }
     }
@@ -1472,8 +1472,8 @@ public:
             Rectangle bz = shrink(S, -18);
             DrawRectangleRounded(bz, 0.03f, 8, rgba(0x15121cff));
             DrawRectangleRec(S, rgba(0x0a2a6aff));
-            ui::text("Updates installeren", S.x + S.width / 2, S.y + S.height / 2 - 30, 30, WHITE, ui::Center, true);
-            ui::text(TextFormat("%d%% voltooid. Zet je PC niet uit.", (int)(clamp01(phaseT_ / 5.5f) * 100)), S.x + S.width / 2, S.y + S.height / 2 + 10, 18, WHITE, ui::Center, true);
+            ui::text("Installing updates", S.x + S.width / 2, S.y + S.height / 2 - 30, 30, WHITE, ui::Center, true);
+            ui::text(TextFormat("%d%% complete. Do not turn off your PC.", (int)(clamp01(phaseT_ / 5.5f) * 100)), S.x + S.width / 2, S.y + S.height / 2 + 10, 18, WHITE, ui::Center, true);
             for (int i = 0; i < 6; i++) {
                 Vector2 c = Vector2{S.x + S.width / 2, S.y + S.height / 2 + 80} + fromAngle(t_ * 4 - i * 0.35f, 22);
                 DrawCircleV(c, 4 - i * 0.4f, WHITE);

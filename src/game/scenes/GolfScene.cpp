@@ -45,20 +45,20 @@ std::vector<Vector2> rectPoly(float x0, float y0, float x1, float y1) { return {
 std::vector<Hole> makeCourse() {
     std::vector<Hole> c;
     {  // 1: a warm-up
-        Hole h{"De Eerste Put", 2, {290, 400}, {990, 400}};
+        Hole h{"The First Putt", 2, {290, 400}, {990, 400}};
         h.outline = {{200, 300}, {1000, 300}, {1090, 340}, {1090, 460}, {1000, 500}, {200, 500}};
         h.rough = {{560, 300, 120, 40}, {560, 460, 120, 40}};
         c.push_back(h);
     }
     {  // 2: round the corner
-        Hole h{"Om De Hoek", 3, {250, 540}, {975, 210}};
+        Hole h{"Round the Corner", 3, {250, 540}, {975, 210}};
         h.outline = {{150, 450}, {860, 450}, {860, 120}, {1090, 120}, {1090, 640}, {150, 640}};
         h.bumpers = {{{1000, 580}, 34}};
         h.rough = {{860, 120, 230, 60}};
         c.push_back(h);
     }
     {  // 3: cross the canal on the little bridge
-        Hole h{"De Gracht", 3, {250, 440}, {1030, 260}};
+        Hole h{"The Canal", 3, {250, 440}, {1030, 260}};
         h.outline = {{140, 170}, {1140, 170}, {1140, 570}, {140, 570}};
         h.water = {{560, 170, 150, 400}};
         h.bridges = {{560, 360, 150, 80}};
@@ -66,14 +66,14 @@ std::vector<Hole> makeCourse() {
         c.push_back(h);
     }
     {  // 4: through the windmill
-        Hole h{"De Molen", 3, {230, 380}, {1060, 380}};
+        Hole h{"The Windmill", 3, {230, 380}, {1060, 380}};
         h.outline = {{120, 220}, {1160, 220}, {1160, 540}, {120, 540}};
         h.blocks = {rectPoly(600, 220, 680, 320), rectPoly(600, 440, 680, 540)};
         h.mills = {{{640, 270}, 150, 1.25f}};
         c.push_back(h);
     }
     {  // 5: slalom through the tulip fields
-        Hole h{"Tulpenslalom", 4, {220, 570}, {1060, 200}};
+        Hole h{"Tulip Slalom", 4, {220, 570}, {1060, 200}};
         h.outline = {{120, 110}, {1160, 110}, {1160, 650}, {120, 650}};
         h.blocks = {rectPoly(410, 110, 450, 480), rectPoly(810, 290, 850, 650)};
         h.rough = {{120, 110, 290, 120}, {450, 520, 360, 130}, {850, 110, 310, 70}};
@@ -81,7 +81,7 @@ std::vector<Hole> makeCourse() {
         c.push_back(h);
     }
     {  // 6: stroopwafel pinball
-        Hole h{"Stroopwafel Flipper", 2, {640, 620}, {640, 190}};
+        Hole h{"Stroopwafel Pinball", 2, {640, 620}, {640, 190}};
         for (int i = 0; i < 10; i++) {
             float a = -PI / 2 + i * 2 * PI / 10 + PI / 10;
             h.outline.push_back({640 + std::cos(a) * 330, 405 + std::sin(a) * 285});
@@ -90,14 +90,14 @@ std::vector<Hole> makeCourse() {
         c.push_back(h);
     }
     {  // 7: mind the cyclists
-        Hole h{"Fietspad", 3, {210, 380}, {1080, 380}};
+        Hole h{"Bike Lane", 3, {210, 380}, {1080, 380}};
         h.outline = {{120, 250}, {1170, 250}, {1170, 510}, {120, 510}};
         h.movers = {{{560, 280}, {560, 480}, 2.6f, 0}, {{720, 480}, {720, 280}, 2.1f, 1.3f}};
         h.rough = {{960, 250, 210, 40}, {960, 470, 210, 40}};
         c.push_back(h);
     }
     {  // 8: the U-turn with a speed strip
-        Hole h{"De Haarspeld", 3, {250, 210}, {250, 550}};
+        Hole h{"The Hairpin", 3, {250, 210}, {250, 550}};
         h.outline = {{150, 120}, {1100, 120}, {1100, 640}, {150, 640}};
         h.blocks = {rectPoly(150, 300, 900, 460)};
         h.boosters = {{{940, 300, 140, 160}, {0, 1}}};
@@ -106,7 +106,7 @@ std::vector<Hole> makeCourse() {
         c.push_back(h);
     }
     {  // 9: the grand finale over the canal, past the mill
-        Hole h{"Pieter's Kanaal", 4, {200, 200}, {1070, 580}};
+        Hole h{"Pieter's Canal", 4, {200, 200}, {1070, 580}};
         h.outline = {{100, 100}, {1180, 100}, {1180, 660}, {100, 660}};
         h.water = {{100, 330, 1080, 100}};
         h.bridges = {{290, 330, 90, 100}, {900, 330, 90, 100}};
@@ -199,8 +199,8 @@ enum class Phase { Intro, Aim, Roll, Sink, Splash, Card, Final };
 class GolfScene : public Scene {
 public:
     Presence presence() const override {
-        if (phase_ == Phase::Final) return {"Grachtengolf", "Finished: " + std::to_string(total()) + " strokes"};
-        return {"Grachtengolf", "Hole " + std::to_string(hole_ + 1) + "/9 - " + course_[hole_].name};
+        if (phase_ == Phase::Final) return {"Canal Golf", "Finished: " + std::to_string(total()) + " strokes"};
+        return {"Canal Golf", "Hole " + std::to_string(hole_ + 1) + "/9 - " + course_[hole_].name};
     }
 
     void enter() override {
@@ -539,7 +539,7 @@ public:
         phaseT_ = 0;
         splashAt_ = ball_;
         E().sfx.play(Sfx::Splash, 0.9f);
-        fx_.floatText("PLONS! +1", ball_ + Vector2{0, -30}, rgba(0x8fd0ffff), 28);
+        fx_.floatText("SPLASH! +1", ball_ + Vector2{0, -30}, rgba(0x8fd0ffff), 28);
         for (int i = 0; i < 30; i++) {
             Particle p;
             p.pos = ball_;
@@ -863,7 +863,7 @@ public:
         DrawRectangleGradientV(0, 0, VW, 60, alpha(col::bgDeep, 0.92f), alpha(col::bgDeep, 0.75f));
         DrawLineEx({0, 60}, {(float)VW, 60}, 2, alpha(col::green, 0.5f));
         const Hole& h = course_[hole_];
-        ui::textShadow("GRACHTENGOLF", 170, 30, 26, rgba(0xbff0a0ff), ui::Left, true, 2);
+        ui::textShadow("CANAL GOLF", 170, 30, 26, rgba(0xbff0a0ff), ui::Left, true, 2);
         ui::text(TextFormat("HOLE %d/9  -  %s", hole_ + 1, h.name), 430, 22, 20, WHITE, ui::Left, true);
         ui::text(TextFormat("PAR %d", h.par), 430, 44, 15, col::muted, ui::Left, true);
         // strokes as balls
@@ -882,13 +882,13 @@ public:
     static const char* verdict(int strokes, int par) {
         if (strokes == 1) return "HOLE IN ONE!";
         int d = strokes - par;
-        if (d <= -3) return "ALBATROS!";
+        if (d <= -3) return "ALBATROSS!";
         if (d == -2) return "EAGLE!";
         if (d == -1) return "BIRDIE!";
         if (d == 0) return "PAR";
         if (d == 1) return "BOGEY";
         if (d == 2) return "DOUBLE BOGEY";
-        return "OEPS...";
+        return "OOPS...";
     }
 
     void drawCard(bool final) {
@@ -899,7 +899,7 @@ public:
         ui::panel(p, alpha(col::panel, 0.97f), 0.06f, alpha(col::green, 0.6f));
         if (final) {
             int over = total() - parSoFar(9);
-            ui::textOutline("RONDE KLAAR!", VW / 2.0f, p.y + 58, 60, rgba(0xbff0a0ff), col::outline, 5);
+            ui::textOutline("ROUND COMPLETE!", VW / 2.0f, p.y + 58, 60, rgba(0xbff0a0ff), col::outline, 5);
             ui::text(TextFormat("%d strokes  (%s)", total(), over == 0 ? "even par" : TextFormat("%+d", over)), VW / 2.0f, p.y + 108, 24, WHITE, ui::Center, true);
         } else {
             int s = scores_[hole_];

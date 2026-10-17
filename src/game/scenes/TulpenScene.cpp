@@ -26,7 +26,7 @@ constexpr int kRainbow = -2;  // colourless rainbow tile
 
 const char* kTex[kTypes] = {"spr/tile_tulip", "spr/tile_cheese", "spr/tile_klomp", "spr/tile_wafel", "spr/tile_sprout", "spr/tile_boba"};
 const Color kCol[kTypes] = {rgba(0xff4a5aff), rgba(0xffc840ff), rgba(0x6a8ae8ff), rgba(0xd8903aff), rgba(0x6ad04aff), rgba(0xb07ae8ff)};
-const char* kCheer[] = {"", "", "Lekker!", "Prachtig!", "Geweldig!", "Gezellig!!", "ONGELOFELIJK!"};
+const char* kCheer[] = {"", "", "Nice!", "Beautiful!", "Awesome!", "Amazing!!", "UNBELIEVABLE!"};
 
 enum class Sp { None, StripeH, StripeV, Bomb, Rainbow };
 enum class St { Idle, Swap, SwapBack, Clear, Fall, Bonus, LevelDone, Over };
@@ -51,8 +51,8 @@ struct Creation { Cell at; int type; Sp sp; };
 class TulpenScene : public Scene {
 public:
     Presence presence() const override {
-        if (state_ == St::Over) return {"Tulpenmatch", "Game over - " + fmtNum(score_) + " points"};
-        return {"Tulpenmatch", "Level " + std::to_string(level_) + " - " + fmtNum(score_) + " points"};
+        if (state_ == St::Over) return {"Tulip Match", "Game over - " + fmtNum(score_) + " points"};
+        return {"Tulip Match", "Level " + std::to_string(level_) + " - " + fmtNum(score_) + " points"};
     }
 
     void enter() override {
@@ -385,7 +385,7 @@ public:
             E().sfx.play(Sfx::Power, 0.8f);
             E().flash(WHITE, 0.6f);
             E().shake(20);
-            cheer("ALLES WEG!");
+            cheer("BOARD CLEARED!");
         } else if (ta.type == kRainbow) {
             int t = tb.type;
             if (tb.sp == Sp::None) {
@@ -400,7 +400,7 @@ public:
                             beam(pos(a), pos({x, y}), lighten(kCol[t], 0.4f), 8);
                         }
                 E().sfx.play(Sfx::Power, 0.8f, 0.9f);
-                cheer("REGENBOOG!");
+                cheer("RAINBOW!");
             }
         } else if (stripeA && stripeB) {
             for (int k = 0; k < N; k++) mark({k, b.y}), mark({b.x, k});
@@ -416,14 +416,14 @@ public:
             E().sfx.play(Sfx::Zap, 0.9f, 0.7f);
             E().sfx.play(Sfx::Boom, 0.6f, 1.2f);
             E().shake(14);
-            cheer("KRUISRAKET!");
+            cheer("CROSS BLAST!");
         } else {  // bomb + bomb
             area(b, 2);
             shocks_.add(pb, 10, C * 4, col::orange, 0.6f, 24);
             fx_.burst(pb, 50, col::orange, 700, 10, 0.8f, PShape::Star);
             E().sfx.play(Sfx::Boom, 0.9f, 1.0f);
             E().shake(18);
-            cheer("KABOEM!");
+            cheer("KABOOM!");
         }
         combo_ = std::max(combo_, 1);
         resolve();
@@ -473,7 +473,7 @@ public:
             if (tries == 299) fill();
         }
         shuffleT_ = 1;
-        cheer_ = "Schudden!";
+        cheer_ = "Shuffle!";
         bannerT_ = 0;
         E().sfx.play(Sfx::Whoosh, 0.7f);
     }
@@ -569,7 +569,7 @@ public:
         if (score_ - levelStart_ >= target_) {
             state_ = St::Bonus;
             bonusT_ = 0;
-            cheer_ = "DOEL GEHAALD!";
+            cheer_ = "TARGET REACHED!";
             bannerT_ = 0;
             E().sfx.play(Sfx::Win, 0.6f);
             fx_.confetti({BX + N * C / 2, BY + 40}, 90);
@@ -877,7 +877,7 @@ public:
     void drawPanel() {
         Rectangle p{40, 74, 540, 592};
         ui::panel(p, alpha(col::panel, 0.92f), 0.06f, alpha(col::pink, 0.5f));
-        fx::gradientText("TULPENMATCH", p.x + p.width / 2, p.y + 52, 54, rgba(0xffe0e8ff), col::pink, 4);
+        fx::gradientText("TULIP MATCH", p.x + p.width / 2, p.y + 52, 54, rgba(0xffe0e8ff), col::pink, 4);
         ui::text("LEVEL " + std::to_string(level_), p.x + p.width / 2, p.y + 98, 22, col::gold, ui::Center, true);
         // score
         ui::text("SCORE", p.x + 40, p.y + 150, 16, col::muted, ui::Left, true);
@@ -916,7 +916,7 @@ public:
         fx::endAdd();
         art::pieter(pc, 70, P().hat, std::sin(t_ * 1.6f) * 5);
         // speech bubble
-        std::string say = state_ == St::Over ? "Nee... geen zetten meer." : bannerT_ < 1.8f && !cheer_.empty() ? cheer_ : combo_ > 0 ? "Ja! Ja!" : idleT_ > 6 ? "Psst... kijk eens daar!" : "Lekker matchen!";
+        std::string say = state_ == St::Over ? "No... out of moves." : bannerT_ < 1.8f && !cheer_.empty() ? cheer_ : combo_ > 0 ? "Yes! Yes!" : idleT_ > 6 ? "Psst... look over there!" : "Let's match!";
         Rectangle bub{p.x + 210, p.y + 360, 290, 84};
         DrawRectangleRounded(shrink(bub, -3), 0.4f, 10, col::outline);
         DrawRectangleRounded(bub, 0.4f, 10, rgba(0xfff6fbff));
@@ -1004,7 +1004,7 @@ public:
     }
 
     void drawLevelDone() {
-        drawResultPanel("LEVEL " + std::to_string(level_) + "!", rgba(0xffe0e8ff), "Pieter is proud of you. Lekker bezig.");
+        drawResultPanel("LEVEL " + std::to_string(level_) + "!", rgba(0xffe0e8ff), "Pieter is proud of you. Keep it up.");
         Rectangle p{VW / 2.0f - 300, 130, 600, 420};
         if (stateT_ > 0.5f) {
             if (ui::button({p.x + 40, p.y + 330, 250, 64}, "NEXT LEVEL", rgba(0xc2418aff), 24) || IsKeyPressed(KEY_SPACE) || (autoPlay_ && stateT_ > 1)) {
