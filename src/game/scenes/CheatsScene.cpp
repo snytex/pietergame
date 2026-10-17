@@ -1032,7 +1032,7 @@ public:
         Color tc = focused ? kAppCol[w.app] : darken(kAppCol[w.app], 0.35f);
         DrawRectangleRounded({r.x, r.y, r.width, kTitle + 6}, 0.3f, 6, tc);
         DrawRectangleRec({r.x, r.y + kTitle - 4, r.width, 4}, tc);
-        std::string title = w.app == Popup ? "!!! WAARSCHUWING !!!" : kAppName[w.app];
+        std::string title = w.app == Popup ? "!!! WARNING !!!" : kAppName[w.app];
         ui::text(title, r.x + 12, r.y + kTitle / 2, 14, WHITE, ui::Left, true);
         if (k < 0.98f) return;
         float bx = r.x + r.width - 30;
