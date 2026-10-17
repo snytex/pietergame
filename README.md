@@ -25,6 +25,10 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Five Nights at Pieter's** | Halloween special, FNAF 4 style. You're Pieter in his dark room from 12 AM to 6 AM, with no cameras. Run to the doors (A/D), the closet (W) and the bed (S). Use the flashlight (F / left mouse) to chase Davi and Kira out of the halls, but if you *hear* breathing or giggling at a door, hold it shut (SPACE) and don't shine the light. Hold the closet shut against Het Nachtpaard, light the paardjes off the bed, switch off the PC when Kira hacks it (it speeds everyone up), and throw a stroopwafel or boba down the hall (Q) to buy time. Five nights, plus an unlockable Juhuh night. |
 | **Pieter Kart** | Top-down 3-lap race on the Tulip Circuit against Davi, Kira and the Horse. Hold SPACE through corners to drift and charge a mini-turbo; boba boxes give a boost, a hagelslag spill or a shield. |
 | **Davi's Dungeon** | Twin-stick roguelite in Davi's basement: WASD to move, mouse to aim and shoot boba pearls, SPACE to dash. Clear locked rooms of useless elektronik, pick upgrades in treasure rooms, beat Davi on his gaming chair and take the stairs down. |
+| **Cheats Downloaden** | Desktop sim: get PieterHax to 100% on a real little window manager (drag, minimise, maximise, taskbar). Hide it before Mama, Papa or your sister open the door (watch PieterCam), close the blinds on gorillas, scan away the RAT, resume stalled downloads, order boba and answer Pietergram. |
+| **Natuurfotograaf** | Photo safari through De Veluwe, De Polder and De Wadden. Zoomable viewfinder, real photos, whistle and bread to make animals pose; every shot is judged and new species fill the Natuurgids. |
+| **Grachtengolf** | Nine holes of mini golf through Amsterdam: canals and bridges, windmill sails, stroopwafel bumpers, cyclists, tulip beds and boosters. Drag back to putt. |
+| **Tulpenmatch** | Match-3 with tulips, cheese, klompen and boba. Striped tiles, bombs, rainbow Pieters and combos; levels with targets and move limits. |
 | **Get A Job Simulator** | "Pieter get a job", so he tries all of them: ten five-second microgames (type your CV, pour the coffee, hide from the boss...) that get faster. Four coffees, then you're unemployed. |
 | **Fietsen!** | Endless bike ride along an Amsterdam canal. Switch lanes past tourists and scooters, jump bollards and ducks, grab stroopwafels, and try not to end up in the canal. |
 | **Casino** | Roulette (European), Blackjack (Davi deals), Mines, Slots (96.6% RTP, see `tools/slots_rtp.py`), Crash, Plinko and Dragon Tower (climb 9 rows of eggs, avoid the dragons, five difficulties). If you go broke, Pieter's pity fund helps you out. |
@@ -99,6 +103,10 @@ PG_SCENE=artlab PG_ARTLAB=horse|items ...                      # sprite sheet fo
 PG_SCENE=horses PG_HORSE=bet|race|ride ...                      # jump into a horse mode
 PG_SCENE=mines PG_MINES_DEMO=1 ...                               # a board with some tiles open
 PG_SCENE=job PG_JOB=3 ... / PG_SCENE=dungeon PG_DUNGEON=1|boss ... / PG_SCENE=fiets PG_FIETS=1 ... / PG_SCENE=plinko PG_PLINKO_AUTO=1 ...
+PG_SCENE=tulpen PG_TULP_AUTO=1 / PG_TULP_SPECIALS=1                                   # Tulpenmatch: bot plays / show every special
+PG_SCENE=golf PG_GOLF_HOLE=4 PG_GOLF_AUTO=1                                  # Grachtengolf: start at a hole / bot putts
+PG_SCENE=cheats PG_CHEATS=2 PG_CHEATS_PCT=60 PG_CHEATS_RAT=1 PG_CHEATS_DOOR=1 PG_CHEATS_GORILLA=1 PG_CHEATS_INTR=1..4 PG_CHEATS_CALM=1
+PG_SCENE=photo PG_PHOTO=1..3 PG_PHOTO_AUTO=1 PG_PHOTO_T=60                   # Natuurfotograaf: ride a route / bot photographer / skip ahead
 PG_DUMP_SFX=sfx ./build/pietergame3                              # write every sound effect to sfx/*.wav and quit
 ```
 

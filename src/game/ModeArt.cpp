@@ -282,6 +282,58 @@ void modeArt(const std::string& id, Rectangle r, float t, float hover) {
             Vector2 p{c.x - s * 0.05f + std::fmod(t * 120 + i * 30, s * 0.22f), c.y - s * 0.1f + i * 2.0f};
             fx::shadedBall(p, 4, rgba(0x3a2418ff), 1);
         }
+    } else if (id == "golf") {
+        fx::tiled(E().tex("tex/grass"), shrink(r, 4), 0.9f, {0, 0}, rgba(0xc8f0b0ff));
+        Rectangle canal{c.x - s * 0.1f, r.y + 4, s * 0.2f, r.height - 8};
+        fx::tiled(E().tex("tex/water"), canal, 0.6f, {t * 6, t * 3});
+        fx::tiled(E().tex("tex/wood"), {canal.x - 4, c.y - s * 0.07f, canal.width + 8, s * 0.14f}, 0.5f, {0, 0}, rgba(0xf0c890ff));
+        Vector2 cup{c.x + s * 0.32f, c.y - s * 0.12f};
+        DrawCircleV(cup, 11, WHITE);
+        DrawCircleV(cup, 8, rgba(0x0a0612ff));
+        DrawLineEx(cup, {cup.x + 6, cup.y - s * 0.28f}, 3, WHITE);
+        for (int k = 0; k < 3; k++)
+            DrawRectangleRec({cup.x + 6, cup.y - s * 0.28f + k * 8, s * 0.16f, 8}, k == 0 ? rgba(0xd8283aff) : k == 1 ? WHITE : rgba(0x2a4aa8ff));
+        float ph = std::fmod(t * 0.5f, 1.0f);
+        Vector2 b = Vector2Lerp({c.x - s * 0.36f, c.y + s * 0.02f}, cup, easeOutCubic(ph));
+        fx::shadedBall(b, 8, WHITE, 2);
+    } else if (id == "tulpen") {
+        const char* tex[] = {"spr/tile_tulip", "spr/tile_cheese", "spr/tile_klomp", "spr/tile_wafel", "spr/tile_sprout", "spr/tile_boba"};
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 4; x++) {
+                Vector2 p{c.x + (x - 1.5f) * s * 0.2f, c.y + (y - 1) * s * 0.2f};
+                float pop = (y == 1 && x >= 1) ? 1 + 0.12f * std::max(0.0f, std::sin(t * 4)) * (0.5f + hover) : 1;
+                fx::sprite(E().tex(tex[y == 1 && x >= 1 ? 0 : (x * 7 + y * 3) % 6]), p, s * 0.0016f * pop);
+            }
+    } else if (id == "cheats") {
+        // a monitor with the download bar, the door ajar behind it
+        Rectangle door{c.x + s * 0.18f, c.y - s * 0.4f, s * 0.24f, s * 0.6f};
+        DrawRectangleRec(door, rgba(0xffe0a8ff));
+        DrawRectangleRec({door.x, door.y, door.width * (0.75f - 0.25f * std::sin(t * 1.3f) * hover), door.height}, rgba(0x8a6a4aff));
+        Rectangle mon{c.x - s * 0.4f, c.y - s * 0.22f, s * 0.6f, s * 0.38f};
+        DrawRectangleRounded(shrink(mon, -6), 0.08f, 6, rgba(0x15121cff));
+        DrawRectangleRec(mon, rgba(0x08120cff));
+        float p = std::fmod(t * 0.25f, 1.0f);
+        Rectangle bar{mon.x + 10, mon.y + mon.height * 0.55f, mon.width - 20, 14};
+        DrawRectangleRec(bar, rgba(0x0a2a14ff));
+        DrawRectangleRec({bar.x, bar.y, bar.width * p, bar.height}, col::green);
+        ui::text(TextFormat("PieterHax %d%%", (int)(p * 100)), mon.x + 10, mon.y + 20, 13, col::green, ui::Left, true);
+        DrawRectangleRec({mon.x + mon.width / 2 - 8, mon.y + mon.height + 6, 16, 14}, rgba(0x15121cff));
+        pieter({c.x - s * 0.1f, c.y + s * 0.32f + bob}, s * 0.12f, P().hat);
+    } else if (id == "photo") {
+        DrawRectangleGradientV((int)r.x + 4, (int)r.y + 4, (int)r.width - 8, (int)(r.height * 0.6f), rgba(0x7ab8e8ff), rgba(0xe8f0d8ff));
+        DrawRectangleGradientV((int)r.x + 4, (int)(r.y + r.height * 0.6f), (int)r.width - 8, (int)(r.height * 0.4f) - 4, rgba(0x6a9a3aff), rgba(0x3a6a2aff));
+        fx::sprite(E().tex("spr/ani_deer"), {c.x + s * 0.05f, c.y + s * 0.08f}, s / 520);
+        // viewfinder brackets breathing in on the deer
+        float k = 0.3f + 0.04f * std::sin(t * 2) - hover * 0.04f;
+        Rectangle f{c.x - s * k, c.y - s * k * 0.62f, s * k * 2, s * k * 1.24f};
+        for (int i = 0; i < 4; i++) {
+            Vector2 p{i % 2 ? f.x + f.width : f.x, i < 2 ? f.y : f.y + f.height};
+            float sx = i % 2 ? -1.0f : 1.0f, sy = i < 2 ? 1.0f : -1.0f;
+            DrawLineEx(p, p + Vector2{sx * 16, 0}, 3, WHITE);
+            DrawLineEx(p, p + Vector2{0, sy * 16}, 3, WHITE);
+        }
+        DrawCircleV({f.x + f.width - 12, f.y + 12}, 4, std::fmod(t, 1) < 0.5f ? col::red : darken(col::red, 0.5f));
+        if (std::fmod(t, 3.0f) < 0.08f) DrawRectangleRec(f, alpha(WHITE, 0.7f));
     } else if (id == "plinko") {
         for (int row = 0; row < 6; row++)
             for (int k = 0; k <= row; k++) DrawCircleV({c.x + (k - row / 2.0f) * s * 0.11f, c.y - s * 0.3f + row * s * 0.1f}, 3.5f, WHITE);

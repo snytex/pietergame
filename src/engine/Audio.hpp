@@ -66,6 +66,7 @@ enum class Sfx {
     Pop, Snore, Water, Yawn, Boop, Gulp, Buzz, Msg, Send, Key,
     Breath, Giggle, Heart, Step, Slam, Flash, Scream, Static, MusicBox, Drone, Creak,
     Klomp, FietsBel, Carillon, Rain, Wind, Thunder, Whisper, Knock, Monkey, Cymbal, Tinnitus, Scratch, Riser, Sting,
+    Putt, Cup, Splash, Swap, Match, Gull, Hammer, Cannon, Zap, Laser, Horn, Shutter, Whistle,
     Count
 };
 

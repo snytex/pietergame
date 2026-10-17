@@ -52,6 +52,13 @@ struct Stats {
     int kartWins = 0;      // Pieter Kart: races won
     float kartBestLap = 0; // Pieter Kart: best lap (s), 0 = none
     int dungeonBest = 0;   // Davi's Dungeon: deepest floor
+    int golfBest = 0;      // Grachtengolf: fewest strokes for the full course, 0 = never finished
+    int tulpBest = 0;      // Tulpenmatch: high score
+    int meeuwBest = 0;     // Meeuwen!: high score
+    int polderBest = 0;    // Polder Defense: most waves survived
+    int fotoBest = 0;      // Natuurfotograaf: best route score
+    int fotoRoute = 1;     // Natuurfotograaf: routes unlocked (1..3)
+    int fotoSpecies = 0;   // Natuurfotograaf: bitmask of species photographed
 };
 
 struct BeatsBest {  // Pieter Beats personal best for one song + difficulty

@@ -682,6 +682,392 @@ def spr_canal_tree():
     s.save("canaltree", outline=2)
 
 
+# ====================================================================== Tulpenmatch tiles (128x128)
+
+
+def tile_tulip():
+    s = Sprite(128, 128)
+    s.shape("line", [(64, 120), (64, 70)], hexc("2e7a34"), width=7)
+    s.shape("poly", [(64, 112), (34, 76), (40, 72), (64, 100)], hexc("4aa04a"), hexc("1e5a24"), outline=1.5)
+    s.shape("poly", [(64, 104), (96, 80), (90, 76), (64, 94)], hexc("4aa04a"), hexc("1e5a24"), outline=1.5)
+    # three petals: back, left, right
+    m = s.shape("ellipse", (40, 14, 88, 78), hexc("ff5a6a"), hexc("a01028"), outline=2.5, radial=(56, 28, 56))
+    s.shape("poly", [(30, 30), (52, 18), (64, 52), (58, 80), (36, 72)], hexc("ff4a5a"), hexc("b0182e"), outline=2)
+    s.shape("poly", [(98, 30), (76, 18), (64, 52), (70, 80), (92, 72)], hexc("e83a4a"), hexc("8a0a20"), outline=2)
+    s.shape("poly", [(52, 30), (64, 8), (76, 30), (72, 74), (56, 74)], hexc("ff6a7a"), hexc("c01a34"), outline=2)
+    s.highlight("ellipse", (54, 18, 64, 48), alpha=140)
+    s.highlight("ellipse", (36, 34, 44, 54), alpha=90)
+    s.save("tile_tulip")
+
+
+def tile_cheese():
+    s = Sprite(128, 128)
+    # a wedge of Gouda: top face, front face, red wax rind
+    top = [(14, 58), (100, 26), (116, 50), (30, 82)]
+    front = [(30, 82), (116, 50), (116, 92), (30, 120)]
+    side = [(14, 58), (30, 82), (30, 120), (14, 96)]
+    s.shape("poly", side, hexc("e8a020"), hexc("a86a10"), outline=2.5)
+    m = s.shape("poly", front, hexc("ffc840"), hexc("d89220"), outline=2.5)
+    s.shape("poly", top, hexc("fff0a0"), hexc("ffd050"), outline=2.5, direction="diag")
+    s.shape("poly", [(30, 116), (116, 88), (116, 94), (30, 122)], hexc("d82a2a"), hexc("8a1010"))
+    for (x, y, r) in [(60, 90, 7), (90, 76, 5), (46, 104, 4), (98, 96, 6)]:
+        s.shape("ellipse", (x - r, y - r * 0.8, x + r, y + r * 0.8), hexc("c88418"), hexc("f0b030"))
+    for (x, y, r) in [(54, 52, 5), (80, 44, 4)]:
+        s.shape("ellipse", (x - r, y - r * 0.6, x + r, y + r * 0.6), hexc("e8c050"), hexc("fff0a0"))
+    s.highlight("poly", [(24, 58), (96, 32), (100, 38), (30, 64)], alpha=120)
+    s.save("tile_cheese")
+
+
+def tile_klomp():
+    s = Sprite(128, 128)
+    shoe = [(10, 86), (22, 64), (48, 52), (66, 34), (96, 30), (116, 42), (120, 66), (112, 96), (60, 108), (24, 104)]
+    m = s.shape("poly", shoe, hexc("f4f6ff"), hexc("b8c4e0"), outline=2.5)
+    s.shadow_inside(m, (2, 6), alpha=80, blur=5)
+    # foot opening
+    s.shape("ellipse", (70, 30, 112, 52), hexc("2a2a4a"), hexc("6a6a8a"), outline=2)
+    # Delft blue painting
+    blue = hexc("2a4aa8")
+    s.shape("line", [(28, 84), (44, 74), (60, 80), (76, 70), (92, 76)], blue, width=3)
+    for (x, y) in [(40, 88), (58, 92), (78, 86), (96, 88)]:
+        s.shape("ellipse", (x - 6, y - 4, x + 6, y + 4), blue)
+    s.shape("ellipse", (48, 60, 62, 72), blue)
+    s.shape("ellipse", (51, 63, 59, 69), hexc("f4f6ff"))
+    s.highlight("poly", [(26, 70), (54, 56), (70, 40), (64, 52), (36, 72)], alpha=150)
+    s.save("tile_klomp")
+
+
+def tile_wafel():
+    s = Sprite(128, 128)
+    m = s.shape("ellipse", (8, 12, 120, 120), hexc("e8a850"), hexc("9a5a1a"), outline=2.5, radial=(48, 44, 80))
+    s.shape("ellipse", (16, 20, 112, 112), hexc("f0b860"), hexc("b06a24"), radial=(48, 44, 72))
+    # waffle grid, clipped to the disc
+    g = Sprite(128, 128)
+    for k in range(-6, 8):
+        g.shape("line", [(k * 14 - 40, 0), (k * 14 + 88, 128)], hexc("8a4a14"), width=3)
+        g.shape("line", [(k * 14 + 88, 0), (k * 14 - 40, 128)], hexc("8a4a14"), width=3)
+    disc = s.mask("ellipse", (18, 22, 110, 110))
+    ga = ImageChops.multiply(g.img.getchannel("A"), disc)
+    g.img.putalpha(ga.point(lambda v: v * 150 // 255))
+    s.img.alpha_composite(g.img)
+    # caramel oozing at the edge
+    s.shape("ellipse", (14, 18, 114, 114), (0, 0, 0, 0))
+    for a in range(0, 360, 30):
+        x = 64 + math.cos(math.radians(a)) * 50
+        y = 66 + math.sin(math.radians(a)) * 50
+        s.shape("ellipse", (x - 5, y - 4, x + 5, y + 4), hexc("c8741a"), hexc("7a3a0a"))
+    s.highlight("ellipse", (30, 26, 70, 50), alpha=110)
+    s.save("tile_wafel")
+
+
+def tile_sprout():
+    s = Sprite(128, 128)
+    m = s.shape("ellipse", (14, 14, 114, 116), hexc("9ae06a"), hexc("2e7a2a"), outline=2.5, radial=(48, 40, 84))
+    # leaf layers
+    for i, (a0, a1, r) in enumerate([(200, 340, 44), (20, 160, 40), (230, 320, 26), (40, 140, 24)]):
+        pts = []
+        for k in range(12):
+            a = math.radians(a0 + (a1 - a0) * k / 11)
+            pts.append((64 + math.cos(a) * r, 66 + math.sin(a) * r * 0.9))
+        s.shape("line", pts, hexc("2a6a24"), width=3)
+    s.shape("ellipse", (54, 56, 74, 76), hexc("c8f09a"), hexc("6ab04a"))
+    s.shape("poly", [(58, 106), (70, 106), (66, 122), (62, 122)], hexc("e8f0c8"), hexc("a8b888"), outline=1.5)
+    s.highlight("ellipse", (32, 28, 64, 52), alpha=120)
+    s.save("tile_sprout")
+
+
+def tile_boba():
+    s = Sprite(128, 128)
+    cup = [(28, 30), (100, 30), (92, 120), (36, 120)]
+    m = s.shape("poly", cup, hexc("c8a0f0"), hexc("7a4ab8"), outline=2.5, direction="h")
+    for i in range(9):
+        x = 42 + (i % 5) * 11 + (i // 5) * 5
+        y = 104 - (i // 5) * 10
+        s.shape("ellipse", (x - 5, y - 5, x + 5, y + 5), hexc("4a2a3a"), hexc("1a0a14"), radial=(x - 2, y - 2, 7))
+    s.shape("rrect", (24, 24, 104, 36), hexc("f4ecff"), hexc("c8b8e0"), outline=2, r=4)
+    s.shape("poly", [(70, 2), (78, 2), (72, 60), (64, 60)], hexc("ff6fb5"), hexc("c8307a"), outline=1.5)
+    s.highlight("poly", [(36, 40), (46, 40), (46, 112), (40, 112)], alpha=110)
+    s.save("tile_boba")
+
+
+# ====================================================================== Natuurfotograaf animals (side view, facing right)
+
+
+def legs(s, pts, c0, c1, w=6):
+    for (x0, y0, x1, y1) in pts:
+        s.shape("line", [(x0, y0), (x1, y1)], c0, width=w + 2.5)
+    for (x0, y0, x1, y1) in pts:
+        s.shape("line", [(x0, y0), (x1, y1)], c1, width=w)
+
+
+def eye(s, x, y, r=3.5):
+    s.shape("ellipse", (x - r, y - r, x + r, y + r), OUTLINE)
+    s.shape("ellipse", (x - r * 0.35 - r * 0.3, y - r * 0.65, x - r * 0.3 + r * 0.35, y - r * 0.0), (255, 255, 255, 230))
+
+
+def ani_deer():
+    s = Sprite(220, 210)
+    fur0, fur1 = hexc("c88a4a"), hexc("7a4a22")
+    legs(s, [(66, 120, 60, 200), (84, 122, 90, 200), (150, 118, 156, 200), (166, 116, 176, 198)], OUTLINE, fur1, 7)
+    m = s.shape("ellipse", (46, 76, 186, 140), fur0, fur1, outline=2.5, radial=(100, 86, 110))
+    s.shape("ellipse", (40, 92, 70, 124), hexc("f4ecdc"), hexc("d8c8b0"))  # white rump
+    s.shadow_inside(m, (0, 8), alpha=90, blur=6)
+    s.shape("poly", [(160, 96), (182, 40), (200, 46), (186, 104)], fur0, fur1, outline=2.5)  # neck
+    s.shape("ellipse", (172, 26, 216, 56), fur0, fur1, outline=2.5, radial=(186, 32, 40))  # head
+    s.shape("ellipse", (204, 38, 218, 50), hexc("2a1a14"))  # nose
+    s.shape("poly", [(178, 30), (166, 12), (184, 26)], fur0, fur1, outline=2)  # ear
+    for (x, y) in [(186, 24), (194, 24)]:  # antlers
+        s.shape("line", [(x, y), (x - 4, y - 18), (x - 12, y - 24)], hexc("e8d8b8"), width=3)
+        s.shape("line", [(x - 4, y - 14), (x + 4, y - 22)], hexc("e8d8b8"), width=2.5)
+    eye(s, 196, 36, 3.5)
+    s.highlight("ellipse", (70, 80, 150, 96), alpha=70)
+    s.save("ani_deer")
+
+
+def ani_boar():
+    s = Sprite(210, 140)
+    f0, f1 = hexc("6a5040"), hexc("2e2018")
+    legs(s, [(58, 100, 56, 136), (76, 100, 80, 136), (140, 98, 144, 136), (158, 98, 164, 134)], OUTLINE, f1, 9)
+    m = s.shape("poly", [(30, 76), (60, 40), (130, 30), (176, 44), (196, 72), (190, 96), (150, 108), (60, 108), (32, 96)], f0, f1, outline=2.5)
+    s.shadow_inside(m, (0, 8), alpha=90, blur=6)
+    for i in range(14):  # bristly back
+        x = 62 + i * 8
+        s.shape("line", [(x, 40 - (i % 3)), (x + 4, 30 - (i % 2) * 3)], f1, width=2.5)
+    s.shape("ellipse", (184, 66, 208, 86), hexc("8a6a5a"), hexc("5a4034"), outline=2)  # snout
+    s.shape("ellipse", (196, 72, 200, 76), OUTLINE)
+    s.shape("poly", [(186, 78), (194, 66), (190, 80)], hexc("f4ecdc"), outline=1)  # tusk
+    s.shape("poly", [(160, 42), (156, 24), (172, 40)], f0, f1, outline=2)  # ear
+    eye(s, 172, 56, 3)
+    s.shape("line", [(30, 76), (18, 86)], f1, width=3)  # tail
+    s.save("ani_boar")
+
+
+def ani_fox():
+    s = Sprite(210, 130)
+    o0, o1 = hexc("ff8a3a"), hexc("b04a14")
+    s.shape("poly", [(10, 62), (40, 54), (64, 70), (40, 86), (6, 82)], o0, o1, outline=2.5)  # tail
+    s.shape("poly", [(2, 66), (16, 62), (16, 82), (2, 80)], hexc("f4f0e8"), outline=1.5)
+    legs(s, [(64, 88, 60, 124), (78, 88, 82, 124), (134, 86, 138, 124), (146, 86, 152, 122)], OUTLINE, hexc("2a1a14"), 6)
+    m = s.shape("ellipse", (50, 56, 162, 100), o0, o1, outline=2.5, radial=(100, 60, 90))
+    s.shape("ellipse", (120, 80, 160, 100), hexc("f4f0e8"), hexc("d8d0c0"))  # chest
+    s.shape("poly", [(146, 54), (176, 34), (206, 56), (176, 70), (150, 74)], o0, o1, outline=2.5)  # head
+    s.shape("poly", [(184, 58), (206, 56), (190, 68)], hexc("f4f0e8"))
+    s.shape("poly", [(160, 40), (164, 14), (176, 36)], o0, o1, outline=2)
+    s.shape("poly", [(172, 36), (184, 12), (188, 38)], o0, o1, outline=2)
+    s.shape("ellipse", (202, 52, 210, 60), OUTLINE)
+    eye(s, 180, 46, 3)
+    s.save("ani_fox")
+
+
+def ani_rabbit():
+    s = Sprite(100, 90)
+    g0, g1 = hexc("b8a088"), hexc("6a5440")
+    m = s.shape("ellipse", (14, 34, 78, 84), g0, g1, outline=2.5, radial=(36, 42, 50))
+    s.shape("ellipse", (6, 46, 24, 64), hexc("f8f4ee"), outline=1.5)  # tail
+    s.shape("ellipse", (58, 26, 94, 58), g0, g1, outline=2.5, radial=(70, 32, 30))
+    s.shape("ellipse", (54, 0, 68, 36), g0, g1, outline=2)
+    s.shape("ellipse", (66, 2, 80, 36), g0, g1, outline=2)
+    s.shape("ellipse", (69, 6, 77, 30), hexc("e8b0a8"))
+    s.shape("ellipse", (88, 40, 94, 46), hexc("c87a7a"))
+    eye(s, 80, 38, 3)
+    s.shape("ellipse", (50, 74, 74, 86), g1, outline=1.5)  # hind foot
+    s.save("ani_rabbit")
+
+
+def ani_squirrel():
+    s = Sprite(100, 100)
+    r0, r1 = hexc("d86a2a"), hexc("8a3a14")
+    s.shape("poly", [(30, 90), (6, 60), (8, 20), (30, 8), (40, 30), (28, 60), (44, 86)], r0, r1, outline=2.5)  # bushy tail
+    m = s.shape("ellipse", (34, 44, 76, 96), r0, r1, outline=2.5, radial=(50, 52, 40))
+    s.shape("ellipse", (52, 60, 72, 90), hexc("f4ecdc"))
+    s.shape("ellipse", (54, 26, 90, 58), r0, r1, outline=2.5)
+    s.shape("poly", [(60, 30), (62, 12), (70, 28)], r0, r1, outline=1.5)
+    eye(s, 76, 38, 3)
+    s.shape("ellipse", (62, 66, 74, 78), hexc("8a5a2a"), outline=1.5)  # acorn
+    s.save("ani_squirrel")
+
+
+def ani_woodpecker():
+    s = Sprite(80, 110)
+    s.shape("poly", [(20, 100), (14, 70), (22, 40), (44, 26), (54, 50), (46, 86), (30, 108)], hexc("2a2a30"), hexc("101014"), outline=2.5)
+    s.shape("poly", [(28, 60), (40, 56), (44, 84), (32, 90)], hexc("f4f0e8"), outline=1)
+    for y in (66, 76, 86):
+        s.shape("line", [(18, y), (26, y + 2)], hexc("f4f0e8"), width=2.5)
+    s.shape("ellipse", (34, 16, 62, 42), hexc("2a2a30"), outline=2)
+    s.shape("ellipse", (34, 12, 54, 26), hexc("e8283a"), outline=1.5)  # red cap
+    s.shape("ellipse", (40, 28, 56, 38), hexc("f4f0e8"))
+    s.shape("poly", [(58, 26), (78, 30), (58, 34)], hexc("4a4a50"), outline=1.5)
+    s.shape("ellipse", (24, 92, 40, 108), hexc("e8283a"))
+    eye(s, 52, 24, 2.5)
+    s.save("ani_woodpecker")
+
+
+def ani_cow():
+    s = Sprite(250, 180)
+    w0, w1 = hexc("f8f6f2"), hexc("c8c0b8")
+    legs(s, [(60, 120, 58, 174), (80, 120, 84, 174), (176, 118, 178, 174), (196, 118, 200, 172)], OUTLINE, hexc("e8e4dc"), 11)
+    for (x, y) in [(58, 170), (84, 170), (178, 170), (200, 168)]:
+        s.shape("rrect", (x - 7, y - 4, x + 7, y + 6), hexc("2a2420"), r=2)
+    s.shape("line", [(36, 70), (26, 120)], OUTLINE, width=4)
+    s.shape("ellipse", (20, 116, 32, 132), hexc("2a2420"))
+    m = s.shape("rrect", (34, 56, 216, 128), w0, w1, outline=2.5, r=30)
+    rnd = random.Random(7)
+    spots = [(70, 66, 40), (130, 90, 34), (176, 64, 26), (98, 110, 22)]
+    for x, y, r in spots:
+        pts = [(x + math.cos(a) * r * rnd.uniform(0.6, 1.1), y + math.sin(a) * r * 0.7 * rnd.uniform(0.6, 1.1)) for a in [i * math.tau / 9 for i in range(9)]]
+        s.shape("poly", pts, hexc("1e1a1c"), hexc("3a3438"))
+    s.shadow_inside(m, (0, 8), alpha=70, blur=6)
+    s.shape("ellipse", (120, 112, 160, 134), hexc("f0b0b0"), hexc("c88080"), outline=1.5)  # udder
+    s.shape("rrect", (196, 50, 246, 104), w0, w1, outline=2.5, r=16)  # head
+    s.shape("rrect", (212, 80, 248, 106), hexc("f0b8b0"), hexc("c88a84"), outline=2, r=10)  # muzzle
+    s.shape("ellipse", (230, 88, 236, 94), OUTLINE)
+    s.shape("ellipse", (196, 46, 220, 70), hexc("1e1a1c"))
+    s.shape("poly", [(204, 52), (192, 40), (210, 50)], w0, outline=1.5)
+    s.shape("poly", [(222, 50), (226, 36), (232, 50)], hexc("e8dcc0"), outline=1.5)  # horn
+    eye(s, 224, 66, 3.5)
+    s.highlight("rrect", (60, 60, 190, 74), alpha=80, r=8)
+    s.save("ani_cow")
+
+
+def ani_sheep():
+    s = Sprite(160, 120)
+    legs(s, [(46, 84, 44, 116), (60, 84, 62, 116), (104, 84, 104, 116), (118, 84, 120, 116)], OUTLINE, hexc("2a2428"), 6)
+    rnd = random.Random(9)
+    for i in range(16):
+        x, y, r = rnd.uniform(36, 128), rnd.uniform(40, 82), rnd.uniform(14, 20)
+        s.shape("ellipse", (x - r, y - r, x + r, y + r), hexc("f4f0e8"), hexc("c8c0b0"), outline=2, radial=(x - r * 0.4, y - r * 0.5, r * 1.6))
+    for i in range(16):
+        x, y, r = rnd.uniform(40, 124), rnd.uniform(44, 78), rnd.uniform(10, 14)
+        s.shape("ellipse", (x - r, y - r, x + r, y + r), hexc("fbf8f2"), hexc("d8d0c0"), radial=(x - r * 0.4, y - r * 0.5, r * 1.6))
+    s.shape("ellipse", (120, 44, 156, 76), hexc("2a2428"), hexc("4a4448"), outline=2)
+    s.shape("ellipse", (114, 46, 128, 56), hexc("2a2428"), outline=1.5)
+    eye(s, 142, 56, 2.8)
+    s.save("ani_sheep")
+
+
+def ani_stork(fly):
+    s = Sprite(200 if fly else 140, 120 if fly else 190)
+    if fly:
+        s.shape("poly", [(40, 60), (10, 24), (90, 46), (150, 26), (120, 66)], hexc("f4f0e8"), hexc("c8c0b8"), outline=2.5)
+        s.shape("poly", [(10, 24), (40, 36), (36, 50)], hexc("1a1a1e"))
+        s.shape("poly", [(150, 26), (126, 40), (132, 52)], hexc("1a1a1e"))
+        s.shape("ellipse", (60, 50, 140, 76), hexc("f8f6f2"), hexc("d0c8c0"), outline=2.5)
+        s.shape("line", [(136, 60), (170, 56)], hexc("f8f6f2"), width=7)
+        s.shape("ellipse", (164, 48, 184, 64), hexc("f8f6f2"), outline=2)
+        s.shape("poly", [(182, 54), (200, 58), (182, 60)], hexc("e8402a"), outline=1)
+        s.shape("line", [(60, 66), (14, 74)], hexc("e8402a"), width=3)
+        eye(s, 176, 54, 2)
+        s.save("ani_stork_fly")
+        return
+    legs(s, [(64, 120, 60, 186), (76, 120, 80, 186)], OUTLINE, hexc("e8402a"), 4)
+    m = s.shape("ellipse", (30, 66, 110, 126), hexc("f8f6f2"), hexc("c8c0b8"), outline=2.5)
+    s.shape("poly", [(20, 104), (40, 80), (90, 96), (70, 118), (24, 120)], hexc("1a1a1e"), hexc("3a3a40"), outline=2)  # black wing
+    s.shape("line", [(96, 74), (104, 30)], OUTLINE, width=10)
+    s.shape("line", [(96, 74), (104, 30)], hexc("f8f6f2"), width=7)
+    s.shape("ellipse", (94, 14, 122, 40), hexc("f8f6f2"), hexc("d8d0c8"), outline=2)
+    s.shape("poly", [(118, 24), (140, 32), (118, 32)], hexc("e8402a"), outline=1.5)
+    eye(s, 112, 24, 2.5)
+    s.save("ani_stork")
+
+
+def ani_heron():
+    s = Sprite(130, 200)
+    legs(s, [(56, 130, 52, 196), (66, 130, 70, 196)], OUTLINE, hexc("c8b070"), 4)
+    m = s.shape("ellipse", (26, 70, 90, 136), hexc("b8c0cc"), hexc("6a7484"), outline=2.5)
+    s.shape("poly", [(20, 120), (34, 96), (70, 120), (40, 140)], hexc("8a94a4"), hexc("4a5464"), outline=2)
+    s.shape("line", [(78, 84), (92, 56), (84, 34), (94, 20)], OUTLINE, width=9)
+    s.shape("line", [(78, 84), (92, 56), (84, 34), (94, 20)], hexc("e8ecf0"), width=6)
+    s.shape("ellipse", (84, 8, 108, 28), hexc("e8ecf0"), outline=2)
+    s.shape("line", [(88, 12), (66, 6)], hexc("1a1a20"), width=2.5)  # crest
+    s.shape("poly", [(104, 14), (130, 20), (104, 22)], hexc("e8c040"), outline=1.5)
+    eye(s, 100, 16, 2.2)
+    s.save("ani_heron")
+
+
+def ani_hare():
+    s = Sprite(130, 100)
+    g0, g1 = hexc("b08a5a"), hexc("6a4a2a")
+    s.shape("ellipse", (40, 74, 80, 96), g1, outline=1.5)
+    m = s.shape("ellipse", (14, 38, 96, 90), g0, g1, outline=2.5, radial=(40, 46, 60))
+    s.shape("ellipse", (82, 32, 120, 64), g0, g1, outline=2.5)
+    s.shape("poly", [(90, 36), (78, 0), (96, 4), (100, 36)], g0, g1, outline=2)
+    s.shape("poly", [(80, 2), (84, 0), (88, 10)], OUTLINE)
+    eye(s, 106, 44, 3)
+    s.shape("ellipse", (8, 52, 22, 66), hexc("f8f4ee"), outline=1.5)
+    s.save("ani_hare")
+
+
+def ani_seal():
+    s = Sprite(210, 110)
+    m = s.shape("poly", [(10, 86), (40, 66), (110, 52), (160, 40), (190, 50), (204, 70), (186, 96), (100, 104), (30, 100)], hexc("a8a8b0"), hexc("5a5a68"), outline=2.5)
+    rnd = random.Random(12)
+    for _ in range(30):
+        x, y = rnd.uniform(40, 180), rnd.uniform(60, 96)
+        s.shape("ellipse", (x - 2.5, y - 2, x + 2.5, y + 2), hexc("6a6a78"))
+    s.shadow_inside(m, (0, 8), alpha=90, blur=6)
+    s.shape("poly", [(120, 90), (140, 108), (100, 104)], hexc("7a7a88"), outline=2)  # flipper
+    s.shape("poly", [(10, 86), (0, 72), (2, 100)], hexc("7a7a88"), outline=2)
+    s.shape("ellipse", (186, 60, 200, 70), OUTLINE)
+    for k in range(3):
+        s.shape("line", [(194, 66 + k * 3), (210, 62 + k * 5)], hexc("e8e8f0"), width=1.2)
+    eye(s, 180, 52, 4.5)
+    s.highlight("poly", [(60, 66), (150, 48), (170, 52), (80, 72)], alpha=110)
+    s.save("ani_seal")
+
+
+def ani_spoonbill():
+    s = Sprite(150, 180)
+    legs(s, [(60, 120, 56, 176), (72, 120, 76, 176)], OUTLINE, hexc("2a2a30"), 4)
+    m = s.shape("ellipse", (24, 70, 100, 126), hexc("fbfaf6"), hexc("d0ccc4"), outline=2.5)
+    s.shape("line", [(88, 80), (100, 40)], OUTLINE, width=10)
+    s.shape("line", [(88, 80), (100, 40)], hexc("fbfaf6"), width=7)
+    s.shape("ellipse", (90, 24, 114, 48), hexc("fbfaf6"), outline=2)
+    s.shape("line", [(110, 34), (138, 40)], hexc("2a2a30"), width=4)
+    s.shape("ellipse", (132, 34, 148, 48), hexc("2a2a30"), outline=1)  # the spoon
+    s.shape("ellipse", (94, 50, 106, 60), hexc("ffd84a"))
+    eye(s, 104, 32, 2.2)
+    s.save("ani_spoonbill")
+
+
+def ani_oyster():
+    s = Sprite(110, 90)
+    legs(s, [(46, 60, 44, 88), (56, 60, 58, 88)], OUTLINE, hexc("f08a8a"), 3.5)
+    s.shape("ellipse", (14, 30, 80, 70), hexc("1a1a1e"), hexc("3a3a40"), outline=2.5)
+    s.shape("ellipse", (30, 50, 80, 70), hexc("f8f6f2"), outline=1.5)
+    s.shape("ellipse", (64, 18, 92, 44), hexc("1a1a1e"), outline=2)
+    s.shape("line", [(88, 32), (110, 38)], hexc("ff6a2a"), width=4)
+    s.shape("ellipse", (76, 24, 84, 32), hexc("e8283a"))
+    eye(s, 80, 28, 2)
+    s.save("ani_oyster")
+
+
+def ani_crab():
+    s = Sprite(90, 60)
+    for k in (-1, 1):
+        for i in range(3):
+            x0 = 45 + k * (12 + i * 6)
+            s.shape("line", [(x0, 38), (x0 + k * 14, 46), (x0 + k * 16, 58)], hexc("8a2a14"), width=3)
+    m = s.shape("ellipse", (22, 22, 68, 48), hexc("e8603a"), hexc("8a2a14"), outline=2.5, radial=(38, 26, 34))
+    for k in (-1, 1):
+        s.shape("line", [(45 + k * 18, 30), (45 + k * 30, 16)], hexc("c84a24"), width=4)
+        s.shape("ellipse", (45 + k * 30 - 9, 4, 45 + k * 30 + 9, 22), hexc("e8603a"), hexc("8a2a14"), outline=2)
+    for k in (-1, 1):
+        s.shape("line", [(45 + k * 6, 24), (45 + k * 8, 14)], OUTLINE, width=2)
+        eye(s, 45 + k * 8, 13, 3)
+    s.save("ani_crab")
+
+
+def ani_porpoise():
+    s = Sprite(230, 100)
+    m = s.shape("poly", [(10, 50), (30, 40), (90, 28), (170, 30), (214, 46), (224, 54), (200, 64), (120, 72), (40, 64)], hexc("5a6a80"), hexc("2a3444"), outline=2.5)
+    s.shape("poly", [(40, 60), (120, 70), (200, 62), (150, 54), (80, 56)], hexc("c8d0dc"))  # belly
+    s.shape("poly", [(110, 30), (124, 6), (134, 30)], hexc("4a5a70"), hexc("2a3444"), outline=2)
+    s.shape("poly", [(10, 50), (0, 34), (4, 50), (0, 66)], hexc("4a5a70"), outline=2)
+    s.shape("poly", [(150, 62), (164, 80), (140, 66)], hexc("4a5a70"), outline=1.5)
+    eye(s, 200, 44, 2.6)
+    s.highlight("poly", [(60, 38), (160, 32), (180, 38), (80, 44)], alpha=110)
+    s.save("ani_porpoise")
+
+
 if __name__ == "__main__":
     tex_grass()
     tex_asphalt("asphalt", (52, 52, 60), (84, 84, 94), 3)
@@ -715,3 +1101,9 @@ if __name__ == "__main__":
     spr_bollard()
     spr_duck()
     spr_canal_tree()
+    for f in (tile_tulip, tile_cheese, tile_klomp, tile_wafel, tile_sprout, tile_boba):
+        f()
+    for f in (ani_deer, ani_boar, ani_fox, ani_rabbit, ani_squirrel, ani_woodpecker, ani_cow, ani_sheep, ani_heron, ani_hare, ani_seal, ani_spoonbill, ani_oyster, ani_crab, ani_porpoise):
+        f()
+    ani_stork(False)
+    ani_stork(True)

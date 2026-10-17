@@ -121,7 +121,9 @@ void Profile::save() const {
       << "\ns.biggestWin=" << stats.biggestWin << "\ns.horseWins=" << stats.horseWins << "\ns.rideWins="
       << stats.rideWins << "\ns.stroopBest=" << stats.stroopBest << "\ns.jobBest=" << stats.jobBest
       << "\ns.fietsBest=" << stats.fietsBest << "\ns.kartWins=" << stats.kartWins << "\ns.kartBestLap=" << stats.kartBestLap
-      << "\ns.dungeonBest=" << stats.dungeonBest << "\n";
+      << "\ns.dungeonBest=" << stats.dungeonBest << "\ns.golfBest=" << stats.golfBest << "\ns.tulpBest=" << stats.tulpBest
+      << "\ns.meeuwBest=" << stats.meeuwBest << "\ns.polderBest=" << stats.polderBest << "\ns.fotoBest=" << stats.fotoBest
+      << "\ns.fotoRoute=" << stats.fotoRoute << "\ns.fotoSpecies=" << stats.fotoSpecies << "\n";
     f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
     for (auto& [k, b] : beats) f << "b." << k << "=" << b.score << "," << b.acc << "," << b.fc << "\n";
     f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
@@ -179,6 +181,13 @@ void Profile::load() {
         else if (k == "s.kartWins") stats.kartWins = (int)L();
         else if (k == "s.kartBestLap") stats.kartBestLap = F();
         else if (k == "s.dungeonBest") stats.dungeonBest = (int)L();
+        else if (k == "s.golfBest") stats.golfBest = (int)L();
+        else if (k == "s.tulpBest") stats.tulpBest = (int)L();
+        else if (k == "s.meeuwBest") stats.meeuwBest = (int)L();
+        else if (k == "s.polderBest") stats.polderBest = (int)L();
+        else if (k == "s.fotoBest") stats.fotoBest = (int)L();
+        else if (k == "s.fotoRoute") stats.fotoRoute = (int)L();
+        else if (k == "s.fotoSpecies") stats.fotoSpecies = (int)L();
         else if (k.rfind("b.", 0) == 0) {
             BeatsBest b;
             float fc = 0;

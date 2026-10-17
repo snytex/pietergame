@@ -26,6 +26,10 @@ std::unique_ptr<Scene> makeJob();    // Get A Job Simulator
 std::unique_ptr<Scene> makeFiets();  // Fietsen! bike runner
 std::unique_ptr<Scene> makeKart();   // Pieter Kart
 std::unique_ptr<Scene> makeDungeon();  // Davi's Dungeon
+std::unique_ptr<Scene> makeTulpen();   // Tulpenmatch (match-3)
+std::unique_ptr<Scene> makeGolf();     // Grachtengolf (mini golf)
+std::unique_ptr<Scene> makeCheats();   // Cheats Downloaden (desktop sim)
+std::unique_ptr<Scene> makePhoto();    // Natuurfotograaf (photo safari)
 std::unique_ptr<Scene> makeShop();
 std::unique_ptr<Scene> makeInventory();
 std::unique_ptr<Scene> makeSettings();

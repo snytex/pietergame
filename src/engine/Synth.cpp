@@ -785,6 +785,100 @@ Patch design(Sfx s, Rng& r) {
              .out(0.75f).verb(0.45f, 0.8f);
             break;
         }
+        case Sfx::Putt:  // putter on a golf ball: a crisp tick and a hollow tock
+            p.add(L(0, 0.01f, O::Noise).hp(4000).vol(0.5f))
+             .add(L(0, 0.06f, O::Sine, r.jit(1250, 0.03f), 900).dec(0.018f).vol(0.7f))
+             .add(L(0, 0.08f, O::Sine, 320, 260).dec(0.025f).vol(0.35f))
+             .add(L(0, 0.05f, O::Noise).bp(2600, -1, 4).dec(0.012f).vol(0.3f))
+             .out(0.55f).verb(0.08f, 0.2f);
+            break;
+        case Sfx::Cup: {  // the ball rattles round the cup and drops in
+            const float at[] = {0, 0.07f, 0.12f, 0.155f};
+            for (int i = 0; i < 4; i++)
+                p.add(L(at[i], 0.05f, O::Sine, r.jit(2300 - i * 120, 0.03f)).fm(1.41f, 2).dec(0.012f).vol(0.35f - i * 0.05f));
+            p.add(L(0.19f, 0.2f, O::Sine, 420, 230).drop(0.5f, 0.01f).dec(0.05f).vol(0.9f))
+             .add(L(0.19f, 0.1f, O::Noise).lp(1200).dec(0.03f).vol(0.4f))
+             .out(0.65f).verb(0.15f, 0.3f);
+            break;
+        }
+        case Sfx::Splash:  // plop into a canal
+            p.add(L(0, 0.18f, O::Sine, r.jit(700, 0.06f), 140).glide(0.5f).dec(0.06f).vol(0.8f))
+             .add(L(0.01f, 0.5f, O::Noise).lp(3000, 600).dec(0.14f).vol(0.6f))
+             .add(L(0.01f, 0.3f, O::Noise).bp(1200, 500, 2).dec(0.08f).vol(0.3f));
+            for (int i = 0; i < 5; i++) {
+                float f = r.range(600, 1400);
+                p.add(L(r.range(0.12f, 0.5f), 0.05f, O::Sine, f, f * 1.8f).dec(0.015f).vol(0.15f));
+            }
+            p.out(0.6f).verb(0.2f, 0.4f);
+            break;
+        case Sfx::Swap:  // two tiles sliding past each other
+            p.add(L(0, 0.12f, O::Noise).bp(1500, 3500, 2).env(0.02f, 0.04f).vol(0.35f))
+             .add(L(0, 0.09f, O::Sine, 520, 780).glide(0.6f).dec(0.04f).vol(0.35f))
+             .out(0.35f).verb(0.06f, 0.2f);
+            break;
+        case Sfx::Match:  // sparkly chime, pitched up for combos
+            p.add(L(0, 0.6f, O::Sine, r.jit(1046, 0.004f)).fm(3.5f, 1.8f, 0.2f).dec(0.22f).vol(0.45f))
+             .add(L(0, 0.4f, O::Sine, 2093).dec(0.1f).vol(0.2f))
+             .add(L(0.04f, 0.5f, O::Sine, 1568).fm(2, 1, 0).dec(0.18f).vol(0.25f))
+             .add(L(0, 0.2f, O::Noise).hp(7000).dec(0.05f).vol(0.12f))
+             .out(0.45f).echo(0.12f, 0.09f, 0.3f).verb(0.15f, 0.4f);
+            break;
+        case Sfx::Gull:  // seagull: "kyaa kyaa"
+            for (int k = 0; k < 2; k++) {
+                float at = k * r.range(0.22f, 0.3f), f = r.jit(1350, 0.06f) * (k ? 0.92f : 1.0f);
+                p.add(L(at, 0.2f, O::Saw, f, f * 0.66f).glide(0.7f).vib(0.8f, 30).bp(1900, 1300, 3).drive(1.5f).env(0.01f, 0.06f).vol(0.6f))
+                 .add(L(at, 0.2f, O::Saw, f, f * 0.66f).glide(0.7f).vib(0.8f, 30).bp(3200, -1, 5).env(0.01f, 0.06f).vol(0.25f))
+                 .add(L(at, 0.1f, O::Noise).bp(2500, -1, 2).env(0.005f, 0.04f).vol(0.1f));
+            }
+            p.out(0.45f).verb(0.25f, 0.6f);
+            break;
+        case Sfx::Hammer:  // building a tower: two hammer hits on wood and metal
+            for (int k = 0; k < 2; k++) {
+                float at = k * 0.13f;
+                p.add(L(at, 0.05f, O::Noise).bp(r.range(2600, 3400), -1, 3).dec(0.012f).vol(0.6f))
+                 .add(L(at, 0.25f, O::Sine, r.jit(880, 0.04f)).fm(2.76f, 3, 0.5f).dec(0.07f).vol(0.35f))
+                 .add(L(at, 0.08f, O::Sine, 200, 120).dec(0.02f).vol(0.5f));
+            }
+            p.out(0.5f).verb(0.12f, 0.3f);
+            break;
+        case Sfx::Cannon:  // cheese cannon: a fat thump with a puff
+            p.add(L(0, 0.35f, O::Sine, r.jit(110, 0.05f), 40).drop(1.5f, 0.015f).dec(0.09f).vol(1))
+             .add(L(0, 0.3f, O::Noise).lp(1800, 300).dec(0.07f).vol(0.6f))
+             .add(L(0, 0.03f, O::Noise).hp(3000).vol(0.4f))
+             .out(0.6f).verb(0.15f, 0.35f);
+            break;
+        case Sfx::Zap:  // electric zap
+            p.add(L(0, 0.16f, O::Square, r.jit(1800, 0.05f), 260).pw(0.3f).glide(0.4f).dec(0.05f).vol(0.45f))
+             .add(L(0, 0.16f, O::Crush, 3000, 600).dec(0.05f).vol(0.35f))
+             .add(L(0, 0.05f, O::Noise).hp(5000).dec(0.01f).vol(0.3f))
+             .out(0.4f).verb(0.08f, 0.2f);
+            break;
+        case Sfx::Laser:  // player shot: short, light, never tiring
+            p.add(L(0, 0.07f, O::Square, r.jit(1700, 0.04f), 650).pw(0.25f).glide(0.5f).curve(2).lp(5000).vol(0.4f))
+             .add(L(0, 0.05f, O::Sine, 2400, 1200).curve(2).vol(0.2f))
+             .out(0.25f).verb(0.05f, 0.15f);
+            break;
+        case Sfx::Horn:  // a ship's horn: next wave incoming
+            for (float f : {98.0f, 123.5f, 146.8f})
+                p.add(L(0, 1.6f, O::Saw, f).uni(3, 10).lp(900, 700).env(0.15f, 0.5f).dec(2.0f, 0.6f).vol(0.35f));
+            p.add(L(0, 1.6f, O::Sine, 49).env(0.15f, 0.5f).vol(0.4f))
+             .out(0.55f).verb(0.35f, 0.8f);
+            break;
+        case Sfx::Shutter:  // camera: mirror slap, shutter clack, film advance
+            p.add(L(0, 0.02f, O::Noise).hp(2500).vol(0.7f))
+             .add(L(0, 0.05f, O::Sine, r.jit(1900, 0.03f), 900).dec(0.012f).vol(0.5f))
+             .add(L(0.065f, 0.03f, O::Noise).bp(3200, -1, 2).dec(0.008f).vol(0.6f))
+             .add(L(0.065f, 0.06f, O::Sine, 1300, 700).dec(0.015f).vol(0.4f))
+             .add(L(0.12f, 0.22f, O::Square, 55, 70).pw(0.2f).lp(1400).trem(0.7f, 38).env(0.01f, 0.05f).vol(0.12f))
+             .out(0.55f).verb(0.06f, 0.2f);
+            break;
+        case Sfx::Whistle:  // "fwiet-fwiew"
+            p.add(L(0, 0.22f, O::Sine, r.jit(1700, 0.03f), 2500).glide(0.7f).vib(0.3f, 9).env(0.02f, 0.05f).vol(0.5f))
+             .add(L(0, 0.22f, O::Noise).bp(2200, 2800, 6).env(0.02f, 0.05f).vol(0.08f))
+             .add(L(0.28f, 0.35f, O::Sine, r.jit(2500, 0.03f), 1500).glide(0.8f).vib(0.4f, 8).env(0.02f, 0.1f).vol(0.5f))
+             .add(L(0.28f, 0.35f, O::Noise).bp(2600, 1700, 6).env(0.02f, 0.1f).vol(0.08f))
+             .out(0.5f).verb(0.25f, 0.6f);
+            break;
         case Sfx::Count: break;
     }
     if (p.layers.empty()) p.add(L(0, 0.01f, O::Sine).vol(0));
@@ -799,7 +893,8 @@ const char* name(Sfx s) {
                                   "pop", "snore", "water", "yawn", "boop", "gulp", "buzz", "msg", "send", "key",
                                   "breath", "giggle", "heart", "step", "slam", "flash", "scream", "static", "musicbox", "drone", "creak",
                                   "klomp", "fietsbel", "carillon", "rain", "wind", "thunder", "whisper", "knock", "monkey", "cymbal", "tinnitus",
-                                  "scratch", "riser", "sting"};
+                                  "scratch", "riser", "sting",
+                                  "putt", "cup", "splash", "swap", "match", "gull", "hammer", "cannon", "zap", "laser", "horn", "shutter", "whistle"};
     static_assert(sizeof(names) / sizeof(names[0]) == (size_t)Sfx::Count);
     return names[(int)s];
 }

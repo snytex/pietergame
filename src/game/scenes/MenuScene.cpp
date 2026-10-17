@@ -40,10 +40,14 @@ std::vector<Tile> tilesFor(int tab) {
     Tile fiets{"fiets", "FIETSEN!", "Bike along the canal. Don't fall in.", "NEW", rgba(0x2f7ad8ff), makeFiets};
     Tile kart{"kart", "PIETER KART", "Race Davi, Kira and the Horse.", "NEW", rgba(0xd8582aff), makeKart};
     Tile dungeon{"dungeon", "DAVI'S DUNGEON", "Roguelite. Smash useless elektronik.", "NEW", rgba(0x4a3a8aff), makeDungeon};
+    Tile golf{"golf", "GRACHTENGOLF", "Nine holes of mini golf. Mind the canals.", "NEW", rgba(0x2a8a4aff), makeGolf};
+    Tile tulpen{"tulpen", "TULPENMATCH", "Match three. Cheese, tulips, klompen.", "NEW", rgba(0xc2418aff), makeTulpen};
+    Tile cheats{"cheats", "CHEATS DOWNLOADEN", "Get PieterHax. Don't let Mama see.", "NEW", rgba(0x1a8a3aff), makeCheats};
+    Tile photo{"photo", "NATUURFOTOGRAAF", "Photo safari through Dutch nature.", "NEW", rgba(0x2a7a9aff), makePhoto};
     Tile casino{"casino", "CASINO", "Seven tables. Pity fund included.", "", rgba(0x1f8a4cff), makeCasino};
     Tile fnap{"fnap", "FIVE NIGHTS", "...at Pieter's. Don't open the closet.", "HALLOWEEN", rgba(0x5a1a2aff), makeFnap};
     switch (tab) {
-        case 1: return {classic, kart, dungeon, job, fiets, beats, horses, stroop};
+        case 1: return {cheats, photo, golf, tulpen, classic, kart, dungeon, job, fiets, beats, horses, stroop};
         case 2:
             return {{"roulette", "ROULETTE", "European wheel. All in on 17?", "", rgba(0xb8283aff), makeRoulette},
                     {"blackjack", "BLACKJACK", "Beat Davi the dealer to 21.", "", rgba(0x2a7ab8ff), makeBlackjack},
@@ -53,7 +57,7 @@ std::vector<Tile> tilesFor(int tab) {
                     {"tower", "DRAGON TOWER", "Climb for eggs. Don't wake it.", "", rgba(0x2a8a4aff), makeDragonTower},
                     {"slots", "SLOTS", "Three Pieters pays 500x.", "", rgba(0xc8901aff), makeSlots}};
         case 3: return {room, fnap};
-        default: return {classic, kart, dungeon, job, fiets, room, beats, horses, stroop, casino, fnap};
+        default: return {cheats, photo, golf, tulpen, classic, kart, dungeon, job, fiets, room, beats, horses, stroop, casino, fnap};
     }
 }
 
