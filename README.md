@@ -118,3 +118,30 @@ The code is MIT licensed (see `LICENSE`). The Noto Sans fonts use the SIL Open F
 The Pieter music and artwork in `assets/music` and `assets/images` belong to the PieterGame project and **aren't** covered by the MIT license.
 
 *Pietercoins are fake. Whatever Pieter says, gambling is not a strategy.*
+
+## Versions and automatic updates
+
+Release downloads live in the public [pietergame-releases repository](https://github.com/snytex/pietergame-releases); the source repository stays private. Download the ZIP for Windows x64 or Linux x64, extract the entire folder, and run **PieterGame3.exe** / **PieterGame3** (the launcher). Linux may require `chmod +x PieterGame3 game/pietergame3` after extraction. Linux releases target Ubuntu 22.04 or newer compatible systems with desktop graphics/audio libraries.
+
+The launcher starts the installed game immediately, checks for a newer stable release at startup and every 30 minutes, and downloads and installs it automatically. An in-game banner shows progress and tells you when to close and reopen the game. Your current session keeps running with its original files. Updates are verified against the SHA-256 digest supplied by GitHub's [release API](https://docs.github.com/en/rest/releases/releases), unpacked into a new directory, and activated by an atomic pointer change. Failed or incomplete downloads leave the previous installation selected. Offline play still works. Saves are never part of the update package.
+
+Installed versions live under `%LOCALAPPDATA%/PieterGame3/updates/windows-x64` or `$XDG_DATA_HOME/PieterGame3/updates/linux-x64` (default `~/.local/share`). Old version folders are retained so running instances keep their assets. With all game instances closed, you can delete unused `version-*` folders, keeping the one named in `current.json`; deleting the entire `updates` folder returns to the bundled version. `last-error.txt` records the most recent updater failure. `PG_NO_UPDATES=1` disables network checks. Directly launching the inner `game/pietergame3` binary, or a developer build, bypasses the updater.
+
+### Publishing an update
+
+1. Set the three-part version in `CMakeLists.txt` to a number higher than the last published release.
+2. Commit the game changes and push a matching tag, for example `v3.0.2`.
+3. `.github/workflows/release.yml` tests and builds both platforms, bundles standalone launchers (players do not need Python), and publishes the four ZIP assets to the public releases repository. Draft releases stay hidden from the updater until all assets are uploaded. Ordinary source commits and prereleases do not update players.
+
+One-time CI setup: create a fine-grained GitHub token scoped **only** to `snytex/pietergame-releases` with **Contents: Read and write**, and store it as the `RELEASES_TOKEN` Actions secret in the private `snytex/pietergame` repository. The default Actions token cannot publish to another repository. Never put a token in the launcher or downloadable files. A manual workflow run builds downloadable artifacts without publishing.
+
+For local packaging, freeze `tools/launcher.py` on each target operating system with Python 3.12 and `pyinstaller==6.16.0`:
+
+```sh
+python -m PyInstaller --onefile --windowed --name PieterGame3 --distpath launcher-dist tools/launcher.py
+python tools/package_release.py --build build --launcher launcher-dist/PieterGame3 --version 3.0.1 --platform linux-x64
+# Windows packaging uses --build build-win --launcher launcher-dist/PieterGame3.exe --platform windows-x64
+python -m unittest discover -s tests -v
+```
+
+`dist/releases` contains the full player downloads and smaller `-update.zip` payloads. Publish all four together as a stable `vMAJOR.MINOR.PATCH` release. The stable outer launcher is intentionally not replaced while running; future changes to the launcher itself require downloading a new full package. Game code and assets update automatically.

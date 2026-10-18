@@ -1,0 +1,86 @@
+name: Build and publish game update
+on:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  games:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build mingw-w64 libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libxinerama-dev libxcursor-dev libwayland-dev libxkbcommon-dev
+      - run: sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix && sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+      - run: python3 -m unittest discover -s tests -v
+      - run: cmake -S . -B build -G Ninja -DBUILD_SHARED_LIBS=OFF && cmake --build build -j2
+      - run: cmake -S . -B build-win -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake -DBUILD_SHARED_LIBS=OFF && cmake --build build-win -j2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: games
+          path: |
+            build/pietergame3
+            build/assets
+            build-win/pietergame3.exe
+            build-win/assets
+  launcher:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x64
+          - os: windows-2022
+            platform: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pyinstaller==6.16.0
+      - run: python -m unittest discover -s tests -v
+      - run: python -m PyInstaller --onefile --windowed --name PieterGame3 --distpath launcher-dist tools/launcher.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-${{ matrix.platform }}
+          path: launcher-dist/*
+  publish:
+    needs: [games, launcher]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: games
+          path: binaries
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher-linux-x64
+          path: launchers/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher-windows-x64
+          path: launchers/windows
+      - name: Package and validate version
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/project(PieterGame3 VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
+            echo 'Release tag must match the CMake version'; exit 1
+          fi
+          chmod +x binaries/build/pietergame3
+          python3 tools/package_release.py --build binaries/build --launcher launchers/linux/PieterGame3 --version "$VERSION" --platform linux-x64
+          python3 tools/package_release.py --build binaries/build-win --launcher launchers/windows/PieterGame3.exe --version "$VERSION" --platform windows-x64
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: dist/releases/*.zip
+      - name: Publish public binaries (source stays private)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          test -n "$GH_TOKEN" || { echo 'Set RELEASES_TOKEN to a token with Contents write permission for snytex/pietergame-releases'; exit 1; }
+          gh release create "v$VERSION" dist/releases/*.zip --repo snytex/pietergame-releases --draft --title "PieterGame $VERSION" --notes 'Download the zip for your system, extract it, and run PieterGame3. Updates download and install automatically; reopen the game to use the installed update.'
+          gh release edit "v$VERSION" --repo snytex/pietergame-releases --draft=false --latest

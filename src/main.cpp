@@ -112,7 +112,7 @@ int main() {
     SetTraceLogLevel(LOG_WARNING);
     if (const char* dir = std::getenv("PG_DUMP_SFX")) return dumpSfx(dir);
     P().load();
-    if (!E().init("PieterGame 3", P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
+    if (!E().init("PieterGame 3 - v" PG_VERSION, P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
     E().setSmooth(P().smoothGraphics);
 
     bool mute = std::getenv("PG_MUTE") != nullptr;

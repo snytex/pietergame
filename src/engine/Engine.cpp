@@ -2,6 +2,7 @@
 
 #include "engine/Fx.hpp"
 #include "engine/Ui.hpp"
+#include "engine/UpdateStatus.hpp"
 
 #include <algorithm>
 #include <ctime>
@@ -331,6 +332,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
     while (!WindowShouldClose() && !quit_) {
         float dt = std::min(GetFrameTime(), 1.0f / 20.0f);
         time_ += dt;
+        pollUpdateStatus(dt);
         updateCanvasTransform();
         mousePressed_ = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
         clickConsumed_ = fadeDir_ != 0;  // no clicking through transitions
@@ -389,6 +391,7 @@ void Engine::run(std::unique_ptr<Scene> first) {
         scene_->draw();
         if (flash_ > 0) DrawRectangle(0, 0, VW, VH, alpha(flashColor_, flash_));
         drawToasts();
+        drawUpdateStatus();
         if (fade_ > 0) DrawRectangle(0, 0, VW, VH, alpha(BLACK, easeInOutSine(fade_)));
         rlPopMatrix();
         EndTextureMode();

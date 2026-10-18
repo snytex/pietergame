@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(PieterGame3 VERSION 3.0.0 LANGUAGES C CXX)
+project(PieterGame3 VERSION 3.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,6 +28,7 @@ add_executable(pietergame3 ${PG_SOURCES})
 target_include_directories(pietergame3 PRIVATE src)
 target_link_libraries(pietergame3 PRIVATE raylib)
 target_compile_definitions(pietergame3 PRIVATE PG_SOURCE_ASSETS="${CMAKE_SOURCE_DIR}/assets")
+target_compile_definitions(pietergame3 PRIVATE PG_VERSION="${PROJECT_VERSION}")
 
 if(MSVC)
   target_compile_options(pietergame3 PRIVATE /W4)
