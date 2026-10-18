@@ -89,6 +89,13 @@ assets/       fonts, menu artwork + character portraits, music
 tools/        make_sprites.py (cuts portraits from the menu art), make_cutout.py (Pieter's head for the room), slots_rtp.py
 ```
 
+### Title-screen previews
+
+The title screen uses illustrated covers in `assets/images/covers/<scene>.png` for the hero, cards, and blurred backdrop. Each cover includes its own themed title lettering. Keep covers at 16:9 with title lettering inside a 7% safe margin; UI badges stay below the artwork. Generated cover prompts are recorded in `assets/images/covers/prompts.json`.
+
+Original gameplay captures in `assets/images/preview/` and procedural mode illustrations are preserved.
+To inspect a category or card directly, use `PG_SCENE=menu PG_MENU_CAT=0 PG_MENU_FOCUS=0` with the screenshot hooks below. Categories are Home (0), Action (1), Chill (2), Casino (3), and Special (4); focus is the zero-based card index within that category.
+
 ### Dev hooks
 
 ```sh

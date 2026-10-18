@@ -1,6 +1,6 @@
 // Title screen: a game launcher.
 //   sidebar  - logo, categories, now playing, your profile (coins, level) and the shop/bag/settings/quit buttons
-//   hero     - the selected game, big: a real gameplay preview with a slow pan, its description, tags,
+//   hero     - the selected game, big: an illustrated widescreen game cover, its description, tags,
 //              your personal best and a PLAY button
 //   shelf    - the games in the current category as cards; hover to preview, click to play
 // The crew avatars in the top bar still hold the secret admin code (Pieter, Pieter, Kira, Pieter, Davi).
@@ -8,7 +8,6 @@
 #include "engine/Particles.hpp"
 #include "engine/Ui.hpp"
 #include "game/Art.hpp"
-#include "game/ModeArt.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
 
@@ -125,7 +124,7 @@ int g_focus[CatCount] = {};
 
 constexpr float kSide = 248;  // sidebar width
 constexpr Rectangle kHero{266, 78, 996, 372};
-constexpr float kShelfY = 500, kCardW = 178, kCardH = 194, kCardGap = 16;
+constexpr float kShelfY = 500, kCardW = 256, kCardH = 194, kCardGap = 16;
 
 class MenuScene : public Scene {
 public:
@@ -228,8 +227,8 @@ public:
         // the focused game's preview, blurred, fills the screen and crossfades
         DrawRectangle(0, 0, VW, VH, col::bgDeep);
         bool fading = heroFrom_ >= 0 && heroT_ < 1;
-        if (fading) cover(fx::blurred("preview/" + games()[heroFrom_].id), 1);
-        cover(fx::blurred("preview/" + focused().id), fading ? easeInOutSine(heroT_) : 1);
+        if (fading) cover(fx::blurred("covers/" + games()[heroFrom_].id), 1);
+        cover(fx::blurred("covers/" + focused().id), fading ? easeInOutSine(heroT_) : 1);
         DrawRectangleGradientV(0, 0, VW, VH, alpha(col::bgDeep, 0.5f), alpha(col::bgDeep, 0.9f));
         fx::beginAdd();
         fx::glow({kHero.x + kHero.width * 0.6f, kHero.y + kHero.height * 0.5f}, 700, alpha(focused().color, 0.16f));
@@ -441,19 +440,17 @@ public:
     }
 
     // ============================================================ hero
-    void drawHeroImage(const Game& g, Rectangle r, float a, float slide) {
-        Texture2D& t = E().tex("preview/" + g.id);
-        // slow Ken Burns pan and zoom
-        float ph = std::fmod(t_ * 0.05f, 2.0f);
-        float k = easeInOutSine(ph < 1 ? ph : 2 - ph);
-        float zoom = 1.04f + 0.06f * k;
-        float sw = t.width / zoom, sh = sw * r.height / r.width;
-        if (sh > t.height / zoom) {
-            sh = t.height / zoom;
+    void drawPreview(const Game& g, Rectangle r, float a) {
+        Texture2D& t = E().tex("covers/" + g.id);
+        // Preserve the cover typography: hover lifts the card without zooming
+        // or cropping the title near an edge.
+        if (!t.id || t.width <= 0 || t.height <= 0) return;
+        float sw = (float)t.width, sh = sw * r.height / r.width;
+        if (sh > t.height) {
+            sh = (float)t.height;
             sw = sh * r.width / r.height;
         }
-        float ox = (t.width - sw) * k, oy = (t.height - sh) * 0.5f;
-        DrawTexturePro(t, {ox, oy, sw, sh}, {r.x + slide, r.y, r.width, r.height}, {0, 0}, 0, alpha(WHITE, a));
+        DrawTexturePro(t, {(t.width - sw) / 2, (t.height - sh) / 2, sw, sh}, r, {0, 0}, 0, alpha(WHITE, a));
     }
 
     void drawHero() {
@@ -466,25 +463,14 @@ public:
         E().beginClip(r);
         Color base = darken(g.color, 0.8f);
         DrawRectangleRec(r, base);
-        // the preview sits on the right, the info panel fades over its left edge
-        Rectangle img{r.x + r.width * 0.3f, r.y, r.width * 0.7f, r.height};
-        if (heroFrom_ >= 0 && heroT_ < 1) drawHeroImage(games()[heroFrom_], img, 1 - k, 0);
-        drawHeroImage(g, img, a, (1 - k) * 40);
-        DrawRectangleGradientH((int)(r.x + r.width * 0.3f), (int)r.y, (int)(r.width * 0.34f), (int)r.height, base, alpha(base, 0));
-        DrawRectangleGradientV((int)r.x, (int)(r.y + r.height - 130), (int)r.width, 130, alpha(BLACK, 0), alpha(BLACK, 0.5f));
-        fx::beginAdd();
-        fx::glow({r.x + 140, r.y + 90}, 380, alpha(g.color, 0.32f));
-        fx::endAdd();
-        // the mode illustration as an emblem in the corner
-        Rectangle em{r.x + r.width - 178, r.y + 18, 160, 108};
-        DrawRectangleRounded(shrink(em, -3), 0.18f, 8, alpha(BLACK, 0.45f));
-        fx::gradRoundRect(em, 0.18f, lighten(g.color, 0.1f), darken(g.color, 0.4f));
-        E().endClip();
-        E().beginClip(shrink(em, 3));
-        art::modeArt(g.id, shrink(em, 4), t_, 0.6f);
-        E().endClip();
-        DrawRectangleRoundedLinesEx(em, 0.18f, 8, 2, alpha(WHITE, 0.5f));
-        E().beginClip(r);
+        // Give the cover its own widescreen frame, clear of the copy.
+        Rectangle img{r.x + 424, r.y + 30, r.width - 442, (r.width - 442) * 9 / 16};
+        DrawRectangleRounded(shrink(img, -5), 0.035f, 8, alpha(BLACK, 0.6f));
+        if (heroFrom_ >= 0 && heroT_ < 1) drawPreview(games()[heroFrom_], img, 1);
+        drawPreview(g, img, a);
+        DrawRectangleLinesEx(shrink(img, -1), 1, alpha(WHITE, 0.24f));
+        ui::text("PIETERGAME COLLECTION", img.x, r.y + r.height - 17, 10, alpha(WHITE, 0.55f), ui::Left, true);
+        ui::text(g.chips.front(), img.x + img.width, r.y + r.height - 17, 10, lighten(g.color, 0.55f), ui::Right, true);
         // text block
         float tx = r.x + 34, slideIn = (1 - k) * 24;
         float y = r.y + 40;
@@ -495,11 +481,11 @@ public:
             ui::text(g.tag, tx + slideIn + tw / 2, y, 13, alpha(col::outline, a), ui::Center, true);
             y += 30;
         }
-        float maxW = r.width * 0.5f;
+        float maxW = 364;
         float size = std::min(52.0f, 52 * maxW / std::max(1.0f, ui::measure(g.title, 52, true)));
         ui::textShadow(g.title, tx + slideIn, y + size / 2, size, alpha(WHITE, a), ui::Left, true, 3, alpha(darken(g.color, 0.7f), a));
         y += size + 14;
-        float ph = ui::paragraph(g.blurb, {tx + slideIn * 1.5f, y, r.width * 0.42f, 0}, 16, alpha(col::text, 0.88f * a));
+        float ph = ui::paragraph(g.blurb, {tx + slideIn * 1.5f, y, 364, 0}, 16, alpha(col::text, 0.88f * a));
         y += ph + 20;
         float cx = tx + slideIn * 2;
         for (auto& c : g.chips) {
@@ -572,28 +558,27 @@ public:
                 fx::endAdd();
             }
             fx::softShadow({r.x + r.width / 2, r.y + r.height + 4}, r.width * 0.5f, 14, 0.5f);
-            Rectangle art{r.x, r.y, r.width, 122};
+            Rectangle art{r.x, r.y, r.width, 144};
             DrawRectangleRounded(r, 0.1f, 10, rgba(0x150e26ff));
-            fx::gradRoundRect(art, 0.14f, lighten(g.color, 0.15f + 0.1f * h), darken(g.color, 0.35f));
-            DrawRectangleRec({art.x, art.y + art.height - 12, art.width, 12}, darken(g.color, 0.35f));
-            DrawCircleGradient({art.x + art.width * 0.3f, art.y + 20}, art.width * 0.6f, alpha(WHITE, 0.13f), alpha(WHITE, 0));
             E().endClip();
-            float cx0 = std::max(art.x + 4, area.x), cx1 = std::min(art.x + art.width - 4, area.x + area.width);
+            float cx0 = std::max(art.x, area.x), cx1 = std::min(art.x + art.width, area.x + area.width);
             if (cx1 > cx0) {
-                E().beginClip({cx0, art.y + 4, cx1 - cx0, art.height - 8});
-                art::modeArt(g.id, shrink(art, 6), t_ + i * 0.7f, h);
+                E().beginClip({cx0, art.y, cx1 - cx0, art.height});
+                drawPreview(g, art, 1);
                 E().endClip();
             }
             E().beginClip(area);
+            // Cover typography is part of the artwork. Keep UI badges in the
+            // footer so they never cover a title or a character's face.
+            ui::text(g.chips.empty() ? "" : g.chips[0], r.x + 12, r.y + 169, 11, mix(col::muted, lighten(g.color, 0.5f), h), ui::Left, true);
             if (!g.tag.empty()) {
-                float tw = ui::measure(g.tag, 11, true) + 14;
-                DrawRectangleRounded({r.x + 8, r.y + 8, tw, 19}, 1, 8, tagColor(g.tag));
-                ui::text(g.tag, r.x + 8 + tw / 2, r.y + 17.5f, 11, col::outline, ui::Center, true);
+                float tw = ui::measure(g.tag, 10, true) + 14;
+                Rectangle badge{r.x + r.width - tw - 12, r.y + 159, tw, 20};
+                DrawRectangleRounded(badge, 1, 8, tagColor(g.tag));
+                ui::text(g.tag, badge.x + tw / 2, badge.y + 10, 10, col::outline, ui::Center, true);
+            } else {
+                ui::text(foc ? "PLAY >" : ">", r.x + r.width - 14, r.y + 169, 11, alpha(WHITE, 0.45f + h * 0.55f), ui::Right, true);
             }
-            float tw = ui::measure(g.title, 17, true);
-            float ts = tw > kCardW - 24 ? std::max(11.0f, 17 * (kCardW - 24) / tw) : 17.0f;
-            ui::text(g.title, r.x + 12, r.y + 146, ts, WHITE, ui::Left, true);
-            ui::text(g.chips.empty() ? "" : g.chips[0], r.x + 12, r.y + 170, 11, mix(col::muted, lighten(g.color, 0.5f), h), ui::Left, true);
             DrawRectangleRoundedLinesEx(r, 0.1f, 10, foc ? 2.5f : 1.2f, foc ? alpha(WHITE, 0.15f + 0.75f * h) : alpha(WHITE, 0.1f));
             E().endClip();
             if (over && E().mousePressed()) clicked = i;
