@@ -178,6 +178,7 @@ void SoundBank::poll() {
             for (auto& a : slot.alias[v]) a = LoadSoundAlias(slot.base[v]);
             pcm = {};
         }
+        for (int k = 0; k < 2; k++) slot.bed[k] = LoadSoundAlias(slot.base[k % synth::kVariants]);
     }
     ready_ = true;
 }
@@ -188,8 +189,11 @@ void SoundBank::shutdown() {
     for (auto& slot : slots_)
         for (int v = 0; v < synth::kVariants; v++) {
             for (auto& a : slot.alias[v]) UnloadSoundAlias(a);
-            UnloadSound(slot.base[v]);
         }
+    for (auto& slot : slots_) {
+        for (auto& b : slot.bed) UnloadSoundAlias(b);
+        for (int v = 0; v < synth::kVariants; v++) UnloadSound(slot.base[v]);
+    }
     ready_ = false;
 }
 
@@ -215,8 +219,41 @@ void SoundBank::play(Sfx s, float volume, float pitch, float pan) {
 
 void SoundBank::stop(Sfx s) {
     if (!ready_) return;
-    for (auto& take : slots_[(int)s].alias)
+    auto& slot = slots_[(int)s];
+    for (auto& take : slot.alias)
         for (auto& snd : take) StopSound(snd);
+    for (auto& b : slot.bed) StopSound(b);
+    slot.bedCur = -1;
+}
+
+void SoundBank::loop(Sfx s, float volume, float pan) {
+    poll();
+    if (!ready_) return;
+    auto& slot = slots_[(int)s];
+    float v = volume * volume_;
+    double now = GetTime();
+    if (slot.bedCur >= 0) {
+        Sound& cur = slot.bed[slot.bedCur];
+        float len = (float)cur.frameCount / cur.stream.sampleRate;
+        // both copies follow the volume, so fades between takes stay smooth
+        for (auto& b : slot.bed) {
+            SetSoundVolume(b, v);
+            SetSoundPan(b, std::clamp(pan, -1.0f, 1.0f));
+        }
+        if (now - slot.bedStart < len - 1.2f) return;  // start the next take 1.2 s before this one ends
+        if (v <= 0.001f) {
+            if (!IsSoundPlaying(cur)) slot.bedCur = -1;
+            return;
+        }
+    } else if (v <= 0.001f) {
+        return;
+    }
+    slot.bedCur = slot.bedCur < 0 ? 0 : 1 - slot.bedCur;
+    Sound& next = slot.bed[slot.bedCur];
+    SetSoundVolume(next, v);
+    SetSoundPan(next, std::clamp(pan, -1.0f, 1.0f));
+    PlaySound(next);
+    slot.bedStart = now;
 }
 
 void SoundBank::playAt(Sfx s, float x, float volume, float pitch) { play(s, volume, pitch, (x / VW * 2 - 1) * 0.6f); }

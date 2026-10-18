@@ -67,6 +67,8 @@ enum class Sfx {
     Breath, Giggle, Heart, Step, Slam, Flash, Scream, Static, MusicBox, Drone, Creak,
     Klomp, FietsBel, Carillon, Rain, Wind, Thunder, Whisper, Knock, Monkey, Cymbal, Tinnitus, Scratch, Riser, Sting,
     Putt, Cup, Splash, Swap, Match, Gull, Hammer, Cannon, Zap, Laser, Horn, Shutter, Whistle,
+    DreadLow, DreadHigh, Hum, ClockTick, Rattle, Thud, StepFar, Flee, Snort, Squeak, PhoneBuzz, Birds, Alarm,
+    Roar, Shriek, HorseScream, LowBatt, Glitch, Impact, Swell, Choir,
     Count
 };
 
@@ -81,6 +83,9 @@ public:
     void play(Sfx s, float volume = 1.0f, float pitch = 1.0f, float pan = 0.0f);
     void playAt(Sfx s, float x, float volume = 1.0f, float pitch = 1.0f);  // pans by screen x (virtual units)
     void stop(Sfx s);  // cuts every playing copy of a sound (long ambient loops when leaving a scene)
+    // Seamless ambient bed: call every frame with the volume you want (0 = let it run out).
+    // Takes overlap by their own fade-in/out, so loop patches should fade at both ends.
+    void loop(Sfx s, float volume, float pan = 0.0f);
     void setVolume(float v) { volume_ = v; }
     float volume() const { return volume_; }
 
@@ -91,6 +96,9 @@ private:
         std::array<std::array<Sound, kVoices>, synth::kVariants> alias{};
         int next = 0, lastVariant = -1;
         double lastPlay = -1;
+        std::array<Sound, 2> bed{};  // loop() copies, alternating
+        int bedCur = -1;
+        double bedStart = 0;
     };
     std::array<Slot, (size_t)Sfx::Count> slots_{};
     std::array<std::array<synth::Pcm, synth::kVariants>, (size_t)Sfx::Count> pcm_{};

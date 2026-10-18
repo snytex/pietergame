@@ -24,7 +24,7 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Horses** | *Bet*: six horses, with odds from a Monte Carlo simulation of the race. Bet to WIN or on TOP 3. *Ride*: you're the jockey racing Davi and Kira. Alternate LEFT/RIGHT to gallop and press SPACE to jump hurdles. |
 | **Stroopwafel** | Stack stroopwafels on Pieter's coffee cup. Anything hanging over gets sliced off. Perfect drops build a combo, and every 10 layers earns Pieter a real stroopwafel. |
 | **Pieter Beats** | A 4-lane rhythm game on every Pieter song. The charts are generated from the music itself (onset detection + tempo tracking), on Easy, Normal and Hard. Hit notes with D F J K or the arrow keys, hold the long ones, and fill the JUHUH meter for double points. Grades S to F, full combos and personal bests per song. The first play of a song takes a moment while it's analysed; after that it's cached. |
-| **Five Nights at Pieter's** | Halloween special, FNAF 4 style. You're Pieter in his dark room from 12 AM to 6 AM, with no cameras. Run to the doors (A/D), the closet (W) and the bed (S). Use the flashlight (F / left mouse) to chase Davi and Kira out of the halls, but if you *hear* breathing or giggling at a door, hold it shut (SPACE) and don't shine the light. Hold the closet shut against Het Nachtpaard, light the paardjes off the bed, switch off the PC when Kira hacks it (it speeds everyone up), and throw a stroopwafel or boba down the hall (Q) to buy time. Five nights, plus an unlockable Juhuh night. |
+| **Five Nights at Pieter's** | Halloween special, FNAF 4 style. You're Pieter, alone in the house from 12 AM to 6 AM, with no cameras. Run to the doors (A/D), the closet (W) and the bed (S). Use the flashlight (F / left mouse) to chase Davi and Kira out of the halls, but if you *hear* breathing or giggling at a door, hold it shut (SPACE) and don't shine the light. They don't always leave when they walk away. Hold the closet shut against Het Nachtpaard, light the paardjes off the bed, switch off the PC when Kira hacks it, don't stare at the Monkey Man, and throw a stroopwafel or boba down the hall (Q) to buy time. The torch drains its battery and charges on the desk, and every noise you make draws them in. Each night opens with a push-in on the house from the canal, texts arrive on Pieter's phone, and 6 AM ends on a sunrise. Five nights, plus an unlockable Juhuh night. |
 | **Pieter Kart** | Top-down 3-lap race on the Tulip Circuit against Davi, Kira and the Horse. Hold SPACE through corners to drift and charge a mini-turbo; boba boxes give a boost, a hagelslag spill or a shield. |
 | **Davi's Dungeon** | Twin-stick roguelite in Davi's basement: WASD to move, mouse to aim and shoot boba pearls, SPACE to dash. Clear locked rooms of useless elektronik, pick upgrades in treasure rooms, beat Davi on his gaming chair and take the stairs down. |
 | **Cheats Downloaden** | Desktop sim: get PieterHax to 100% on a real little window manager (drag, minimise, maximise, taskbar). Hide it before Mama, Papa or your sister open the door (watch PieterCam), close the blinds on gorillas, scan away the RAT, resume stalled downloads, order boba and answer Pietergram. |
@@ -98,6 +98,12 @@ The title screen uses illustrated covers in `assets/images/covers/<scene>.png` f
 Original gameplay captures in `assets/images/preview/` and procedural mode illustrations are preserved.
 To inspect a category or card directly, use `PG_SCENE=menu PG_MENU_CAT=0 PG_MENU_FOCUS=0` with the screenshot hooks below. Categories are Home (0), Action (1), Chill (2), Casino (3), and Special (4); focus is the zero-based card index within that category.
 
+### Five Nights at Pieter's: the AI
+
+The night's rules and every monster's mind live in `src/game/fnap/Brain.cpp`, separate from drawing and sound. Each monster is an agent with a memory: they push harder on the door you neglect, follow the noise you make, freeze while you light them up, and fake walking away from the door on later nights. Davi gets angrier every time you chase him off; Kira learns to hide in the bathroom if you keep shining at her. A director paces each night (build, peak, breather), caps how many lethal threats can stack up at once, and stages set pieces like the house going silent before a rush.
+
+`PG_FNAP_SIM=300` runs a headless bot that only acts on what a player could hear or see. Use it after any balance change: no night should have deaths the bot couldn't avoid (`PG_FNAP_SIM_WHY=1` prints each death's cause, `PG_FNAP_SIM_TRACE=night,run` traces one run).
+
 ### Dev hooks
 
 ```sh
@@ -108,6 +114,8 @@ PG_SCENE=room PG_HOUR=22 PG_ROOM=sleep ...                       # Pieter Room a
 PG_SCENE=beats PG_BEATS=3:2 PG_BEATS_AUTO=1 ...                  # Pieter Beats: song 3 on Hard, played by a bot
 PG_SCENE=fnap PG_FNAP=3 PG_FNAP_VIEW=closet PG_FNAP_STAGE=0,0,3,0,0 PG_FNAP_LIGHT=1 ...  # Five Nights: frozen setup for screenshots
 PG_SCENE=fnap PG_FNAP=3 PG_FNAP_MONKEY=1 / PG_FNAP_BOLT=1                                        # Five Nights: Monkey Man at the window / frozen lightning flash
+PG_SCENE=fnap PG_FNAP=3 PG_FNAP_INTRO=1 / PG_FNAP_SCARE=0..3 / PG_FNAP_DAWN=1 / PG_FNAP_OVER=0..3  # Five Nights: cinematic / jumpscare / 6 AM / game over
+PG_FNAP_SIM=300 ./build/pietergame3                                                             # Five Nights: a bot plays every night 300 times, prints win rates
 PG_SCENE=artlab PG_ARTLAB=horse|items ...                      # sprite sheet for checking art
 PG_SCENE=horses PG_HORSE=bet|race|ride ...                      # jump into a horse mode
 PG_SCENE=mines PG_MINES_DEMO=1 ...                               # a board with some tiles open

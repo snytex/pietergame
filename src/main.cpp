@@ -4,6 +4,7 @@
 #include "game/DiscordConfig.hpp"
 #include "game/Profile.hpp"
 #include "game/Scenes.hpp"
+#include "game/fnap/Brain.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -27,6 +28,7 @@ namespace {
 //   PG_FNAP=3 PG_FNAP_VIEW=left PG_FNAP_STAGE=2,0,3,1,1 PG_FNAP_LIGHT=1 PG_FNAP_HOLD=1 PG_FNAP_SCARE=0
 //                                        Five Nights at Pieter's: jump into a night with a frozen setup (screenshots)
 //   PG_BEATS_TEST=1                      analyze every song for Pieter Beats, print tempo + note counts, quit
+//   PG_FNAP_SIM=200                      Five Nights at Pieter's: a bot plays every night N times, print win rates, quit
 //   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -111,6 +113,7 @@ int main() {
     using namespace pg;
     SetTraceLogLevel(LOG_WARNING);
     if (const char* dir = std::getenv("PG_DUMP_SFX")) return dumpSfx(dir);
+    if (const char* runs = std::getenv("PG_FNAP_SIM")) return fnap::simulate(std::max(1, std::atoi(runs)));
     P().load();
     if (!E().init("PieterGame 3 - v" PG_VERSION, P().fullscreen, P().resW, P().resH, P().monitor)) return 1;
     E().setSmooth(P().smoothGraphics);
