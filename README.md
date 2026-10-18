@@ -1,3 +1,5 @@
+# pietergame is fully vibecoded in every possible way. this has been tradition since PG1
+
 # PieterGame 3
 
 The third game starring **Pieter**, the Dutch meme legend. It follows *PieterGame 1* and *PieterGame 2: Online*.
