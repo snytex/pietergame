@@ -85,7 +85,7 @@ def extract(archive, destination, latest, target):
         for item in entries:
             path = PurePosixPath(item.filename)
             mode = item.external_attr >> 16
-            if (path.is_absolute() or ".." in path.parts or "\\" in item.filename
+            if (path.is_absolute() or ".." in path.parts or "\\" in item.orig_filename
                     or ":" in item.filename or stat.S_ISLNK(mode)
                     or item.filename.lower() in seen):
                 raise ValueError("Unsafe archive entry")

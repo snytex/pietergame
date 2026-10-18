@@ -29,7 +29,14 @@ class Updates(unittest.TestCase):
             archive.writestr("assets/images/menu_bg.png", "image")
             archive.writestr("version.json", json.dumps(manifest or self.manifest))
             if extra:
-                archive.writestr(*extra)
+                name, content = extra
+                if isinstance(name, str):
+                    # Preserve hostile raw names even on Windows, where ZipInfo
+                    # normally normalizes backslashes before writing the fixture.
+                    info = zipfile.ZipInfo(name)
+                    info.filename = name
+                    name = info
+                archive.writestr(name, content)
         return buffer.getvalue()
 
     def asset(self, data):

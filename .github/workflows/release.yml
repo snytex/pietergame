@@ -25,6 +25,7 @@ jobs:
             build-win/assets
   launcher:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-22.04
