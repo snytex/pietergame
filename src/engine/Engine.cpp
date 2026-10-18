@@ -296,11 +296,6 @@ void Engine::beginClip(Rectangle r) {
 
 void Engine::updateCanvasTransform() {
     resizeCanvas();
-    fx::init();
-    post_ = LoadShaderFromMemory(nullptr, kPostFs);
-    postLocAberration_ = GetShaderLocation(post_, "aberration");
-    postLocTime_ = GetShaderLocation(post_, "time");
-    postLocRes_ = GetShaderLocation(post_, "resolution");
     float sw = (float)GetScreenWidth(), sh = (float)GetScreenHeight();
     scale_ = std::min(sw / VW, sh / VH);
     offset_ = {(sw - VW * scale_) / 2, (sh - VH * scale_) / 2};
