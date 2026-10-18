@@ -252,7 +252,11 @@ public:
         money_ += bonus;
         fx_.floatText("WAVE " + std::to_string(wave_) + " CLEARED  +" + std::to_string(bonus), {kMapW / 2, 110}, col::green, 30);
         E().sfx.play(Sfx::Perfect, 0.6f);
-        if (bot_) std::printf("polder bot: cleared wave %d, stash %d, money %d, %zu towers\n", wave_, lives_, money_, towers_.size());
+        if (bot_) {
+            std::printf("polder bot: cleared wave %d, stash %d, money %d, %zu towers\n", wave_, lives_, money_, towers_.size());
+            std::fflush(stdout);
+            if (wave_ == kFinalWave) E().quit();
+        }
         if (!bot_) {
             int coins = 5 + wave_ * 2;
             P().earn(coins);

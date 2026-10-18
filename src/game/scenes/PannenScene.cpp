@@ -35,11 +35,11 @@ struct DayDef {
 const DayDef kDays[] = {
     {"Monday", "Opening day! Plain pancakes with syrup or sugar.", 2, 6, 2, 13, 50, 40, 0, 0, false, false},
     {"Tuesday", "Bacon pancakes are on the menu: bake the spek in before you flip.", 3, 8, 2, 11, 46, 60, Spek, 0, false, false},
-    {"Wednesday", "Cheese and apple too. A third pan, and the regulars are coming.", 3, 10, 3, 10, 44, 90, Spek | Kaas | Appel, 0, false, true},
-    {"Thursday", "The coffee machine is fixed. Some customers want a koffie with it.", 4, 12, 3, 9, 42, 120, Spek | Kaas | Appel, 0, true, true},
-    {"Friday", "Bacon AND cheese, if you please. It's getting busy.", 4, 14, 3, 8, 40, 150, Spek | Kaas | Appel, 1, true, true},
-    {"Saturday", "Weekend rush. A fourth pan, and less patience out there.", 4, 16, 4, 7, 36, 190, Spek | Kaas | Appel, 1, true, true},
-    {"Sunday", "The food critic is in town. Everyone is coming.", 4, 18, 4, 6.5f, 34, 230, Spek | Kaas | Appel, 2, true, true},
+    {"Wednesday", "Cheese and apple too. A third pan, and the regulars are coming.", 3, 10, 3, 10, 44, 85, Spek | Kaas | Appel, 0, false, true},
+    {"Thursday", "The coffee machine is fixed. Some customers want a koffie with it.", 4, 12, 3, 9, 42, 105, Spek | Kaas | Appel, 0, true, true},
+    {"Friday", "Bacon AND cheese, if you please. It's getting busy.", 4, 14, 3, 8, 40, 130, Spek | Kaas | Appel, 1, true, true},
+    {"Saturday", "Weekend rush. A fourth pan, and less patience out there.", 4, 16, 4, 7, 36, 150, Spek | Kaas | Appel, 1, true, true},
+    {"Sunday", "The food critic is in town. Everyone is coming.", 4, 18, 4, 6.5f, 34, 175, Spek | Kaas | Appel, 2, true, true},
 };
 constexpr int kDayCount = sizeof(kDays) / sizeof(kDays[0]);
 
@@ -987,7 +987,7 @@ public:
 
     void drawHud() {
         const DayDef& d = kDays[day_];
-        Rectangle r{VW - 250.0f, 64, 236, 66};
+        Rectangle r{VW - 250.0f, 316, 236, 66};
         DrawRectangleRounded(r, 0.3f, 8, alpha(col::bgDeep, 0.85f));
         ui::text(TextFormat("%s  -  day %d", d.name, day_ + 1), r.x + 14, r.y + 18, 14, col::muted, ui::Left, true);
         bool ok = earned_ >= d.target;
@@ -995,7 +995,7 @@ public:
         ui::text(TextFormat("/ %d", d.target), r.x + 24 + ui::measure(TextFormat("EUR %d", earned_), 24, true), r.y + 46, 15, col::muted, ui::Left, true);
         int left = d.customers - spawned_ + (int)customers_.size();
         ui::text(TextFormat("%d to go", left), r.x + r.width - 14, r.y + 46, 13, col::text, ui::Right, true);
-        if (streak_ >= 3 && shiftT_ - lastServe_ < 6) ui::textOutline(TextFormat("RUSH x%d", streak_), VW - 132, 150, 22, col::cyan, col::outline, 3);
+        if (streak_ >= 3 && shiftT_ - lastServe_ < 6) ui::textOutline(TextFormat("RUSH x%d", streak_), VW - 380, 349, 22, col::cyan, col::outline, 3);
     }
 
     void draw() override {
