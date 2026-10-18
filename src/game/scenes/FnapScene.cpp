@@ -367,7 +367,6 @@ public:
         pcOn_ = false;
         pcT_ = 20;
         pcSongT_ = 0;
-        captions_.clear();
         doorAnim_ = 0;
         fx_.clear();
         heartT_ = 0;
@@ -389,12 +388,6 @@ public:
     int hour() const { return std::min(6, (int)(nightT_ / kHourLen)); }
     std::string clockText() const { return hour() == 0 ? "12 AM" : std::to_string(hour()) + " AM"; }
 
-    void caption(const std::string& s, Color c = col::text, float dur = 2.6f) {
-        for (auto& cp : captions_)
-            if (cp.text == s) { cp.t = dur; return; }
-        captions_.push_back({s, c, dur});
-        if (captions_.size() > 3) captions_.erase(captions_.begin());
-    }
 
     // ============================================================ events
     void jumpscare(Who w) {
@@ -446,8 +439,6 @@ public:
     void update(float dt) override {
         t_ += dt;
         fx_.update(dt);
-        for (auto& c : captions_) c.t -= dt;
-        std::erase_if(captions_, [](auto& c) { return c.t <= 0; });
         renderLightMap();
 
         switch (phase_) {
@@ -644,7 +635,6 @@ public:
                             } else {
                                 E().sfx.play(Sfx::FietsBel, near * 0.7f, rnd(0.78f, 0.86f), 0.7f);
                             }
-                            if (!here) caption(s == 0 ? "[ klompen clacking - left hall ]" : "[ a bike bell rings - right hall ]", col::muted, 2);
                         }
                     }
                 }
@@ -663,7 +653,6 @@ public:
                     h.stage = 0;
                     h.moveT = 5;
                     E().sfx.play(Sfx::Hurt, 0.5f, 0.45f, s == 0 ? -0.5f : 0.5f);
-                    caption(s == 0 ? "[ Davi runs back into the dark ]" : "[ Kira skitters away ]", col::muted);
                     flashScare_ = 1;
                 }
             } else {
@@ -678,7 +667,6 @@ public:
                         h.moveT = 6;
                         h.hidden = false;
                         E().sfx.play(Sfx::Step, 0.4f, 0.8f, s == 0 ? -0.6f : 0.6f);
-                        caption("[ footsteps fading away ]", col::muted);
                     }
                 } else if (!devFreeze_) {
                     h.attackT -= dt;
@@ -691,7 +679,6 @@ public:
                         if (s == 0) E().sfx.play(Sfx::Breath, hold ? 0.35f : 0.8f, 1, -0.4f);
                         else E().sfx.play(Sfx::Giggle, hold ? 0.3f : 0.6f, rnd(0.95f, 1.05f), 0.4f);
                     }
-                    caption(s == 0 ? "[ heavy breathing right outside the door ]" : "[ soft giggling right outside the door ]", col::red, 0.3f);
                 }
             }
             // lure: Q throws a stroopwafel (Davi) or boba (Kira)
@@ -709,7 +696,6 @@ public:
                     if (horse_ >= 2) E().sfx.play(Sfx::Scratch, horse_ >= 3 ? 0.5f : 0.25f, rnd(0.9f, 1.1f));
                     if (horse_ >= 3) {
                         E().sfx.play(Sfx::Creak, 0.45f, 0.7f);
-                        caption("[ something scratching inside the closet ]", col::orange);
                     }
                 }
             }
@@ -729,7 +715,6 @@ public:
                 horse_ = 0;
                 horseHold_ = 0;
                 horseT_ = 7;
-                caption("[ the closet goes quiet ]", col::muted);
             }
         } else if (!hold) {
             horseHold_ = 0;
@@ -744,7 +729,6 @@ public:
                 if (rndi(1, 20) <= level(ai.paardjes)) {
                     paardjes_++;
                     E().sfx.play(Sfx::Giggle, 0.22f, 1.7f);
-                    if (paardjes_ >= 2) caption("[ tiny giggles from the bed ]", col::pink);
                 }
             }
         }
@@ -788,7 +772,6 @@ public:
                 pcSongT_ = 7.2f;
                 E().sfx.play(Sfx::MusicBox, view_ == View::Center ? 0.6f : 0.35f, 0.95f, 0.3f);
             }
-            caption("[ a music box is playing from the PC ]", col::violet, 0.3f);
         }
 
         updateMonkey(dt);
@@ -830,7 +813,6 @@ public:
                 monkeyT_ = monkeyStare_ = 0;
                 riser_ = false;
                 E().sfx.play(Sfx::Knock, 0.12f, 1.9f, 0.5f);  // tik tik on the glass
-                caption("[ tik... tik... something at the window ]", col::orange, 3);
             }
             return;
         }
@@ -842,7 +824,6 @@ public:
             if (monkeyStare_ > 1.6f && !riser_) {
                 riser_ = true;
                 E().sfx.play(Sfx::Riser, 0.5f);
-                caption("[ don't look at him ]", col::red, 2);
             }
         } else if (riser_) {
             riser_ = false;
@@ -866,11 +847,9 @@ public:
                     h.stage++;
                     h.seen = false;
                 }
-            caption("[ the Monkey Man woke up the whole house ]", col::red, 3.5f);
         } else if (monkeyT_ > 11) {
             monkeyOn_ = false;
             monkeyNext_ = rnd(40, 70) - night_ * 4;
-            caption("[ the window is empty again ]", col::muted);
         }
     }
 
@@ -880,7 +859,6 @@ public:
             lastHour_ = hour();
             if (lastHour_ > 0 && lastHour_ < 6) {
                 E().sfx.play(Sfx::Carillon, 0.4f, 0.98f);
-                caption("[ the church carillon plays - " + clockText() + " ]", col::gold, 4);
                 hourPulse_ = 1;
             }
         }
@@ -891,7 +869,6 @@ public:
             if (whisperT_ <= 0) {
                 whisperT_ = rnd(14, 32) - night_ * 1.5f;
                 E().sfx.play(Sfx::Whisper, rnd(0.3f, 0.5f), rnd(0.9f, 1.1f));
-                caption("[ whispering... \"pieter...\" ]", col::muted, 2);
             }
         }
         if (night_ >= 2) {  // knocking at a door - maybe nobody's there
@@ -900,7 +877,6 @@ public:
                 knockT_ = rnd(28, 55);
                 bool left = chance(0.5f);
                 E().sfx.play(Sfx::Knock, 0.45f, rnd(0.9f, 1.05f), left ? -0.8f : 0.8f);
-                caption(left ? "[ knocking - left door ]" : "[ knocking - right door ]", col::muted, 2);
             }
         }
         // when things get bad you start seeing faces
@@ -923,10 +899,9 @@ public:
     void lure(int s) {
         Hall& h = hall_[s];
         const char* item = s == 0 ? "stroopwafel" : "boba";
-        if (h.lureUsed) { caption("[ already used a lure on this side tonight ]", col::muted); E().sfx.play(Sfx::Error, 0.4f); return; }
-        if (h.stage == 3) { caption("[ too close... it won't work now ]", col::red); E().sfx.play(Sfx::Error, 0.4f); return; }
+        if (h.lureUsed) { E().sfx.play(Sfx::Error, 0.4f); return; }
+        if (h.stage == 3) { E().sfx.play(Sfx::Error, 0.4f); return; }
         if (!P().take(item)) {
-            caption(s == 0 ? "[ no stroopwafels left - buy some in the shop ]" : "[ no boba left - buy some in the shop ]", col::orange);
             E().sfx.play(Sfx::Error, 0.4f);
             return;
         }
@@ -936,7 +911,6 @@ public:
         h.stunT = 15;
         h.hidden = false;
         E().sfx.play(Sfx::Whoosh, 0.6f);
-        caption(s == 0 ? "[ Davi goes after the stroopwafel ]" : "[ Kira goes after the boba ]", col::gold);
     }
 
     void pcOff() {
@@ -1013,17 +987,6 @@ public:
         }
     }
 
-    void drawCaptions() {
-        float y = VH - 40;
-        for (int i = (int)captions_.size() - 1; i >= 0; i--) {
-            auto& c = captions_[i];
-            float a = clamp01(c.t / 0.3f);
-            float w = ui::measure(c.text, 18, true) + 30;
-            DrawRectangleRounded({VW / 2.0f - w / 2, y - 16, w, 32}, 0.5f, 8, alpha(BLACK, 0.6f * a));
-            ui::text(c.text, VW / 2.0f, y, 18, alpha(c.color, a), ui::Center, true);
-            y -= 38;
-        }
-    }
 
     void drawHud() {
         // clock
@@ -1569,7 +1532,6 @@ public:
         grain(0.035f);
         if (staticT_ > 0) staticScreen(staticT_ * 2);
         drawHud();
-        drawCaptions();
     }
 
     void drawTitle() {
@@ -1767,7 +1729,6 @@ public:
     }
 
 private:
-    struct Caption { std::string text; Color color; float t; };
     Phase phase_ = Phase::Title;
     View view_ = View::Center, pendingView_ = View::Center;
     int night_ = 0;
@@ -1787,7 +1748,6 @@ private:
     bool devLight_ = false, devHold_ = false, devFreeze_ = false;
     Who scareWho_ = Who::Davi;
     long long reward_ = 0;
-    std::vector<Caption> captions_;
     Texture2D mask_{}, noise_{};
     Vector2 doorEyePos_[2]{}, doorQuad_[2][4]{};
     RenderTexture2D lm_{};
