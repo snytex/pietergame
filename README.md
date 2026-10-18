@@ -33,6 +33,7 @@ PG_RENDER_INTRO=1 ./build/pietergame3
 | **Tulpenmatch** | Match-3 with tulips, cheese, klompen and boba. Striped tiles, bombs, rainbow Pieters and combos; levels with targets and move limits. |
 | **Get A Job Simulator** | "Pieter get a job", so he tries all of them: ten five-second microgames (type your CV, pour the coffee, hide from the boss...) that get faster. Four coffees, then you're unemployed. |
 | **Fietsen!** | Endless bike ride along an Amsterdam canal. Switch lanes past tourists and scooters, jump bollards and ducks, grab stroopwafels, and try not to end up in the canal. |
+| **Meeuwen!** | Pieter is a seagull on the beach at Scheveningen. W/S to fly, hold SPACE to dive and let go to swoop back up, and snatch fries, kroketten and haring out of tourists' hands before they hide them. Bump rival gulls to steal their loot, drop a little present (E) to make someone drop their snack, and dodge kites, the patat man's spatula, flying slippers, water pistols and Davi's drones. The day runs from late morning to sunset; keep your belly full. |
 | **Casino** | Roulette (European), Blackjack (Davi deals), Mines, Slots (96.6% RTP, see `tools/slots_rtp.py`), Crash, Plinko and Dragon Tower (climb 9 rows of eggs, avoid the dragons, five difficulties). If you go broke, Pieter's pity fund helps you out. |
 
 You earn **Pietercoins** in every mode. Spend them in **Kira's Shop** on Classic powerups, food for Pieter, and cosmetics (hats and trails). Set your powerup loadout and wardrobe in the **Inventory**.

@@ -1057,6 +1057,33 @@ Patch design(Sfx s, Rng& r) {
              .add(L(0, 2.2f, O::Sine, 49, 55).env(2.0f, 0.01f).curve(0).vol(0.4f))
              .out(0.6f);
             break;
+        // ---- Meeuwen!
+        case Sfx::Flap:  // two quick wingbeats
+            for (int k = 0; k < 2; k++)
+                p.add(L(k * 0.1f, 0.09f, O::Noise).bp(r.jit(720, 0.1f) * (k ? 0.85f : 1), 320, 1.3f).env(0.012f, 0.05f).vol(k ? 0.35f : 0.5f))
+                 .add(L(k * 0.1f, 0.06f, O::Sine, 160, 90).env(0.005f, 0.03f).vol(0.15f));
+            p.out(0.35f).verb(0.05f, 0.2f);
+            break;
+        case Sfx::Splat:  // a wet little present landing
+            p.add(L(0, 0.22f, O::Noise).lp(r.jit(2600, 0.1f), 350).dec(0.05f).vol(0.8f))
+             .add(L(0, 0.12f, O::Sine, r.jit(320, 0.08f), 90).glide(0.5f).dec(0.03f).vol(0.6f))
+             .add(L(0.03f, 0.08f, O::Noise).bp(900, 400, 3).dec(0.02f).vol(0.3f));
+            for (int i = 0; i < 3; i++) {
+                float f = r.range(500, 1100);
+                p.add(L(r.range(0.05f, 0.18f), 0.04f, O::Sine, f, f * 0.6f).dec(0.012f).vol(0.12f));
+            }
+            p.out(0.5f).verb(0.08f, 0.25f);
+            break;
+        case Sfx::Surf:  // bed: waves rolling in and out, far-off gulls
+            p.add(L(0, 8, O::Pink).lp(700, 1300).trem(0.65f, 0.125f).env(1.2f, 1.2f).curve(0).vol(0.7f))
+             .add(L(0, 8, O::Noise).hp(2500).trem(0.8f, 0.125f).env(1.2f, 1.2f).curve(0).vol(0.1f))
+             .add(L(0, 8, O::Pink).lp(220).env(1.2f, 1.2f).curve(0).vol(0.35f));
+            for (int k = 0; k < 2; k++) {
+                float at = r.range(1.5f, 6.0f), f = r.jit(1500, 0.08f);
+                p.add(L(at, 0.18f, O::Saw, f, f * 0.66f).glide(0.7f).vib(0.8f, 30).bp(1900, 1300, 3).env(0.01f, 0.06f).pan(r.bi() * 0.7f).vol(0.05f));
+            }
+            p.out(0.4f).verb(0.25f, 0.7f).asBed();
+            break;
         case Sfx::Count: break;
     }
     if (p.layers.empty()) p.add(L(0, 0.01f, O::Sine).vol(0));
@@ -1074,7 +1101,8 @@ const char* name(Sfx s) {
                                   "scratch", "riser", "sting",
                                   "putt", "cup", "splash", "swap", "match", "gull", "hammer", "cannon", "zap", "laser", "horn", "shutter", "whistle",
                                   "dreadlow", "dreadhigh", "hum", "clocktick", "rattle", "thud", "stepfar", "flee", "snort", "squeak", "phonebuzz",
-                                  "birds", "alarm", "roar", "shriek", "horsescream", "lowbatt", "glitch", "impact", "swell", "choir"};
+                                  "birds", "alarm", "roar", "shriek", "horsescream", "lowbatt", "glitch", "impact", "swell", "choir",
+                                  "flap", "splat", "surf"};
     static_assert(sizeof(names) / sizeof(names[0]) == (size_t)Sfx::Count);
     return names[(int)s];
 }

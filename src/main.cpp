@@ -29,6 +29,7 @@ namespace {
 //                                        Five Nights at Pieter's: jump into a night with a frozen setup (screenshots)
 //   PG_BEATS_TEST=1                      analyze every song for Pieter Beats, print tempo + note counts, quit
 //   PG_FNAP_SIM=200                      Five Nights at Pieter's: a bot plays every night N times, print win rates, quit
+//   PG_MEEUW=120 PG_MEEUW_BOT=1          Meeuwen!: start playing at that many seconds into the day (and let a bot fly)
 //   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -36,7 +37,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots}, {"tower", makeDragonTower}, {"crash", makeCrash}, {"plinko", makePlinko}, {"job", makeJob}, {"fiets", makeFiets}, {"kart", makeKart}, {"dungeon", makeDungeon},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab}, {"tulpen", makeTulpen}, {"golf", makeGolf}, {"cheats", makeCheats}, {"photo", makePhoto},
+        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab}, {"tulpen", makeTulpen}, {"golf", makeGolf}, {"cheats", makeCheats}, {"photo", makePhoto}, {"meeuw", makeMeeuw},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();

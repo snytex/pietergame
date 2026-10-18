@@ -54,6 +54,8 @@ const std::vector<Game>& games() {
     const int A = 1 << Action, C = 1 << Chill, K = 1 << Casino, X = 1 << Special, H = 1 << Home;
     using F = std::function<std::string()>;
     g = {
+        {"meeuw", "SEAGULLS!", "Pieter is a seagull on the beach at Scheveningen. Dive at tourists, snatch their fries before they hide them and bump rival gulls out of the sky.",
+         {"ARCADE", "FLYING", "ENDLESS"}, "NEW", rgba(0x2a8ab8ff), makeMeeuw, H | A, F([] { return "High score: " + fmtNum(P().stats.meeuwBest); })},
         {"cheats", "CHEAT DOWNLOADER", "Get PieterHax onto the PC without getting caught. Juggle windows, hide them before Mom opens the door, fight off a RAT and keep the boba coming.",
          {"SIMULATION", "STEALTH", "~5 MIN"}, "NEW", rgba(0x1a8a3aff), makeCheats, H | C, F([] { return std::string("Can you get away with it?"); })},
         {"photo", "NATURE PHOTOGRAPHER", "A photo safari through the Veluwe, the polder and the Wadden. Frame the shot, whistle for a pose and fill your field guide with 18 species.",

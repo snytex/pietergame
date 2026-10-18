@@ -30,6 +30,7 @@ std::unique_ptr<Scene> makeTulpen();   // Tulpenmatch (match-3)
 std::unique_ptr<Scene> makeGolf();     // Grachtengolf (mini golf)
 std::unique_ptr<Scene> makeCheats();   // Cheats Downloaden (desktop sim)
 std::unique_ptr<Scene> makePhoto();    // Natuurfotograaf (photo safari)
+std::unique_ptr<Scene> makeMeeuw();    // Meeuwen! (seagull snack thief)
 std::unique_ptr<Scene> makeShop();
 std::unique_ptr<Scene> makeInventory();
 std::unique_ptr<Scene> makeSettings();
