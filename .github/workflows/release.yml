@@ -48,6 +48,8 @@ jobs:
   publish:
     needs: [games, launcher]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -77,11 +79,10 @@ jobs:
         with:
           name: release-packages
           path: dist/releases/*.zip
-      - name: Publish public binaries (source stays private)
+      - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          test -n "$GH_TOKEN" || { echo 'Set RELEASES_TOKEN to a token with Contents write permission for snytex/pietergame-releases'; exit 1; }
-          gh release create "v$VERSION" dist/releases/*.zip --repo snytex/pietergame-releases --draft --title "PieterGame $VERSION" --notes 'Download the zip for your system, extract it, and run PieterGame3. Updates download and install automatically; reopen the game to use the installed update.'
-          gh release edit "v$VERSION" --repo snytex/pietergame-releases --draft=false --latest
+          gh release create "v$VERSION" dist/releases/*.zip --repo "$GITHUB_REPOSITORY" --draft --title "PieterGame $VERSION" --notes 'Download the zip for your system, extract it, and run PieterGame3. Updates download and install automatically; reopen the game to use the installed update.'
+          gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --latest

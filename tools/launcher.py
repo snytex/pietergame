@@ -14,7 +14,7 @@ import time
 import urllib.request
 import zipfile
 
-REPOSITORY = "snytex/pietergame-releases"
+REPOSITORY = "snytex/pietergame"
 API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 MAX_DOWNLOAD = 1024 * 1024 * 1024
 MAX_UNPACKED = 2 * MAX_DOWNLOAD

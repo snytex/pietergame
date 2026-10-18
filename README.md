@@ -128,7 +128,7 @@ The Pieter music and artwork in `assets/music` and `assets/images` belong to the
 
 ## Versions and automatic updates
 
-Release downloads live in the public [pietergame-releases repository](https://github.com/snytex/pietergame-releases); the source repository stays private. Download the ZIP for Windows x64 or Linux x64, extract the entire folder, and run **PieterGame3.exe** / **PieterGame3** (the launcher). Linux may require `chmod +x PieterGame3 game/pietergame3` after extraction. Linux releases target Ubuntu 22.04 or newer compatible systems with desktop graphics/audio libraries.
+Download the latest build from the [Releases page](https://github.com/snytex/pietergame/releases/latest). Download the ZIP for Windows x64 or Linux x64, extract the entire folder, and run **PieterGame3.exe** / **PieterGame3** (the launcher). Linux may require `chmod +x PieterGame3 game/pietergame3` after extraction. Linux releases target Ubuntu 22.04 or newer compatible systems with desktop graphics/audio libraries.
 
 The launcher starts the installed game immediately, checks for a newer stable release at startup and every 30 minutes, and downloads and installs it automatically. An in-game banner shows progress and tells you when to close and reopen the game. Your current session keeps running with its original files. Updates are verified against the SHA-256 digest supplied by GitHub's [release API](https://docs.github.com/en/rest/releases/releases), unpacked into a new directory, and activated by an atomic pointer change. Failed or incomplete downloads leave the previous installation selected. Offline play still works. Saves are never part of the update package.
 
@@ -137,10 +137,10 @@ Installed versions live under `%LOCALAPPDATA%/PieterGame3/updates/windows-x64` o
 ### Publishing an update
 
 1. Set the three-part version in `CMakeLists.txt` to a number higher than the last published release.
-2. Commit the game changes and push a matching tag, for example `v3.0.2`.
-3. `.github/workflows/release.yml` tests and builds both platforms, bundles standalone launchers (players do not need Python), and publishes the four ZIP assets to the public releases repository. Draft releases stay hidden from the updater until all assets are uploaded. Ordinary source commits and prereleases do not update players.
+2. Commit the game changes and push a matching tag, for example `v3.0.4`.
+3. `.github/workflows/release.yml` tests and builds both platforms, bundles standalone launchers (players do not need Python), and publishes the four ZIP assets to this repository's Releases. Draft releases stay hidden from the updater until all assets are uploaded. Ordinary source commits and prereleases do not update players.
 
-One-time CI setup: create a fine-grained GitHub token scoped **only** to `snytex/pietergame-releases` with **Contents: Read and write**, and store it as the `RELEASES_TOKEN` Actions secret in the private `snytex/pietergame` repository. The default Actions token cannot publish to another repository. Never put a token in the launcher or downloadable files. A manual workflow run builds downloadable artifacts without publishing.
+Publishing uses the built-in Actions token; no secrets are needed. A manual workflow run builds downloadable artifacts without publishing.
 
 For local packaging, freeze `tools/launcher.py` on each target operating system with Python 3.12 and `pyinstaller==6.16.0`:
 
