@@ -27,7 +27,7 @@ constexpr float kHourLen = 45;  // seconds per in-game hour: a night is 4.5 minu
 constexpr int kNights = 6;
 
 enum class View { Center, Left, Right, Closet, Bed };
-enum class Who { Davi, Kira, Horse, Paardjes };
+enum class Who { Davi, Kira, Horse, Paardjes, Other };  // Other: never the Brain's doing, see FnapScene
 enum class Mood { Calm, Build, Peak, Relax, Hush };
 
 enum class Ev {

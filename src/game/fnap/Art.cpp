@@ -6,6 +6,8 @@
 
 #include <rlgl.h>
 
+#include <tuple>
+
 #include <algorithm>
 #include <string>
 
@@ -627,6 +629,130 @@ void holdingHands(float push, float t, bool closet) {
         limb({palm.x - k * 40, palm.y + 8}, {palm.x - k * 72, palm.y - 30}, 19, skin);  // thumb
         for (int f = 0; f < 3; f++) DrawLineEx({palm.x - 18 + f * 18.0f, palm.y - 20}, {palm.x - 14 + f * 14.0f, palm.y + 10}, 2, alpha(skinD, 0.6f));  // tendons
     }
+}
+
+// ====================================================================== the other one
+
+// Pieter's own face, wrong: drained of colour, stretched, the eyes gone to holes
+// that don't catch any light, and a smile that keeps going past where it should stop.
+void otherFace(Vector2 c, float r, float t, float jaw, float rot, float a) {
+    rlPushMatrix();
+    rlTranslatef(c.x, c.y, 0);
+    rlRotatef(rot, 0, 0, 1);
+    rlScalef(0.92f, 1.32f, 1);
+    art::portrait("pieter", {0, 0}, r, BLANK, 0, false, alpha(rgba(0x9c9aa0ff), a));
+    DrawCircleGradient({0, 0}, r, alpha(BLACK, 0.0f), alpha(BLACK, 0.6f * a));
+    DrawCircleGradient({0, r * 0.35f}, r * 0.9f, alpha(rgba(0x10141aff), 0.25f * a), alpha(BLACK, 0));
+    // the eyes: deep, perfectly black, a little too big
+    const Vector2 eye[2] = {{-0.02f, 0.23f}, {0.58f, 0.31f}};
+    for (int i = 0; i < 2; i++) {
+        Vector2 e = eye[i] * r;
+        DrawCircleGradient(e, r * 0.3f, alpha(BLACK, 0.7f * a), alpha(BLACK, 0));
+        ellipse(e, r * 0.15f, r * (0.12f + jaw * 0.03f), 0.1f, alpha(BLACK, a));
+        // something wet trickling out of one of them
+        if (i == 0) DrawLineEx(e + Vector2{r * 0.02f, r * 0.1f}, e + Vector2{r * 0.035f, r * (0.26f + 0.02f * std::sin(t))}, std::max(1.0f, r * 0.02f), alpha(BLACK, 0.85f * a));
+    }
+    // the smile, cut far too wide; with jaw > 0 it opens onto nothing
+    float w = 0.62f + jaw * 0.1f;
+    Vector2 prev{};
+    for (int i = 0; i <= 24; i++) {
+        float u = i / 24.0f;
+        float x = lerpf(-w * 0.75f, w, u) + 0.07f;
+        float y = 0.7f - std::sin(u * PI) * (0.05f - jaw * 0.12f) - (u > 0.85f ? (u - 0.85f) * 0.6f : 0);
+        Vector2 q{x * r, y * r};
+        if (i > 0) {
+            DrawLineEx(prev, q, std::max(1.5f, r * 0.028f), alpha(rgba(0x060406ff), a));
+            if (jaw > 0.05f) tri(prev, q, {q.x, q.y + jaw * r * 0.28f * std::sin(u * PI)}, alpha(BLACK, a), alpha(BLACK, a), alpha(BLACK, a));
+        }
+        prev = q;
+    }
+    rlPopMatrix();
+}
+
+Vector2 otherHead(Vector2 feet, float s, float look) { return {feet.x + look * 10 * s, feet.y - 738 * s}; }
+
+// Him. Far too tall and far too still, in a washed-out copy of Pieter's hoodie,
+// arms hanging down past his knees. s = 1 is about 720 px tall. `look` (-1..1)
+// turns the head towards wherever you're looking from.
+void other(Vector2 feet, float s, float t, float look, float a) {
+    auto P = [&](float x, float y) { return Vector2{feet.x + x * s, feet.y + y * s}; };
+    Color hood = alpha(rgba(0x2c2638ff), a), hoodD = alpha(rgba(0x16121eff), a), skin = alpha(rgba(0x8a8486ff), a), pants = alpha(rgba(0x101016ff), a);
+    // legs: thin, close together, perfectly straight
+    for (int k : {-1, 1}) {
+        limb(P(k * 14, -330), P(k * 12, -14), 22 * s, pants);
+        DrawEllipse((int)(feet.x + k * 16 * s), (int)(feet.y - 6 * s), 18 * s, 7 * s, alpha(BLACK, a));
+    }
+    // a long narrow torso
+    quad(P(-56, -640), P(56, -640), P(40, -320), P(-40, -320), hood, hoodD);
+    quad(P(-56, -640), P(-20, -640), P(-14, -320), P(-40, -320), alpha(BLACK, 0.4f * a), alpha(BLACK, 0.3f * a));
+    limb(P(-12, -610), P(-14, -520), 2.5f * s, alpha(rgba(0x6a6478ff), a));  // the drawstrings, hanging dead straight
+    limb(P(12, -610), P(14, -520), 2.5f * s, alpha(rgba(0x6a6478ff), a));
+    // arms down to the knees, fingers too long, not moving at all
+    for (int k : {-1, 1}) {
+        Vector2 sh = P(k * 54, -630), el = P(k * 62, -470), wr = P(k * 60, -250);
+        limb(sh, el, 24 * s, hood);
+        limb(el, wr, 20 * s, hood);
+        limb(wr, P(k * 60, -236), 14 * s, skin);
+        for (int f = 0; f < 4; f++) {
+            Vector2 a0 = P(k * (52 + f * 5), -232), a1 = P(k * (50 + f * 6), -160 - (f == 1 || f == 2 ? 0 : 18));
+            limb(a0, a1, 5 * s, skin);
+            DrawLineEx(a1, a1 + Vector2{0, 10 * s}, 3 * s, alpha(rgba(0x0a0606ff), a));
+        }
+    }
+    // a neck a little too long, and the head
+    limb(P(0, -640), P(look * 6, -690), 18 * s, alpha(darken(rgba(0x8a8486ff), 0.3f), a));
+    Vector2 head = P(look * 10, -738);
+    DrawEllipse((int)head.x, (int)(head.y + 70 * s), 44 * s, 12 * s, alpha(BLACK, 0.6f * a));
+    otherFace(head, 58 * s, t, 0, look * 22 + 4, a);
+}
+
+// A hand that isn't anybody's: grey-blue, bony, the knuckles too big, long
+// fingers with an extra crook in them and dark broken nails. `dir` is where the
+// fingers point (radians), `s` its size.
+static void wrongHand(Vector2 wrist, float dir, float s, float t, float spread) {
+    Color base = rgba(0x6a666eff), shade = rgba(0x34303aff), lit = rgba(0x8e8a94ff), nail = rgba(0x120c0cff);
+    Vector2 fwd = fromAngle(dir), side{-fwd.y, fwd.x};
+    Vector2 palm = wrist + fwd * (34 * s);
+    ellipse(palm + side * (3 * s), 44 * s, 36 * s, dir, shade);
+    ellipse(palm, 40 * s, 32 * s, dir, base);
+    ellipse(palm - side * (8 * s) - fwd * (6 * s), 22 * s, 12 * s, dir, alpha(lit, 0.5f));
+    for (int i = 0; i < 3; i++) DrawLineEx(wrist + side * ((i - 1) * 9 * s), palm + fwd * (24 * s) + side * ((i - 1) * 12 * s), 2.5f * s, alpha(shade, 0.8f));  // tendons
+    for (int f = 0; f < 4; f++) {
+        float off = (f - 1.5f) * (17 + spread * 8) * s;
+        float len = (f == 1 || f == 2 ? 1.0f : 0.84f) * s;
+        float a = dir + (f - 1.5f) * (0.09f + spread * 0.05f);
+        float wob = std::sin(t * 1.3f + f) * 0.04f;
+        Vector2 j0 = palm + fwd * (30 * s) + side * off;
+        Vector2 j1 = j0 + fromAngle(a + wob, 46 * len), j2 = j1 + fromAngle(a + 0.25f + wob, 36 * len), j3 = j2 + fromAngle(a + 0.55f, 26 * len);
+        for (auto [p, q, w] : {std::tuple{j0, j1, 15.0f}, std::tuple{j1, j2, 12.5f}, std::tuple{j2, j3, 10.0f}}) {
+            limb(p, q, (w + 3) * s, shade);
+            limb(p - side * (1.5f * s), q - side * (1.5f * s), w * s, base);
+        }
+        DrawCircleV(j1, 9 * s, base);  // knuckles too big
+        DrawCircleV(j1 - side * (2 * s), 4 * s, alpha(lit, 0.6f));
+        DrawCircleV(j2, 7 * s, base);
+        limb(j3, j3 + fromAngle(a + 0.7f, 16 * len), 6 * s, nail);
+    }
+    Vector2 th = palm - side * (36 * s) - fwd * (8 * s);
+    limb(th, th + fromAngle(dir - 0.9f, 40 * s), 15 * s, shade);
+    limb(th, th + fromAngle(dir - 0.9f, 38 * s), 12 * s, base);
+    limb(th + fromAngle(dir - 0.9f, 38 * s), th + fromAngle(dir - 0.9f, 52 * s), 5 * s, nail);
+}
+
+// A third hand on the door, pressed flat right between yours, slipping down and away at the end.
+void thirdHand(float k, float t) {
+    float slide = k < 0.15f ? (1 - k / 0.15f) * 200 : k > 0.8f ? (k - 0.8f) / 0.2f * 320 : 0;
+    Vector2 wrist{VW / 2.0f + 6, 700 + slide};
+    limb(wrist + Vector2{12, 140}, wrist, 52, rgba(0x14101aff));
+    wrongHand(wrist, -PI / 2 + 0.05f, 1.0f, t, 0.3f);
+}
+
+// Something resting on Pieter's shoulder, from behind. k: 0..1 how far it has crept in.
+void shoulderHand(float k, float t) {
+    float e = easeInOutSine(clamp01(k));
+    Vector2 wrist{-120 + e * 250, VH + 40 - e * 170};
+    limb(wrist + Vector2{-220, 120}, wrist, 70, rgba(0x0e0c12ff));  // the arm, reaching over from behind you
+    wrongHand(wrist, -0.32f, 1.35f, t, 0.1f);
 }
 
 // ====================================================================== the street

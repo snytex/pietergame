@@ -89,6 +89,8 @@ public:
     bool beatsHitSounds = true;
     int fnapNight = 1;      // Five Nights at Pieter's: highest night unlocked (6 = Juhuh night)
     int fnapBeaten = 0;     // bitmask of nights survived
+    int fnapDeaths = 0;     // how many times Pieter has died. The house remembers.
+    bool fnapLeft = false;  // you walked out in the middle of a night
 
     // settings
     float musicVolume = 0.55f;

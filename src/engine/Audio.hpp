@@ -70,6 +70,7 @@ enum class Sfx {
     DreadLow, DreadHigh, Hum, ClockTick, Rattle, Thud, StepFar, Flee, Snort, Squeak, PhoneBuzz, Birds, Alarm,
     Roar, Shriek, HorseScream, LowBatt, Glitch, Impact, Swell, Choir,
     Flap, Splat, Surf, Steam, Boing, Coo, Sizzle, Pour, Register,
+    Exhale, Lullaby, Drip, Barefoot, Sub,
     Count
 };
 

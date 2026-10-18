@@ -129,7 +129,7 @@ void Profile::save() const {
     f << "lastPity=" << lastPity << "\nintroSeen=" << introSeen << "\n";
     for (auto& [k, b] : beats) f << "b." << k << "=" << b.score << "," << b.acc << "," << b.fc << "\n";
     f << "beatsOffset=" << beatsOffsetMs << "\nbeatsSpeed=" << beatsSpeed << "\nbeatsHitSounds=" << beatsHitSounds << "\n";
-    f << "fnapNight=" << fnapNight << "\nfnapBeaten=" << fnapBeaten << "\n";
+    f << "fnapNight=" << fnapNight << "\nfnapBeaten=" << fnapBeaten << "\nfnapDeaths=" << fnapDeaths << "\nfnapLeft=" << fnapLeft << "\n";
     f << "musicVolume=" << musicVolume << "\nsfxVolume=" << sfxVolume << "\nfullscreen=" << fullscreen
       << "\nscreenShake=" << screenShake << "\nsmooth=" << smoothGraphics << "\ndiscordRpc=" << discordRpc << "\nmonitor=" << monitor << "\nresW=" << resW << "\nresH=" << resH << "\n";
     f.close();
@@ -208,6 +208,8 @@ void Profile::load() {
         else if (k == "beatsHitSounds") beatsHitSounds = L() != 0;
         else if (k == "fnapNight") fnapNight = std::clamp((int)L(), 1, 6);
         else if (k == "fnapBeaten") fnapBeaten = (int)L();
+        else if (k == "fnapDeaths") fnapDeaths = (int)L();
+        else if (k == "fnapLeft") fnapLeft = L() != 0;
         else if (k == "lastPity") lastPity = L();
         else if (k == "introSeen") introSeen = L() != 0;
         else if (k == "musicVolume") musicVolume = F();

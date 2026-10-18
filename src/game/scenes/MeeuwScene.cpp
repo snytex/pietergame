@@ -1057,6 +1057,8 @@ public:
 
     // The gull: tail, far wing, body, near wing, head. `pieter` puts his face on it.
     void drawGull(Vector2 pos, float tilt, float flap, int mode, float facing, bool pieter, float sc, float alphaK) {
+        rlDrawRenderBatchActive();
+        rlDisableBackfaceCulling();  // mirrored when flying left
         rlPushMatrix();
         rlTranslatef(pos.x, pos.y, 0);
         rlRotatef(tilt * facing, 0, 0, 1);
@@ -1088,6 +1090,8 @@ public:
         DrawCircleV({b0.x + 13, -8 + open * 0.6f}, 2.4f, alpha(col::red, alphaK));
         drawWing({-2, -10}, wa, tint);
         rlPopMatrix();
+        rlDrawRenderBatchActive();
+        rlEnableBackfaceCulling();
     }
 
     void draw() override {

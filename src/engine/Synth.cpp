@@ -1128,6 +1128,49 @@ Patch design(Sfx s, Rng& r) {
                 p.add(L(0.09f, 0.8f, O::Sine, f * r.jit(1, 0.005f)).fm(3.5f, 1.2f, 0.1f).dec(0.25f).vol(0.25f));
             p.out(0.45f).verb(0.15f, 0.4f);
             break;
+        // ---- Five Nights at Pieter's: the wrong things
+        case Sfx::Exhale:  // a slow breath out, very close, right behind your head. No reverb: it's in the room with you.
+            p.add(L(0, 1.6f, O::Pink).bp(r.jit(700, 0.08f), 420, 1.6f).env(0.35f, 0.7f).curve(0.6f).vol(0.7f))
+             .add(L(0, 1.6f, O::Noise).bp(2400, 1600, 3).env(0.4f, 0.7f).curve(0.6f).vol(0.18f))
+             .add(L(0.05f, 1.4f, O::Pink).lp(260).env(0.3f, 0.6f).curve(0.5f).vol(0.35f))
+             .add(L(1.5f, 0.06f, O::Noise).bp(1800, -1, 4).dec(0.02f).vol(0.12f))  // a wet click of the mouth
+             .out(0.55f);
+            break;
+        case Sfx::Lullaby: {  // a child humming somewhere in the house, a little out of tune, on a tape that drags
+            const float notes[] = {76, 72, 76, 72, 74, 71, 72, 69, 72, 71, 69, 68, 69};
+            const float lens[] = {0.55f, 0.55f, 0.55f, 0.55f, 0.55f, 0.55f, 0.8f, 1.1f, 0.55f, 0.55f, 0.55f, 0.55f, 1.6f};
+            float at = 0;
+            for (int i = 0; i < 13; i++) {
+                float f = hz(notes[i] - 12 + r.range(-0.25f, 0.25f)) * (1 - at * 0.004f);  // the tape slows down
+                p.add(L(at, lens[i] + 0.15f, O::Saw, f).bp(f * 2.2f, -1, 2.5f).vib(0.25f, 5.1f).env(0.08f, 0.2f).curve(0.4f).vol(0.35f))
+                 .add(L(at, lens[i] + 0.15f, O::Sine, f).vib(0.25f, 5.1f).env(0.08f, 0.2f).curve(0.4f).vol(0.5f))
+                 .add(L(at, lens[i], O::Pink).bp(f * 3, -1, 6).env(0.1f, 0.2f).vol(0.04f));
+                at += lens[i];
+            }
+            p.add(L(0, at, O::Pink).hp(3000).env(0.5f, 0.5f).curve(0).vol(0.03f));  // tape hiss
+            p.out(0.4f).verb(0.45f, 0.85f, 0.6f);
+            break;
+        }
+        case Sfx::Drip:  // water dripping somewhere inside the walls
+            p.add(L(0, 0.12f, O::Sine, r.jit(1300, 0.15f), 2600).glide(0.3f).dec(0.03f).vol(0.6f))
+             .add(L(0, 0.02f, O::Noise).hp(3000).vol(0.2f))
+             .out(0.3f).verb(0.5f, 0.8f, 0.3f);
+            break;
+        case Sfx::Barefoot:  // soft bare feet on the floorboards, close behind you
+            for (int k = 0; k < 2; k++) {
+                float at = k * r.range(0.55f, 0.7f);
+                p.add(L(at, 0.12f, O::Pink).lp(r.jit(500, 0.1f), 200).dec(0.04f).vol(0.7f))
+                 .add(L(at + 0.03f, 0.08f, O::Noise).bp(900, -1, 2).dec(0.02f).vol(0.12f))
+                 .add(L(at + 0.06f, 0.25f, O::Sine, r.jit(140, 0.1f), 120).fm(2.2f, 2, 0.2f).dec(0.08f).vol(0.1f));  // the board giving a little
+            }
+            p.out(0.4f);
+            break;
+        case Sfx::Sub:  // bed: a pressure you feel more than hear, two low tones beating against each other
+            p.add(L(0, 8, O::Sine, 31).env(1.5f, 1.5f).curve(0).vol(0.7f))
+             .add(L(0, 8, O::Sine, 32.3f).env(1.5f, 1.5f).curve(0).vol(0.6f))
+             .add(L(0, 8, O::Sine, 46.5f).trem(0.6f, 0.17f).env(1.5f, 1.5f).curve(0).vol(0.25f))
+             .out(0.6f).asBed();
+            break;
         case Sfx::Count: break;
     }
     if (p.layers.empty()) p.add(L(0, 0.01f, O::Sine).vol(0));
@@ -1146,7 +1189,8 @@ const char* name(Sfx s) {
                                   "putt", "cup", "splash", "swap", "match", "gull", "hammer", "cannon", "zap", "laser", "horn", "shutter", "whistle",
                                   "dreadlow", "dreadhigh", "hum", "clocktick", "rattle", "thud", "stepfar", "flee", "snort", "squeak", "phonebuzz",
                                   "birds", "alarm", "roar", "shriek", "horsescream", "lowbatt", "glitch", "impact", "swell", "choir",
-                                  "flap", "splat", "surf", "steam", "boing", "coo", "sizzle", "pour", "register"};
+                                  "flap", "splat", "surf", "steam", "boing", "coo", "sizzle", "pour", "register",
+                                  "exhale", "lullaby", "drip", "barefoot", "sub"};
     static_assert(sizeof(names) / sizeof(names[0]) == (size_t)Sfx::Count);
     return names[(int)s];
 }

@@ -12,6 +12,15 @@
 //           three at once and they call the horse.
 //   Monkey Man - (night 2+) at the bedroom window. Don't stare at him.
 //   Lures  - throw a stroopwafel (Davi) or a boba (Kira) down the hall.
+//   The other one - a far too tall Pieter with holes for eyes. He never
+//           attacks. He only stands there, a little closer every night, and he
+//           does not want to be looked at. Put the torch on him four times
+//           in one night and he comes to you.
+// On top of the monsters the house itself is wrong, more so every night (and
+// every time Pieter dies): silences that lead nowhere, breathing right behind
+// you when you stand still too long, someone under the blanket, a reflection
+// in the dark monitor, a hand on the door that isn't yours, a 6 AM that isn't
+// real, and a phone that knows who is playing and what time it is.
 // The flashlight drains its battery and charges in its dock on the desk, and
 // every noise you make carries through the house. How the monsters think lives
 // in game/fnap/Brain; how they look in game/fnap/Art.
@@ -28,6 +37,8 @@
 #include <rlgl.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 
 namespace pg {
 namespace {
@@ -39,7 +50,7 @@ using fnap::View;
 using fnap::Who;
 namespace gfx = fnap::gfx;
 
-enum class Phase { Title, Cinematic, Note, Play, Scare, GameOver, Dawn };
+enum class Phase { Title, Cinematic, Note, Play, Scare, GameOver, Dawn, FakeDawn };
 enum class Src { LeftHall, RightHall, Closet, Bed, Window, Desk };
 
 // Texts that come in on Pieter's phone during the night: story, and hints.
@@ -71,12 +82,69 @@ const std::vector<Text> kTexts[fnap::kNights] = {
 
 constexpr float kCinematicLen = 7.0f;
 
+// The whole night is drawn into a texture first, then through this: colour drains
+// out of the room, the dark gets crushed, the edges close in and crawl, and the
+// picture breathes very slightly, as if the room were.
+const char* kGradeFs = R"(#version 330
+in vec2 fragTexCoord;
+in vec4 fragColor;
+uniform sampler2D texture0;
+uniform float uTime, uDesat, uCrush, uVig, uWarp, uSplit, uGrain;
+uniform vec3 uTint;
+uniform vec2 uRes;
+out vec4 finalColor;
+float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void main() {
+    vec2 uv = fragTexCoord;
+    vec2 c = uv - 0.5;
+    float r = length(c * vec2(uRes.x / uRes.y, 1.0));
+    uv += c * uWarp * (0.5 + 0.5 * sin(uTime * 0.85)) * r * r * 0.1;
+    uv.x += sin(uv.y * 7.0 + uTime * 1.1) * 0.0009 * uWarp;
+    float s = uSplit * (0.3 + r * 1.8);
+    vec3 col = vec3(texture(texture0, uv + c * s).r, texture(texture0, uv).g, texture(texture0, uv - c * s).b);
+    float l = dot(col, vec3(0.299, 0.587, 0.114));
+    col = mix(col, vec3(l) * uTint, uDesat);
+    col = pow(max(col, vec3(0.0)), vec3(uCrush));
+    float v = 1.0 - smoothstep(0.3 - uVig * 0.25, 0.98 - uVig * 0.5, r);
+    float crawl = h(floor(uv * uRes / 4.0) + floor(uTime * 10.0));
+    v *= mix(1.0, 0.8 + 0.2 * crawl, smoothstep(0.35, 0.95, r));
+    col *= v;
+    col += (h(uv * uRes + fract(uTime) * 97.0) - 0.5) * uGrain;
+    finalColor = vec4(col, 1.0);
+}
+)";
+
+// Who is playing, and what time it really is. The phone knows both.
+std::string userName() {
+    const char* u = std::getenv("USER");
+    if (!u || !*u) u = std::getenv("USERNAME");
+    std::string n = u && *u ? u : "you";
+    if (n.size() > 16) n = n.substr(0, 16);
+    return n;
+}
+std::string realClock() {
+    std::time_t now = std::time(nullptr);
+    char b[8] = "00:00";
+    if (std::tm* lt = std::localtime(&now)) std::strftime(b, sizeof b, "%H:%M", lt);
+    return b;
+}
+std::string fill(std::string s) {
+    for (auto [key, val] : {std::pair<const char*, std::string>{"{USER}", userName()}, {"{TIME}", realClock()}})
+        for (size_t at; (at = s.find(key)) != std::string::npos;) s.replace(at, std::string(key).size(), val);
+    return s;
+}
+
+// Things that flash up for two frames.
+const char* kSubText[] = {"BEHIND YOU", "IT IS NOT MORNING", "SOMEONE IS IN THE BED", "DON'T LOOK AT HIM", "HE IS WEARING YOUR FACE", "{USER}", "WHY ARE YOU STILL HERE"};
+
 class FnapScene : public Scene {
 public:
     ~FnapScene() override {
         if (noise_.id) UnloadTexture(noise_);
         if (lm_.id) UnloadRenderTexture(lm_);
         if (rt_.id) UnloadRenderTexture(rt_);
+        if (viewRt_.id) UnloadRenderTexture(viewRt_);
+        if (grade_.id) UnloadShader(grade_);
     }
 
     MusicMode music() const override { return MusicMode::None; }
@@ -100,6 +168,14 @@ public:
         BeginTextureMode(rt_);
         ClearBackground(BLACK);
         EndTextureMode();
+        viewRt_ = LoadRenderTexture((int)cs.x, (int)cs.y);
+        SetTextureFilter(viewRt_.texture, TEXTURE_FILTER_BILINEAR);
+        BeginTextureMode(viewRt_);
+        ClearBackground(BLACK);
+        EndTextureMode();
+        grade_ = LoadShaderFromMemory(nullptr, kGradeFs);
+        const char* names[] = {"uTime", "uDesat", "uCrush", "uVig", "uWarp", "uSplit", "uGrain", "uTint", "uRes"};
+        for (int i = 0; i < 9; i++) gradeLoc_[i] = GetShaderLocation(grade_, names[i]);
         env_.horror = true;
         env_.lights = 0;
         env_.outside = [this] { outsideWindow(); };
@@ -108,6 +184,7 @@ public:
     }
 
     void exit() override {
+        for (Sfx x : {Sfx::Exhale, Sfx::Lullaby, Sfx::Drip, Sfx::Barefoot, Sfx::Sub}) E().sfx.stop(x);
         for (Sfx x : {Sfx::MusicBox, Sfx::Drone, Sfx::Breath, Sfx::Giggle, Sfx::Heart, Sfx::Static, Sfx::Scream, Sfx::Creak, Sfx::Step, Sfx::Rain,
                       Sfx::Wind, Sfx::Thunder, Sfx::Carillon, Sfx::Whisper, Sfx::Riser, Sfx::Sting, Sfx::Tinnitus, Sfx::Monkey, Sfx::DreadLow,
                       Sfx::DreadHigh, Sfx::Hum, Sfx::Choir, Sfx::Birds, Sfx::Alarm, Sfx::Impact, Sfx::Swell, Sfx::Roar, Sfx::Shriek,
@@ -159,14 +236,33 @@ public:
             if (const char* c = std::getenv("PG_FNAP_CINE_T")) phaseT_ = (float)std::atof(c);
         }
         if (const char* sc = std::getenv("PG_FNAP_SCARE")) {
-            jumpscare((Who)std::clamp(std::atoi(sc), 0, 3));
+            jumpscare((Who)std::clamp(std::atoi(sc), 0, 4));
             if (const char* c = std::getenv("PG_FNAP_SCARE_T")) phaseT_ = (float)std::atof(c);
         }
         if (const char* o = std::getenv("PG_FNAP_OVER")) {
-            b_.killer = (Who)std::clamp(std::atoi(o), 0, 3);
+            b_.killer = (Who)std::clamp(std::atoi(o), 0, 4);
+            scareWho_ = b_.killer;
             b_.cause = "lit at door";
             phase_ = Phase::GameOver;
             phaseT_ = 2;
+        }
+        // PG_FNAP_OTHER=<spot 0-3> puts him in the starting view; PG_FNAP_DREAD=bed|reflect|hand|behind|fake|ceiling|turned
+        if (const char* o = std::getenv("PG_FNAP_OTHER")) {
+            dr_.spot = std::clamp(std::atoi(o), 0, 3);
+            dr_.at = view_;
+            dr_.fade = 1;
+            dr_.lastView = view_;
+        }
+        if (const char* d = std::getenv("PG_FNAP_DREAD")) {
+            std::string k = d;
+            dr_.lastView = view_;
+            if (k == "bed") dr_.bedShape = true;
+            if (k == "reflect") dr_.reflectT = 2;
+            if (k == "hand") dr_.handT = 1.0f, dr_.handDone = true;
+            if (k == "behind") dr_.behindT = 7.5f, dr_.stillT = 30;
+            if (k == "ceiling") dr_.ceiling[1] = true;
+            if (k == "turned") dr_.turned[0] = true;
+            if (k == "fake") phase_ = Phase::FakeDawn, phaseT_ = std::getenv("PG_FNAP_DAWN_T") ? (float)std::atof(std::getenv("PG_FNAP_DAWN_T")) : 3.5f;
         }
         if (std::getenv("PG_FNAP_DAWN")) {
             winNight();
@@ -198,6 +294,61 @@ public:
         thunderT_ = 1.2f;  // the cinematic's lightning
         boltT_ = -1;
         E().sfx.play(Sfx::Swell, 0.35f);
+        setupDread();
+    }
+
+    // ============================================================ the dread
+    // How wrong the house is tonight: grows every night, and a little with every death.
+    float creep() const {
+        static const float k[fnap::kNights] = {0.15f, 0.35f, 0.55f, 0.75f, 1.0f, 0.85f};
+        return k[night_] * (1 + 0.15f * std::min(P().fnapDeaths, 6) / 6.0f);
+    }
+
+    void setupDread() {
+        dr_ = Dread{};
+        float c = std::max(0.3f, creep());
+        dr_.nextOther = night_ == 0 ? rnd(120, 170) : rnd(35, 70) / c;
+        dr_.nextSilence = rnd(40, 80) / c;
+        dr_.nextSub = night_ == 0 ? 1e9f : rnd(50, 100) / c;
+        dr_.nextLull = night_ >= 2 ? rnd(60, 120) : 1e9f;
+        if (night_ >= 3) dr_.fakeAt = 5 * kHourLen + rnd(8, 22);
+        if (night_ == 4 || night_ == 5) dr_.freezeAt = rnd(110, 200);
+        // texts nobody should be able to send
+        late_.clear();
+        auto add = [&](float at, const char* from, const char* msg, bool other) { late_.push_back({at, from, msg, other}); };
+        if (P().fnapLeft) {
+            add(12, "Pieter", "why did you leave me alone in here", true);
+            P().fnapLeft = false;
+            P().save();
+        }
+        switch (night_) {
+            case 0: add(232, "Pieter", "are you still awake?", true); break;
+            case 1:
+                add(58, "Pieter", "if you see me at the end of the hall, don't shine the light on me.", true);
+                add(185, "Pieter", "you were standing very still just now.", true);
+                break;
+            case 2:
+                add(112, "Pieter", "{USER}.", true);
+                add(228, "Mama", "Pieter? I tried calling you. Who picked up?", false);
+                break;
+            case 3:
+                add(48, "Pieter", "it's {TIME} where you are. you should be asleep too.", true);
+                add(150, "Mama", "Coming home early. Don't open the door for anyone. Not even if it sounds like us.", false);
+                break;
+            case 4:
+                add(28, "Pieter", "i'm in the room with you.", true);
+                add(138, "Mama", "We're at the station. All the lights in the house are on. Do you have friends over?", false);
+                add(248, "Pieter", "don't turn around", true);
+                break;
+            default: add(160, "Pieter", "they're not the scariest thing in this house, {USER}.", true); break;
+        }
+        lateIdx_ = 0;
+    }
+
+    void showMsg(const std::string& from, const std::string& msg, bool other) {
+        shown_ = {from, fill(msg), other};
+        textT_ = 0;
+        E().sfx.play(Sfx::PhoneBuzz, 0.45f);
     }
 
     void beginPlay() {
@@ -228,8 +379,15 @@ public:
         scareWho_ = w;
         b_.killer = w;
         for (Sfx x : {Sfx::Riser, Sfx::MusicBox, Sfx::Whisper, Sfx::Breath, Sfx::Giggle}) E().sfx.stop(x);
-        Sfx voice = w == Who::Davi ? Sfx::Roar : w == Who::Kira ? Sfx::Shriek : Sfx::HorseScream;
-        E().sfx.play(voice, 1.0f);
+        Sfx voice = w == Who::Davi ? Sfx::Roar : w == Who::Kira || w == Who::Other ? Sfx::Shriek : Sfx::HorseScream;
+        E().sfx.play(voice, 1.0f, w == Who::Other ? 0.55f : 1.0f);
+        if (w == Who::Other) E().sfx.play(Sfx::Exhale, 1.0f, 0.7f);
+        if (!b_.frozen && !std::getenv("PG_FNAP")) {  // dev runs don't count
+            P().fnapDeaths++;
+            P().save();
+        }
+        dr_.freezeT = -1;
+        dr_.silenceT = -1;
         E().sfx.play(Sfx::Scream, 0.45f, w == Who::Kira ? 1.15f : 0.85f);
         E().sfx.play(Sfx::Impact, 0.9f);
         E().sfx.play(Sfx::Glitch, 0.6f);
@@ -272,6 +430,9 @@ public:
             case Ev::Roam: play3d(Sfx::StepFar, hs, 0.35f, rnd(0.9f, 1.1f)); break;
             case Ev::Advance: {
                 prevPos_[s] = (int)e.x - 1;
+                // later nights: sometimes Kira comes along the ceiling, and Davi waits at the far end with his back to you
+                dr_.ceiling[s] = s == 1 && e.x == 2 && night_ >= 3 && chance(0.4f);
+                dr_.turned[s] = s == 0 && e.x == 1 && night_ >= 1 && chance(0.5f);
                 float near = e.x / 3.0f;
                 if (s == 0) {
                     play3d(Sfx::Klomp, hs, 0.25f + 0.45f * near, rnd(0.9f, 1.05f));
@@ -404,7 +565,10 @@ public:
 
     // Beds of sound under everything, mixed by how bad things are.
     void ambience(float dt, bool playing) {
-        bool hush = hushT_ >= 0;
+        bool hush = hushT_ >= 0 || (playing && dr_.silenceT >= 0);
+        float c = playing ? creep() : 0.2f;
+        // a pressure under everything that you feel more than hear
+        E().sfx.loop(Sfx::Sub, hush ? 0.25f : playing ? 0.12f + 0.3f * c + 0.3f * (dr_.spot >= 0 && dr_.at == view_ ? 1 : 0) : 0.08f);
         float dg = playing ? b_.danger() : 0;
         float title = phase_ == Phase::Title ? 1.0f : 0.0f;
         E().sfx.loop(Sfx::DreadLow, hush ? 0 : 0.32f + 0.25f * dg);
@@ -412,6 +576,15 @@ public:
         E().sfx.loop(Sfx::Hum, playing && !hush ? (view_ == View::Center ? 0.16f : 0.04f) : 0);
         E().sfx.loop(Sfx::Choir, title * 0.22f);
         if (hush) return;
+        // the house, settling. Or something walking around upstairs.
+        if (playing && (dr_.creakT -= dt) <= 0) {
+            dr_.creakT = rnd(9, 22) / std::max(0.4f, c);
+            E().sfx.play(chance(0.5f) ? Sfx::Creak : Sfx::StepFar, rnd(0.08f, 0.18f), rnd(0.5f, 0.75f), rnd(-0.9f, 0.9f));
+        }
+        if (playing && (dr_.dripT -= dt) <= 0) {
+            dr_.dripT = rnd(4, 11);
+            E().sfx.play(Sfx::Drip, rnd(0.08f, 0.16f), rnd(0.9f, 1.1f), rnd(-0.8f, 0.8f));
+        }
         rainT_ -= dt;
         if (rainT_ <= 0) {  // it's always raining in Holland
             rainT_ = 3.1f;
@@ -458,6 +631,20 @@ public:
 
     // ============================================================ update
     void update(float dt) override {
+        // the freeze: the picture stops, the sound stops. Only the cursor still moves.
+        if (dr_.freezeT >= 0) {
+            dr_.freezeT += dt;
+            for (Sfx x : {Sfx::DreadLow, Sfx::DreadHigh, Sfx::Hum, Sfx::Sub}) E().sfx.loop(x, 0);
+            if (dr_.freezeT > 2.9f) {
+                dr_.freezeT = -1;
+                E().sfx.play(Sfx::Exhale, 0.9f, 0.9f);
+                E().sfx.play(Sfx::Glitch, 0.5f, 0.7f);
+                subFace_ = 3;
+                subT_ = 0.09f;
+                staticT_ = 0.3f;
+            }
+            return;
+        }
         t_ += dt;
         phaseT_ += dt;
         fx_.update(dt);
@@ -491,7 +678,9 @@ public:
                 if (E().backPressed()) phase_ = Phase::Title;
                 break;
             case Phase::Dawn: updateDawn(dt); break;
+            case Phase::FakeDawn: updateFakeDawn(dt); break;
         }
+        if (phase_ == Phase::Play) renderView();
     }
 
     void updateTitle(float dt) {
@@ -622,6 +811,10 @@ public:
         if (klompEcho_ > 0 && (klompEcho_ -= dt) <= 0) play3d(Sfx::Klomp, Src::LeftHall, 0.15f, rnd(0.88f, 0.95f));
         if (plushFall_ >= 0 && (plushFall_ += dt) > 0.6f) plushFall_ = -1;
         if (textIdx_ < (int)kTexts[night_].size() && b_.t >= kTexts[night_][textIdx_].at) showText(kTexts[night_][textIdx_++]);
+        if (lateIdx_ < (int)late_.size() && b_.t >= late_[lateIdx_].at && textT_ < 0) {
+            const Late& l = late_[lateIdx_++];
+            showMsg(l.from, l.msg, l.other);
+        }
         if (textT_ >= 0 && (textT_ += dt) > 6.5f) textT_ = -1;
         float dg = b_.danger();
         if (dg > 0.2f && hushT_ < 0) {
@@ -637,17 +830,252 @@ public:
         subT_ = std::max(0.0f, subT_ - dt);
         if (dg > 0.5f && subT_ <= 0 && chance(dt * 0.04f * (1 + night_ * 0.3f))) {
             subT_ = 0.07f;
-            subFace_ = rndi(0, 2);
+            subFace_ = rndi(0, night_ >= 1 ? 3 : 2);
             E().sfx.play(Sfx::Static, 0.25f, 1.3f);
         }
-        if (E().backPressed()) phase_ = Phase::Title;
+        updateDread(dt);
+        if (phase_ != Phase::Play) return;
+        if (E().backPressed()) {
+            if (night_ >= 1 && b_.t > 30 && !std::getenv("PG_FNAP")) {  // it notices when you leave
+                P().fnapLeft = true;
+                P().save();
+            }
+            phase_ = Phase::Title;
+        }
     }
 
-    void showText(const Text& t) {
-        curText_ = t;
-        textT_ = 0;
-        E().sfx.play(Sfx::PhoneBuzz, 0.45f);
+    // ---- where he stands. Halls: (u, depth, scale factor) by how close he's got.
+    struct Spot { float u, d, k; };
+    static Spot hallSpot(int side, int spot) {
+        float m = side == 0 ? 1.0f : -1.0f;
+        switch (spot) {
+            case 0: return {0.02f * m, 0.97f, 1.25f};   // at the far end, in front of the window
+            case 1: return {-0.8f * m, 0.34f, 1.25f};   // half in a doorway along the hall
+            case 2: return {-0.4f * m, 0.14f, 0.92f};   // nearly at your door
+            default: return {0.0f, 0.0f, 0.97f};        // right in front of you
+        }
     }
+    // Centre view: feet and scale, in room coordinates.
+    static void roomSpot(int spot, Vector2& feet, float& s) {
+        if (spot <= 1) feet = {812, 540}, s = 0.6f;        // in the dark gap between the closet and the window
+        else if (spot == 2) feet = {300, 566}, s = 0.62f;  // at the end of the bed
+        else feet = {640, 760}, s = 0.98f;                 // in the middle of the room
+    }
+
+    void onArrive() {
+        dr_.spot = -1;
+        dr_.lit = dr_.hover = 0;
+        dr_.reflectT = -1;
+        float c = creep();
+        if (dr_.hunting && dr_.finalT < 0) {  // he's coming, wherever you go
+            dr_.spot = 3;
+            dr_.at = view_;
+            dr_.finalT = 0;
+            dr_.fade = 1;
+            dr_.silenceT = 0;
+            dr_.silenceLen = 99;
+            for (Sfx x : {Sfx::Rain, Sfx::Wind, Sfx::MusicBox}) E().sfx.stop(x);
+            return;
+        }
+        bool hall = view_ == View::Left || view_ == View::Right;
+        if ((hall || view_ == View::Center) && b_.t > dr_.nextOther && chance(0.35f + c * 0.4f)) {
+            dr_.at = view_;
+            dr_.spot = std::min(dr_.stage, 2);
+            if (view_ == View::Center && dr_.stage == 0) dr_.spot = 0;
+            dr_.fade = 0;
+            dr_.nextOther = b_.t + rnd(30, 60) * (1.3f - c * 0.6f);
+        }
+        if (view_ == View::Center && !b_.pc && night_ >= 1 && dr_.spot < 0 && chance(0.25f * c)) dr_.reflectT = 0;
+        dr_.bedShape = view_ == View::Bed && night_ >= 2 && b_.plush < 3 && chance(0.3f * c);
+        dr_.bedLit = 0;
+    }
+
+    void otherSeen() {
+        dr_.stage++;
+        dr_.spot = -1;
+        staticT_ = 0.35f;
+        subFace_ = 3;
+        subT_ = 0.06f;
+        E().sfx.play(Sfx::Glitch, 0.7f, 0.8f);
+        E().sfx.play(Sfx::Sting, 0.6f, 0.7f);
+        E().sfx.play(Sfx::Exhale, 0.5f, 0.8f);
+        E().aberrate(0.015f);
+        E().shake(4);
+        const char* lines[] = {"don't look at me", "please. don't look at me.", "if you look one more time i'm coming over there"};
+        if (dr_.stage <= 3) showMsg("Pieter", lines[dr_.stage - 1], true);
+        if (dr_.stage >= 4) {
+            dr_.hunting = true;
+            showMsg("Pieter", "ok", true);
+        }
+    }
+
+    void updateDread(float dt) {
+        float c = creep();
+        if (moveT_ <= 0 && view_ != dr_.lastView) {
+            dr_.lastView = view_;
+            onArrive();
+        }
+        // ---- him
+        if (dr_.spot >= 0 && dr_.at == view_) {
+            dr_.fade = std::min(1.0f, dr_.fade + dt * 1.5f);
+            if (dr_.finalT >= 0) {
+                dr_.finalT += dt;
+                if (dr_.finalT > 2.2f) {
+                    jumpscare(Who::Other);
+                    return;
+                }
+            } else if (view_ != View::Center) {
+                bool inBeam = beamPower() > 0 && CheckCollisionPointRec(aim(), dr_.rect);
+                dr_.lit = inBeam ? dr_.lit + dt : std::max(0.0f, dr_.lit - dt * 0.5f);
+                if (dr_.lit > 0.3f) otherSeen();
+            } else {
+                // in the room you can't light him. Look at him and his head follows you; keep looking and he steps out of sight.
+                Vector2 m = roomMouse();
+                bool over = CheckCollisionPointRec(m, dr_.rect);
+                dr_.hover = over ? dr_.hover + dt : std::max(0.0f, dr_.hover - dt);
+                if (dr_.hover > 3.2f) {
+                    dr_.spot = -1;
+                    staticT_ = 0.15f;
+                    E().sfx.play(Sfx::Creak, 0.3f, 0.6f);
+                }
+            }
+            Vector2 head{dr_.rect.x + dr_.rect.width / 2, dr_.rect.y};
+            float want = clamp01((aim().x - head.x) / 500 + 0.5f) * 2 - 1;
+            dr_.look = damp(dr_.look, want, 0.8f, dt);  // slowly. Too slowly.
+        } else if (dr_.hunting && dr_.finalT < 0 && moveT_ <= 0 && (dr_.huntT += dt) > 6) {
+            dr_.huntT = 0;
+            onArrive();  // staying put doesn't help
+        }
+        // ---- silences that lead nowhere
+        if (dr_.silenceT < 0 && b_.t > dr_.nextSilence && hushT_ < 0 && b_.danger() < 0.45f && !dr_.hunting) {
+            dr_.silenceT = 0;
+            dr_.silenceLen = rnd(7, 12);
+            for (Sfx x : {Sfx::Rain, Sfx::Wind}) E().sfx.stop(x);
+        }
+        if (dr_.silenceT >= 0 && dr_.finalT < 0) {
+            dr_.silenceT += dt;
+            if (dr_.silenceT > dr_.silenceLen) {
+                dr_.silenceT = -1;
+                dr_.nextSilence = b_.t + rnd(55, 95) / std::max(0.3f, c);
+                switch (rndi(0, 4)) {  // and then, maybe, one sound
+                    case 1: E().sfx.play(Sfx::Slam, 0.12f, 0.6f, rnd(-0.6f, 0.6f)); break;
+                    case 2: if (night_ >= 2) E().sfx.play(Sfx::Lullaby, 0.12f, 1, rnd(-0.7f, 0.7f)); break;
+                    case 3: E().sfx.play(Sfx::Whisper, 0.3f, 0.85f, 0); break;
+                    case 4: if (night_ >= 1) E().sfx.play(Sfx::Barefoot, 0.5f, 1, 0); break;
+                    default: break;
+                }
+            }
+        }
+        // ---- breathing behind you, if you stand in the room too long
+        if (view_ == View::Center && moveT_ <= 0 && dr_.finalT < 0) dr_.stillT += dt;
+        else dr_.stillT = std::min(dr_.stillT, 0.0f), dr_.behindT = -1;
+        if (view_ != View::Center) dr_.stillT = 0;
+        if (c >= 0.3f && dr_.behindT < 0 && dr_.stillT > 15 - c * 6) dr_.behindT = 0, dr_.breathT = 0;
+        if (dr_.behindT >= 0) {
+            dr_.behindT += dt;
+            if ((dr_.breathT -= dt) <= 0) {
+                dr_.breathT = 3.3f;
+                E().sfx.play(Sfx::Exhale, std::min(1.0f, 0.35f + dr_.behindT * 0.08f), rnd(0.92f, 1.0f), 0);
+            }
+            if (dr_.behindT > 11) {
+                dr_.behindT = -1;
+                dr_.stillT = -30;  // it goes away. For a while.
+                E().sfx.play(Sfx::Barefoot, 0.35f, 1, 0);
+            }
+        }
+        // ---- a hand on the door that isn't yours
+        if (holding() && doorAnim_ > 0.9f && view_ != View::Closet) {
+            dr_.holdT += dt;
+            if (!dr_.handDone && night_ >= 2 && dr_.holdT > 1.2f && chance(dt * 0.5f * c)) {
+                dr_.handDone = true;
+                dr_.handT = 0;
+                E().sfx.play(Sfx::Exhale, 0.7f, 0.85f, 0);
+            }
+        } else {
+            dr_.holdT = 0;
+            dr_.handDone = false;
+        }
+        if (dr_.handT >= 0 && (dr_.handT += dt) > 2.6f) dr_.handT = -1;
+        if (dr_.handT >= 0 && !holding()) dr_.handT = -1;
+        // ---- two frames of something written
+        dr_.subT = std::max(0.0f, dr_.subT - dt);
+        if (b_.t > dr_.nextSub) {
+            dr_.nextSub = b_.t + rnd(45, 90) / std::max(0.3f, c);
+            dr_.subT = 0.05f;
+            dr_.subText = fill(kSubText[rndi(0, (int)(sizeof(kSubText) / sizeof(kSubText[0])) - 1)]);
+        }
+        if (dr_.reflectT >= 0 && (dr_.reflectT += dt) > 6) dr_.reflectT = -1;
+        // ---- the bed: shine on the shape and it's gone
+        if (dr_.bedShape && view_ == View::Bed && beamPower() > 0 && CheckCollisionPointRec(aim(), {300, 200, 520, 220})) {
+            if ((dr_.bedLit += dt) > 0.25f) {
+                dr_.bedShape = false;
+                E().sfx.play(Sfx::Exhale, 0.8f, 1.15f, 0);
+                E().sfx.play(Sfx::Creak, 0.4f, 0.8f);
+                staticT_ = 0.12f;
+            }
+        }
+        // ---- a lullaby somewhere in the house
+        if (b_.t > dr_.nextLull && hushT_ < 0 && dr_.silenceT < 0) {
+            dr_.nextLull = b_.t + rnd(90, 150);
+            E().sfx.play(Sfx::Lullaby, 0.1f + 0.08f * c, 1, rnd(-0.8f, 0.8f));
+        }
+        // ---- the fake morning, the freeze
+        if (dr_.fakeAt > 0 && b_.t >= dr_.fakeAt && b_.danger() < 0.7f && !dr_.hunting) {
+            dr_.fakeAt = -1;
+            phase_ = Phase::FakeDawn;
+            phaseT_ = 0;
+            bells_ = 0;
+            for (Sfx x : {Sfx::MusicBox, Sfx::Breath, Sfx::Giggle, Sfx::Riser, Sfx::Whisper, Sfx::Exhale}) E().sfx.stop(x);
+            return;
+        }
+        if (dr_.freezeAt > 0 && b_.t >= dr_.freezeAt && view_ == View::Center && moveT_ <= 0 && hushT_ < 0) {
+            dr_.freezeAt = -1;
+            dr_.freezeT = 0;
+            dr_.frozenT = t_;
+            for (Sfx x : {Sfx::Rain, Sfx::Wind, Sfx::Thunder, Sfx::MusicBox, Sfx::ClockTick, Sfx::Heart}) E().sfx.stop(x);
+        }
+        redPulse_ = std::max(0.0f, redPulse_ - dt * 0.15f);
+    }
+
+    // the mouse in room coordinates (the centre view is panned and zoomed a little)
+    Vector2 roomMouse() const {
+        Vector2 m = E().mouse(), cam = camShift();
+        return {(m.x - VW / 2.0f - cam.x) / 1.06f + VW / 2.0f, (m.y - VH / 2.0f - cam.y) / 1.06f + VH / 2.0f};
+    }
+
+    // It's 6 AM. The alarm, the birds, the sunrise. And then it isn't.
+    void updateFakeDawn(float dt) {
+        (void)dt;
+        for (Sfx x : {Sfx::DreadLow, Sfx::DreadHigh, Sfx::Hum, Sfx::Sub}) E().sfx.loop(x, 0);
+        if (bells_ < 1 && phaseT_ > 1.5f) {
+            bells_ = 1;
+            E().sfx.play(Sfx::Alarm, 0.6f);
+            E().sfx.play(Sfx::Win, 0.5f);
+            E().sfx.play(Sfx::Birds, 0.7f);
+        }
+        if (bells_ == 1 && phaseT_ > 4.6f) {
+            bells_ = 2;
+            for (Sfx x : {Sfx::Alarm, Sfx::Win, Sfx::Birds}) E().sfx.stop(x);
+        }
+        if (bells_ == 2 && phaseT_ > 6.4f) {
+            bells_ = 3;
+            E().sfx.play(Sfx::Impact, 0.9f, 0.8f);
+            E().sfx.play(Sfx::Glitch, 0.7f);
+            E().sfx.play(Sfx::Static, 0.6f);
+            E().shake(16);
+            E().aberrate(0.02f);
+        }
+        if (phaseT_ > 6.75f) {
+            phase_ = Phase::Play;
+            phaseT_ = 0;
+            staticT_ = 0.6f;
+            redPulse_ = 1;
+            while (textIdx_ < (int)kTexts[night_].size() && kTexts[night_][textIdx_].at <= b_.t + 10) textIdx_++;  // nothing else gets through
+            showMsg("Pieter", "it's not morning.", true);
+        }
+    }
+
+    void showText(const Text& t) { showMsg(t.from, t.msg, false); }
 
     Vector2 bedSpot(int i) const {
         const Vector2 spots[3] = {{390, 560}, {650, 470}, {920, 570}};
@@ -659,7 +1087,7 @@ public:
         if (!lm_.id) return;
         env_.t = t_;
         BeginTextureMode(lm_);
-        ClearBackground(rgba(0x3a3666ff));
+        ClearBackground(mix(rgba(0x2e2a54ff), rgba(0x1c1a38ff), creep()));  // less and less light gets in
         rlPushMatrix();
         rlScalef(0.5f, 0.5f, 1);
         fx::beginAdd();
@@ -715,7 +1143,10 @@ public:
         gfx::haze(l, t_);
         if (!hands) return;
         float bob = std::sin(t_ * 1.7f) * 4 + (moveT_ > 0 ? 20 : 0);
-        if (doorAnim_ > 0.05f) gfx::holdingHands(doorAnim_ + doorKick_ * 0.4f, t_, view_ == View::Closet);
+        if (doorAnim_ > 0.05f) {
+            gfx::holdingHands(doorAnim_ + doorKick_ * 0.4f, t_, view_ == View::Closet);
+            if (dr_.handT >= 0) gfx::thirdHand(dr_.handT / 2.6f, t_);
+        }
         else if (lightOn()) gfx::flashlightHand(l.pos, t_, l.power, bob);
         DrawRectangleGradientV(0, VH - 220, VW, 220, alpha(BLACK, 0), alpha(BLACK, 0.55f));
     }
@@ -723,7 +1154,11 @@ public:
     void drawHud() {
         // clock
         float jitter = hushT_ >= 0 && std::fmod(t_, 0.7f) < 0.1f ? 3.0f : 0.0f;
-        ui::textShadow(clockText(), VW - 30 + jitter, 44, 44, mix(rgba(0xf4ecffff), col::gold, hourPulse_), ui::Right, true, 3);
+        bool near = dr_.spot >= 0 && dr_.at == view_;
+        std::string clk = clockText();
+        if (near && std::fmod(t_, 1.3f) < 0.18f) clk = std::fmod(t_, 2.6f) < 1.3f ? "?? AM" : "13 AM";
+        Color cc = mix(mix(rgba(0xf4ecffff), col::gold, hourPulse_), col::red, redPulse_);
+        ui::textShadow(clk, VW - 30 + jitter, 44, 44, cc, ui::Right, true, 3);
         ui::text("NIGHT " + std::to_string(night_ + 1), VW - 30, 82, 18, col::muted, ui::Right, true);
         // lures
         for (int s = 0; s < 2; s++) {
@@ -791,9 +1226,14 @@ public:
         DrawRectangleRounded({r.x + 4, r.y + 6, r.width, r.height}, 0.25f, 8, alpha(BLACK, 0.5f));
         DrawRectangleRounded(r, 0.25f, 8, rgba(0x15121ef0));
         DrawRectangleRoundedLinesEx(r, 0.25f, 8, 2, rgba(0x3a3450ff));
-        std::string from = curText_.from;
+        std::string from = shown_.from;
         Vector2 av{r.x + 40, r.y + 46};
-        if (from == "Davi") art::portrait("davi", av, 24);
+        if (shown_.other) {
+            DrawCircleV(av, 25, BLACK);
+            E().beginClip({av.x - 24, av.y - 24, 48, 48});
+            gfx::otherFace(av + Vector2{0, 6}, 26, t_, 0, 0);
+            E().endClip();
+        } else if (from == "Davi") art::portrait("davi", av, 24);
         else if (from == "Kira") art::portrait("kira", av, 24);
         else if (from == "Pieter") art::portrait("pieter", av, 24);
         else {
@@ -801,8 +1241,8 @@ public:
             ui::text(from == "Mama" ? "M" : "?", av.x, av.y, 24, col::text, ui::Center, true);
         }
         ui::text(from, r.x + 76, r.y + 20, 15, from == "???" ? col::red : col::text, ui::Left, true);
-        ui::text("now", r.x + r.width - 16, r.y + 20, 12, col::muted, ui::Right, true);
-        ui::paragraph(curText_.msg, {r.x + 76, r.y + 34, r.width - 92, 0}, 14, rgba(0xd8d0e8ff));
+        ui::text(shown_.other ? "" : "now", r.x + r.width - 16, r.y + 20, 12, col::muted, ui::Right, true);
+        ui::paragraph(shown_.msg, {r.x + 76, r.y + 34, r.width - 92, 0}, 14, shown_.other ? rgba(0xe8e0e0ff) : rgba(0xd8d0e8ff));
     }
 
     // ============================================================ draw: centre (the room)
@@ -972,6 +1412,15 @@ public:
             ui::text("HIHIHI", mon.x + mon.width / 2, mon.y + 14, 14, col::pink, ui::Center, true);
         }
         room::drawRug(env_);
+        if (dr_.spot >= 0 && dr_.at == View::Center) {
+            Vector2 feet;
+            float sc;
+            roomSpot(dr_.spot, feet, sc);
+            float a = dr_.fade * (dr_.hover > 2.4f ? 1 - clamp01((dr_.hover - 2.4f) / 0.8f) : 1);
+            gfx::other(feet, sc, t_, dr_.look, a);
+            Vector2 head = gfx::otherHead(feet, sc, dr_.look);
+            dr_.rect = {feet.x - 70 * sc, head.y - 70 * sc, 140 * sc, feet.y - head.y + 70 * sc};
+        }
         BeginBlendMode(BLEND_MULTIPLIED);
         DrawTexturePro(lm_.texture, {0, 0, (float)lm_.texture.width, -(float)lm_.texture.height}, {0, 0, (float)VW, (float)VH}, {0, 0}, 0, WHITE);
         EndBlendMode();
@@ -982,6 +1431,31 @@ public:
             EndBlendMode();
         }
         centerEyes();
+        // his face, pale in the room's light, where you'd least want it
+        if (dr_.spot >= 0 && dr_.at == View::Center && dr_.fade > 0.5f) {
+            Vector2 head{dr_.rect.x + dr_.rect.width / 2, dr_.rect.y + 70 * dr_.rect.width / 140};
+            // the face is the one thing that catches what little light there is
+            Vector2 feet;
+            float sc;
+            roomSpot(dr_.spot, feet, sc);
+            gfx::otherFace(gfx::otherHead(feet, sc, dr_.look), 58 * sc, t_, 0, dr_.look * 22 + 4, 0.55f * dr_.fade * (dr_.hover > 2.4f ? 1 - clamp01((dr_.hover - 2.4f) / 0.8f) : 1));
+            (void)head;
+        }
+        // in the black monitor: Pieter's reflection, and someone standing behind him
+        if (dr_.reflectT >= 0 && !b_.pc) {
+            float a = clamp01(dr_.reflectT / 1.2f) * clamp01((6 - dr_.reflectT) / 1.2f);
+            Rectangle mon{926, 286, 210, 120};
+            E().beginClip(mon);
+            DrawCircleV({mon.x + 96, mon.y + 92}, 30, alpha(rgba(0x0c0a10ff), 0.9f * a));
+            DrawEllipse((int)(mon.x + 96), (int)(mon.y + 150), 70, 40, alpha(rgba(0x0c0a10ff), 0.9f * a));
+            if (a > 0.05f) {
+                BeginBlendMode(BLEND_ADDITIVE);
+                gfx::otherFace({mon.x + 150, mon.y + 44}, 30, t_, 0, 6);
+                EndBlendMode();
+                DrawRectangleRec(mon, alpha(rgba(0x06060aff), 1 - a * 0.7f));
+            }
+            E().endClip();
+        }
         if (moveT_ <= 0 && phase_ == Phase::Play) hotspots();
         rlPopMatrix();
         art::vignette(0.45f);
@@ -1235,6 +1709,18 @@ public:
         gfx::quad(hallPt(-0.2f, 1, 1), hallPt(0.2f, 1, 1), hallPt(0.5f, 1, 0.4f), hallPt(-0.5f, 1, 0.4f), alpha(rgba(0x6878d8ff), 0.12f), alpha(rgba(0x6878d8ff), 0));
         fx::endAdd();
 
+        // ---- him, if he's standing in this hall. Far away he's behind whoever is coming; close up, in front.
+        bool otherHere = dr_.spot >= 0 && dr_.at == (side ? View::Right : View::Left);
+        auto drawOther = [&] {
+            Spot sp = hallSpot(side, dr_.spot);
+            Vector2 feet = hallPt(sp.u, 1, sp.d);
+            float sc = hallScale(sp.d) * sp.k;
+            gfx::other(feet, sc, t_, dr_.look, dr_.fade);
+            Vector2 head = gfx::otherHead(feet, sc, dr_.look);
+            dr_.rect = {feet.x - 70 * sc + pan.x, head.y - 80 * sc, 140 * sc, feet.y - head.y + 80 * sc};
+        };
+        if (otherHere && dr_.spot <= 1) drawOther();
+
         // ---- the stalker
         bool visible = (h.pos >= 1 && h.pos <= 3 && !h.hidden) || h.fleeAnim >= 0;
         Vector2 headPos{-1, -1};
@@ -1259,10 +1745,34 @@ public:
                 float lit = beamPower() > 0 && view_ == (side ? View::Right : View::Left) && doorAnim_ < 0.5f ? 1.0f : 0.0f;
                 if (lit > 0) gfx::stalkerShadow(side, feet, scale, {aim().x - pan.x, VH + 300.0f}, 0.8f);
                 float flinch = h.fleeAnim >= 0 ? 1 - clamp01(h.fleeAnim / 0.5f) : clamp01(h.lightT * 3);
-                gfx::stalker(side, feet, scale, t_, flinch, h.pos == 3 && h.fleeAnim < 0 ? 0.35f : 0);
-                headPos = gfx::stalkerHead(feet, scale) + Vector2{pan.x, 0};
+                if (dr_.ceiling[side] && h.pos == 2 && h.fleeAnim < 0) {
+                    // on the ceiling, upside down, hair hanging towards the floor
+                    Vector2 top = hallPt(u, -1, d);
+                    rlDrawRenderBatchActive();
+                    rlDisableBackfaceCulling();
+                    rlPushMatrix();
+                    rlTranslatef(top.x, top.y, 0);
+                    rlScalef(1, -1, 1);
+                    rlTranslatef(-top.x, -top.y, 0);
+                    gfx::stalker(side, top, scale * 0.9f, t_, flinch, 0.15f);
+                    rlPopMatrix();
+                    rlDrawRenderBatchActive();
+                    rlEnableBackfaceCulling();
+                    headPos = Vector2{top.x, top.y + 548 * scale * 0.9f} + Vector2{pan.x, 0};
+                } else {
+                    gfx::stalker(side, feet, scale, t_, flinch, h.pos == 3 && h.fleeAnim < 0 ? 0.35f : 0);
+                    headPos = gfx::stalkerHead(feet, scale) + Vector2{pan.x, 0};
+                    if (dr_.turned[side] && h.pos == 1 && h.fleeAnim < 0) {
+                        // facing the wall at the far end. You can only see the back of his head.
+                        Vector2 hd = gfx::stalkerHead(feet, scale);
+                        DrawEllipse((int)hd.x, (int)(hd.y + 4 * scale), 76 * scale, 86 * scale, rgba(0x1a140eff));
+                        DrawEllipse((int)(hd.x - 10 * scale), (int)(hd.y - 20 * scale), 40 * scale, 30 * scale, alpha(rgba(0x3a2e22ff), 0.6f));
+                        headPos = {-1, -1};
+                    }
+                }
             }
         }
+        if (otherHere && dr_.spot >= 2) drawOther();
         if (h.lureAnim >= 0) {
             float k = clamp01(h.lureAnim / 0.9f);
             float d = k * 0.85f;
@@ -1302,7 +1812,7 @@ public:
         DrawRectangleLinesEx({kOpening.x - 30, kOpening.y - 30, kOpening.width + 60, kOpening.height + 60}, 3, col::outline);
         rlPopMatrix();
 
-        lightPass(0.91f, Vector2{kVPx + pan.x, kVPy - 14});
+        lightPass(0.95f, Vector2{kVPx + pan.x, kVPy - 14});
         // fingers curled round the door frame, pale in the moonlight: someone is right beside the door
         if (h.pos == 4 && !h.feint && doorAnim_ < 0.5f) {
             float fx0 = (side == 0 ? kOpening.x + kOpening.width + 4 : kOpening.x - 4) + pan.x;
@@ -1389,12 +1899,36 @@ public:
             fx::endAdd();
         }
         rlPopMatrix();
-        lightPass(0.93f, {-1, -1});
+        lightPass(0.96f, {-1, -1});
+        closeOther();
         if (doorAnim_ < 0.5f) {
             if (st == 1) gfx::eyes(2, {640 + pan.x - 10, 300}, 60, 0.5f, t_);
             if (st == 2) gfx::eyes(2, {640 + pan.x - 30, 300}, 120, 0.9f, t_);
             if (st == 3) gfx::eyes(2, {640 + pan.x + 10, 370}, 190, 0.5f, t_);
         }
+    }
+
+    // he came for you: in the closet and at the bed there's nowhere for him to stand but right in front of you
+    void closeOther() {
+        if (dr_.spot != 3 || dr_.at != view_) return;
+        float k = clamp01(dr_.finalT / 2.2f);
+        gfx::other({640, VH + 200 - k * 120}, 1.05f + k * 0.3f, t_, 0, 1);
+    }
+
+    // someone lying under the blanket, breathing
+    void bedShape() {
+        if (!dr_.bedShape) return;
+        float br = std::sin(t_ * 1.9f) * 0.5f + 0.5f;
+        Color b0 = rgba(0x2f68b8ff), b1 = rgba(0x23508cff);
+        DrawEllipse(560, 286, 120, 70 + br * 6, alpha(BLACK, 0.25f));
+        DrawEllipse(470, 252, 70, 52 + br * 3, b1);            // head and shoulders under the cover
+        DrawEllipse(470, 246, 64, 46 + br * 3, b0);
+        DrawEllipse(650, 280, 210, 60 + br * 8, b1);           // the body
+        DrawEllipse(650, 272, 200, 52 + br * 8, b0);
+        DrawEllipse(840, 300, 70, 30, b1);                     // feet
+        for (int i = 0; i < 6; i++) DrawLineEx({420.0f + i * 70, 240.0f + (i % 2) * 20}, {470.0f + i * 70, 300}, 4, alpha(WHITE, 0.08f));
+        DrawEllipse(450, 210, 90, 30, rgba(0xd8d0e8ff));      // the pillow, pressed down
+        DrawEllipse(450, 212, 60, 18, rgba(0xb0a8c0ff));
     }
 
     // ============================================================ draw: bed
@@ -1416,6 +1950,7 @@ public:
             DrawLineEx({lerpf(120, 1160, u), 260}, {lerpf(0, 1280, u), 760}, 10, alpha(WHITE, 0.15f));
         }
         DrawRectangleRounded({200, 520, 880, 60}, 0.6f, 10, alpha(BLACK, 0.12f));
+        bedShape();
         for (int i = 0; i < b_.plush; i++) {
             Vector2 p = bedSpot(i);
             float creep = clamp01(b_.plushAge[i] / 25);
@@ -1432,7 +1967,8 @@ public:
             rlPopMatrix();
         }
         rlPopMatrix();
-        lightPass(0.9f, {-1, -1});
+        lightPass(0.96f, {-1, -1});
+        closeOther();
         for (int i = 0; i < b_.plush; i++) {
             Vector2 e = gfx::plushEye(bedSpot(i), 1.25f, i, clamp01(b_.plushAge[i] / 25)) + Vector2{pan.x, 0};
             fx::beginAdd();
@@ -1443,7 +1979,60 @@ public:
     }
 
     // ============================================================ draw: phases
+    // the whole view, drawn into viewRt_ during update() and graded in draw()
+    void renderView() {
+        if (!viewRt_.id) return;
+        BeginTextureMode(viewRt_);
+        ClearBackground(BLACK);
+        rlPushMatrix();
+        rlScalef(viewRt_.texture.width / (float)VW, viewRt_.texture.height / (float)VH, 1);
+        drawPlayWorld();
+        rlPopMatrix();
+        EndTextureMode();
+    }
+
+    void drawGraded() {
+        if (!grade_.id || !viewRt_.id) {
+            drawPlayWorld();
+            return;
+        }
+        float c = creep(), dg = b_.danger();
+        bool near = dr_.spot >= 0 && dr_.at == view_;
+        float behind = dr_.behindT >= 0 ? clamp01(dr_.behindT / 6) : 0;
+        float time = dr_.freezeT >= 0 ? dr_.frozenT : t_;
+        float desat = 0.42f + 0.38f * c + (near ? 0.15f : 0), crush = 1.12f + 0.22f * c;
+        float vig = 0.15f + 0.35f * dg + 0.55f * behind + (near ? 0.3f : 0) + (dr_.finalT >= 0 ? 0.4f : 0);
+        float warp = 0.25f + 0.6f * c + 1.2f * behind + (dr_.finalT >= 0 ? 2.5f : 0);
+        float split = 0.0012f + 0.004f * dg + (near ? 0.004f : 0) + (dr_.finalT >= 0 ? 0.01f : 0);
+        float grain = 0.045f + 0.03f * c;
+        float tint[3] = {0.84f, 0.97f, 1.06f};
+        Vector2 res = E().canvasSize();
+        float vals[7] = {time, desat, crush, vig, warp, split, grain};
+        for (int i = 0; i < 7; i++) SetShaderValue(grade_, gradeLoc_[i], &vals[i], SHADER_UNIFORM_FLOAT);
+        SetShaderValue(grade_, gradeLoc_[7], tint, SHADER_UNIFORM_VEC3);
+        SetShaderValue(grade_, gradeLoc_[8], &res, SHADER_UNIFORM_VEC2);
+        Texture2D& tex = viewRt_.texture;
+        BeginShaderMode(grade_);
+        DrawTexturePro(tex, {0, 0, (float)tex.width, -(float)tex.height}, {0, 0, (float)VW, (float)VH}, {0, 0}, 0, WHITE);
+        EndShaderMode();
+    }
+
     void drawPlayView() {
+        drawGraded();
+        // a hand on your shoulder, from behind. Drawn over everything: the dark doesn't hide it.
+        if (dr_.behindT > 5) {
+            float k = dr_.behindT < 9 ? clamp01((dr_.behindT - 5) / 2.5f) : 1 - clamp01((dr_.behindT - 9) / 1.5f);
+            gfx::shoulderHand(k, t_);
+            DrawRectangleGradientV(0, VH - 260, VW, 260, alpha(BLACK, 0), alpha(BLACK, 0.35f));
+        }
+        if (dr_.subT > 0) {  // two frames of white letters on black
+            DrawRectangle(0, 0, VW, VH, BLACK);
+            ui::text(dr_.subText, VW / 2.0f + rnd(-6, 6), VH / 2.0f, 64, WHITE, ui::Center, true);
+        }
+        if (dr_.freezeT < 0) drawHud();
+    }
+
+    void drawPlayWorld() {
         switch (view_) {
             case View::Center: drawCenter(); break;
             case View::Left: drawHall(0); break;
@@ -1453,15 +2042,15 @@ public:
         }
         if (flashScare_ > 0) DrawRectangle(0, 0, VW, VH, alpha(WHITE, 0.12f * flashScare_));
         if (subT_ > 0) {
-            DrawRectangle(0, 0, VW, VH, alpha(BLACK, 0.6f));
-            gfx::nightmare(subFace_, {VW / 2.0f + rnd(-40, 40), VH / 2.0f + 20}, 330, rnd(-10, 10), 1, t_);
+            DrawRectangle(0, 0, VW, VH, alpha(BLACK, subFace_ == 3 ? 0.9f : 0.6f));
+            if (subFace_ == 3) gfx::otherFace({VW / 2.0f + rnd(-20, 20), VH / 2.0f - 20}, 250, t_, 0.3f, rnd(-6, 6));
+            else gfx::nightmare(subFace_, {VW / 2.0f + rnd(-40, 40), VH / 2.0f + 20}, 330, rnd(-10, 10), 1, t_);
             staticScreen(0.3f);
         }
         fx_.draw();
         if (moveT_ > 0) DrawRectangle(0, 0, VW, VH, alpha(BLACK, 1 - std::abs(moveT_ - 0.15f) / 0.15f));
         grain(0.035f);
         if (staticT_ > 0) staticScreen(staticT_ * 2);
-        drawHud();
     }
 
     void drawStreet(float zoom, float dawn, bool figures) {
@@ -1482,8 +2071,16 @@ public:
         drawStreet(1.08f + drift, 0, true);
         DrawRectangleGradientH(0, 0, 720, VH, alpha(BLACK, 0.92f), alpha(BLACK, 0));
         float flick = std::fmod(t_, 4.3f) < 0.1f ? 0.4f : 1.0f;
-        fx::gradientText("FIVE NIGHTS", 330, 110, 74, alpha(rgba(0xffd08aff), flick), alpha(rgba(0xff5a1aff), flick), 5);
-        fx::gradientText("AT PIETER'S", 330, 184, 74, alpha(rgba(0xffd08aff), flick), alpha(rgba(0xc81a1aff), flick), 5);
+        int beaten = 0;
+        for (int i = 0; i < 6; i++) beaten += (P().fnapBeaten >> i) & 1;
+        bool wrong = (P().fnapDeaths >= 3 || beaten >= 2) && std::fmod(t_, 11.0f) < 0.09f;
+        if (wrong) {
+            fx::gradientText("HE IS STILL", 330, 110, 74, rgba(0xe8e8e8ff), rgba(0x8a8a8aff), 5);
+            fx::gradientText("IN THE HOUSE", 330, 184, 74, rgba(0xe8e8e8ff), rgba(0x6a0a0aff), 5);
+        } else {
+            fx::gradientText("FIVE NIGHTS", 330, 110, 74, alpha(rgba(0xffd08aff), flick), alpha(rgba(0xff5a1aff), flick), 5);
+            fx::gradientText("AT PIETER'S", 330, 184, 74, alpha(rgba(0xffd08aff), flick), alpha(rgba(0xc81a1aff), flick), 5);
+        }
         ui::text("HALLOWEEN SPECIAL", 330, 238, 20, col::orange, ui::Center, true);
         for (int i = 0; i < 5; i++) {  // a pumpkin per night survived
             bool beat = P().fnapBeaten & (1 << i);
@@ -1609,6 +2206,11 @@ public:
             float s = lerpf(0.5f, 1.6f, grow) + lunge * 0.9f;
             Vector2 head = gfx::stalkerHead({VW / 2.0f + off.x, VH / 2.0f + 60 + 548 * s + off.y}, s);
             gfx::nightmare(who, head, 72 * s, std::sin(k * 40) * 10, 1, t_, jaw);
+        } else if (scareWho_ == Who::Other) {
+            // no lunge. He's just suddenly there, filling everything, and the smile opens.
+            float r = lerpf(260, 470, easeOutCubic(clamp01(k / 0.1f))) + lunge * 200 + std::sin(k * 70) * 6;
+            DrawRectangle(0, 0, VW, VH, BLACK);
+            gfx::otherFace(Vector2{VW / 2.0f, VH / 2.0f - 30} + off * 0.4f, r, t_, clamp01(k * 2.5f), std::sin(k * 30) * 4);
         } else if (scareWho_ == Who::Paardjes) {
             for (int i = 0; i < 3; i++)
                 gfx::plush({VW / 2.0f + (i - 1) * 420 * grow + off.x, VH + 60 + off.y}, 1.6f + grow * 1.4f, t_, i, 1, 1);
@@ -1657,7 +2259,8 @@ public:
     void drawGameOver() {
         DrawRectangle(0, 0, VW, VH, BLACK);
         int f = scareWho_ == Who::Davi ? 0 : scareWho_ == Who::Kira ? 1 : 2;
-        gfx::nightmare(f, {VW / 2.0f, 250}, 190, 0, 0.6f, t_);
+        if (scareWho_ == Who::Other) gfx::otherFace({VW / 2.0f, 230}, 170, t_, 0.2f, 0);
+        else gfx::nightmare(f, {VW / 2.0f, 250}, 190, 0, 0.6f, t_);
         DrawRectangle(0, 0, VW, VH, alpha(BLACK, 0.6f));
         DrawRectangleGradientV(0, 400, VW, 100, alpha(BLACK, 0), alpha(BLACK, 0.85f));
         DrawRectangle(0, 500, VW, VH - 500, alpha(BLACK, 0.85f));
@@ -1666,11 +2269,13 @@ public:
         float jitter = std::fmod(t_, 2.1f) < 0.06f ? 8.0f : 0.0f;
         fx::gradientText("GAME OVER", VW / 2.0f + jitter, 110, 90, alpha(rgba(0xff6a6aff), a), alpha(rgba(0x8a0a1aff), a), 6);
         std::string cause = b_.cause;
-        const char* who = scareWho_ == Who::Davi    ? "Davi got you."
+        const char* who = scareWho_ == Who::Other   ? "You kept looking at him."
+                          : scareWho_ == Who::Davi  ? "Davi got you."
                           : scareWho_ == Who::Kira  ? "Kira got you. HIHIHI."
                           : scareWho_ == Who::Horse ? "The Night Horse came out of the closet."
                                                     : "The plush horses called the big horse.";
-        const char* tip = cause == "lit at door"       ? "Tip: you shone the torch at the door while someone was right behind it. Hear breathing or giggling? HOLD, never shine."
+        const char* tip = scareWho_ == Who::Other      ? "Tip: the tall one only wants one thing. Don't put the torch on him. He told you. Four times."
+                          : cause == "lit at door"     ? "Tip: you shone the torch at the door while someone was right behind it. Hear breathing or giggling? HOLD, never shine."
                           : cause == "door not held"   ? "Tip: you were at the door, but didn't hold it shut. SPACE / right mouse."
                           : cause == "door unattended" ? "Tip: someone waited at a door and nobody held it. Listen from the room: breathing = run there."
                           : cause == "stared"          ? "Tip: when the closet swings open, hold it shut straight away. Don't just look."
@@ -1678,6 +2283,9 @@ public:
                           : scareWho_ == Who::Paardjes ? "Tip: check the bed and light up every plush horse before there are three."
                                                        : "Tip: listen. Everything in the house makes a sound before it comes.";
         ui::text(who, VW / 2.0f, 466, 26, alpha(col::text, a), ui::Center, true);
+        if (P().fnapDeaths >= 3 && P().fnapDeaths % 3 == 0)  // every third time, it says something to you
+            ui::text(fill("That's " + std::to_string(P().fnapDeaths) + " times now, {USER}. You keep letting him die."), VW / 2.0f, 34, 16,
+                     alpha(rgba(0xc04040ff), a * 0.8f), ui::Center, true);
         ui::paragraph(tip, {VW / 2.0f - 380, 490, 760, 0}, 16, alpha(col::muted, a));
         ui::text(std::string("Night ") + std::to_string(night_ + 1) + "  -  " + clockText(), VW / 2.0f, 548, 16, alpha(col::orange, a), ui::Center, true);
         if (phaseT_ > 1.0f) {
@@ -1687,8 +2295,23 @@ public:
         grain(0.05f);
     }
 
+    // the fake one: the same morning, cut off in the middle
+    void drawFakeDawn() {
+        float k = phaseT_;
+        if (k < 4.6f) {
+            drawDawn(true);
+            return;
+        }
+        DrawRectangle(0, 0, VW, VH, BLACK);  // silence. Nothing. For far too long.
+        if (k > 6.4f) {
+            gfx::otherFace({VW / 2.0f + rnd(-30, 30), VH / 2.0f - 10}, 300, t_, 0.6f + 0.4f * std::sin(k * 40), rnd(-8, 8));
+            staticScreen(0.4f);
+        }
+        grain(0.06f);
+    }
+
     // 6 AM: the clock rolls over, the alarm goes, and the street is pink with sunrise
-    void drawDawn() {
+    void drawDawn(bool fake = false) {
         float k = phaseT_;
         if (k < 1.6f) {
             DrawRectangle(0, 0, VW, VH, BLACK);
@@ -1716,8 +2339,15 @@ public:
             fx::gradientText("6:00 AM", VW / 2.0f, 300, 54, alpha(WHITE, a), alpha(rgba(0xffd8a0ff), a), 4);
             fx::gradientText("GOOD MORNING!", VW / 2.0f, 370, 64, alpha(rgba(0xfff3a0ff), a), alpha(col::orange, a), 5);
             ui::text("Night " + std::to_string(night_ + 1) + " survived", VW / 2.0f, 422, 22, alpha(col::text, a), ui::Center, true);
-            ui::coin({VW / 2.0f - 90, 460}, 14);
-            ui::text("+" + fmtNum(reward_) + " Pietercoins", VW / 2.0f - 68, 460, 22, alpha(col::gold, a), ui::Left, true);
+            if (!fake) {
+                ui::coin({VW / 2.0f - 90, 460}, 14);
+                ui::text("+" + fmtNum(reward_) + " Pietercoins", VW / 2.0f - 68, 460, 22, alpha(col::gold, a), ui::Left, true);
+            }
+        }
+        if (fake) {
+            grain(0.04f);
+            art::vignette(0.4f);
+            return;
         }
         float endA = clamp01((k - 4.4f) / 0.8f);
         if (night_ == 4 && endA > 0) {
@@ -1751,6 +2381,7 @@ public:
             case Phase::Scare: drawScare(); break;
             case Phase::GameOver: drawGameOver(); break;
             case Phase::Dawn: drawDawn(); break;
+            case Phase::FakeDawn: drawFakeDawn(); break;
         }
     }
 
@@ -1766,12 +2397,46 @@ private:
     float rainT_ = 0, windT_ = 4, thunderT_ = 6, boltT_ = -1, thunderDelay_ = -1, clockT_ = 0, hushT_ = -1, plushFall_ = -1;
     float monkeyRise_ = 0, monkeyBang_ = 0, clashAnim_ = 0, textT_ = -1;
     bool devLight_ = false, devHold_ = false, devBolt_ = false;
-    Text curText_{0, "", ""};
+    struct Shown { std::string from, msg; bool other = false; } shown_;
+    struct Late { float at; const char* from; const char* msg; bool other; };
+    std::vector<Late> late_;
+    int lateIdx_ = 0;
+    // everything that makes the house wrong
+    struct Dread {
+        // the other one
+        int stage = 0;           // times you've put the torch on him tonight
+        int spot = -1;           // where he stands in the view you're in (-1: not here)
+        View at = View::Center;
+        bool hunting = false;    // stage 4: he comes to you
+        float lit = 0, hover = 0, look = 0, nextOther = 60, finalT = -1, fade = 0;
+        Rectangle rect{};        // where he was drawn this frame, on screen
+        // silences that lead nowhere
+        float silenceT = -1, silenceLen = 0, nextSilence = 60;
+        // breathing right behind you when you stand still
+        float stillT = 0, behindT = -1, breathT = 0;
+        // a hand on the door that isn't yours
+        float holdT = 0, handT = -1, huntT = 0;
+        bool handDone = false;
+        // two-frame flashes of text
+        float subT = 0, nextSub = 80;
+        std::string subText;
+        // the monitor, the bed, the lullaby
+        float reflectT = -1, nextLull = 1e9f, bedLit = 0;
+        bool bedShape = false;
+        // the fake morning, the freeze
+        float fakeAt = -1, freezeAt = -1, freezeT = -1, frozenT = 0;
+        float creakT = 9, dripT = 5;
+        bool ceiling[2]{}, turned[2]{};
+        View lastView = View::Center;
+    } dr_;
     Who scareWho_ = Who::Davi;
     long long reward_ = 0;
     Texture2D noise_{};
     Vector2 doorEyePos_[2]{}, doorQuad_[2][4]{};
-    RenderTexture2D lm_{}, rt_{};
+    RenderTexture2D lm_{}, rt_{}, viewRt_{};
+    Shader grade_{};
+    int gradeLoc_[9]{};
+    float redPulse_ = 0;
     room::Env env_;
     Particles fx_;
 };

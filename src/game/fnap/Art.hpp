@@ -50,9 +50,18 @@ void windmill(Vector2 base, float s, float t, Color c);
 void jackOLantern(Vector2 c, float r, float t, float flicker);
 void horseSilhouette(Vector2 feet, float s, Color c, float facing = 1);
 
+// The other one: a far too tall, perfectly still Pieter with holes for eyes.
+// s = 1 is about 720 px tall; look -1..1 turns his head; a fades him.
+void other(Vector2 feet, float s, float t, float look, float a = 1);
+Vector2 otherHead(Vector2 feet, float s, float look);
+// his face alone (jumpscare, subliminals, the phone). jaw 0..1 opens the smile.
+void otherFace(Vector2 c, float r, float t, float jaw = 0, float rot = 0, float a = 1);
+
 // ---- first person: Pieter's hands
 void flashlightHand(Vector2 aim, float t, float on, float bob);
 void holdingHands(float push, float t, bool closet);  // pressing on a door, push 0..1
+void thirdHand(float k, float t);     // a hand that isn't yours, between yours on the door (k 0..1 over its visit)
+void shoulderHand(float k, float t);  // something resting on your shoulder from behind (k 0..1 how far in)
 
 // ---- the house from outside: a row of canal houses on a rainy night (or at dawn)
 struct Street {

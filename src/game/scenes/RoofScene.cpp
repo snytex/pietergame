@@ -994,6 +994,8 @@ public:
         if (x < -80 || x > VW + 80) return;
         if (!g.alive && g.deadT > 1.2f) return;
         float face = std::cos(g.t * 0.9f) >= 0 ? 1 : -1;
+        rlDrawRenderBatchActive();
+        rlDisableBackfaceCulling();  // mirrored when flying left
         rlPushMatrix();
         rlTranslatef(x, g.p.y, 0);
         if (!g.alive) rlRotatef(g.deadT * 500, 0, 0, 1);
@@ -1011,6 +1013,8 @@ public:
         DrawCircleV({58, -8}, 2.4f, col::red);
         DrawTexturePro(wing, {0, 0, (float)wing.width, (float)wing.height}, {-2, -10, wing.width * wl, wing.height * 0.72f}, {2 * wl, 24 * 0.72f}, wa, WHITE);
         rlPopMatrix();
+        rlDrawRenderBatchActive();
+        rlEnableBackfaceCulling();
     }
 
     void drawPlayer() {
@@ -1020,6 +1024,8 @@ public:
         }
         float x = px_ + kPW / 2 - camX_, feet = py_ + kPH;
         float sx = 1 + land_ * 0.25f - stretch_ * 0.15f, sy = 1 - land_ * 0.2f + stretch_ * 0.15f;
+        rlDrawRenderBatchActive();
+        rlDisableBackfaceCulling();  // mirrored when running left
         rlPushMatrix();
         rlTranslatef(x, feet, 0);
         rlScalef(sx * face_, sy, 1);
@@ -1045,6 +1051,8 @@ public:
         DrawLineEx(sh, hand, 7, col::outline);
         DrawLineEx(sh, hand, 4.5f, hoodie);
         rlPopMatrix();
+        rlDrawRenderBatchActive();
+        rlEnableBackfaceCulling();
         art::pieter({x + face_ * 2, feet - kPH + 4 - (1 - sy) * 20}, 17, P().hat, wall_ != 0 ? -face_ * 8 : !ground_ ? face_ * 6 : sw * 3);
     }
 
