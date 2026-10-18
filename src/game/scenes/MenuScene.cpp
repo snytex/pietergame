@@ -56,6 +56,21 @@ const std::vector<Game>& games() {
     g = {
         {"meeuw", "SEAGULLS!", "Pieter is a seagull on the beach at Scheveningen. Dive at tourists, snatch their fries before they hide them and bump rival gulls out of the sky.",
          {"ARCADE", "FLYING", "ENDLESS"}, "NEW", rgba(0x2a8ab8ff), makeMeeuw, H | A, F([] { return "High score: " + fmtNum(P().stats.meeuwBest); })},
+        {"pannen", "PANCAKE HOUSE", "Pieter runs a pancake house on the canal for a week. Pour, bake the bacon in, flip, add syrup and get every plate to the right table before they walk out.",
+         {"COOKING", "TIME MANAGEMENT", "7 DAYS"}, "NEW", rgba(0xd89a2aff), makePannen, H | C, F([] {
+             if (!P().stats.pannenDay) return std::string("Opening day is Monday");
+             return std::to_string(P().stats.pannenDay) + " / 7 days, best shift EUR " + std::to_string(P().stats.pannenBest);
+         })},
+        {"roof", "ROOFTOP RUN", "A platformer over the rooftops of Amsterdam. Wall-jump up the gables, bounce off awnings, stomp pigeons and dodge the steam, all the way up the Westertoren.",
+         {"PLATFORMER", "5 LEVELS", "SPEEDRUN"}, "NEW", rgba(0xd8703aff), makeRoof, H | A, F([] {
+             int n = 0, b = 0;
+             for (int i = 0; i < 5; i++) n += (P().stats.roofDone >> i) & 1;
+             for (int i = 0; i < 15; i++) b += (P().stats.roofBoba >> i) & 1;
+             return std::to_string(n) + " / 5 levels, " + std::to_string(b) + " / 15 golden bobas";
+         })},
+        {"polder", "POLDER DEFENSE", "Davi has emptied his basement and his useless electronics march on Pieter's farm. Build clog cannons, windmills, cheese catapults and tulip zappers to save the stroopwafels.",
+         {"TOWER DEFENSE", "STRATEGY", "20 WAVES"}, "NEW", rgba(0x3a8a3aff), makePolder, H | C,
+         F([] { return P().stats.polderBest ? "Most waves survived: " + std::to_string(P().stats.polderBest) : std::string("The polder needs you"); })},
         {"cheats", "CHEAT DOWNLOADER", "Get PieterHax onto the PC without getting caught. Juggle windows, hide them before Mom opens the door, fight off a RAT and keep the boba coming.",
          {"SIMULATION", "STEALTH", "~5 MIN"}, "NEW", rgba(0x1a8a3aff), makeCheats, H | C, F([] { return std::string("Can you get away with it?"); })},
         {"photo", "NATURE PHOTOGRAPHER", "A photo safari through the Veluwe, the polder and the Wadden. Frame the shot, whistle for a pose and fill your field guide with 18 species.",

@@ -264,6 +264,101 @@ def kite():
     s.save("kite")
 
 
+# ====================================================================== Polder Defense
+
+
+@job
+def tex_klinker():
+    """Herringbone brick road (klinkers), tileable."""
+    W = 256
+    im = Image.new("RGB", (W, W), (120, 90, 80))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(71)
+    bw, bh = 32, 16
+    for gy in range(-2, W // bh + 3):
+        for gx in range(-2, W // bw + 3):
+            for k in range(2):
+                if k == 0:
+                    x0, y0, x1, y1 = gx * bw + gy * bh, gy * bh, gx * bw + gy * bh + bw, gy * bh + bh
+                else:
+                    x0, y0, x1, y1 = gx * bw + gy * bh + bw - bh, gy * bh + bh, gx * bw + gy * bh + bw, gy * bh + bh + bw
+                base = rnd.choice([(150, 70, 52), (138, 62, 48), (164, 82, 60), (128, 58, 46), (156, 90, 70)])
+                for ox in (-W, 0, W):
+                    for oy in (-W, 0, W):
+                        d.rectangle([x0 + ox + 1, y0 + oy + 1, x1 + ox - 1, y1 + oy - 1], fill=base)
+                        d.line([(x0 + ox + 1, y0 + oy + 1), (x1 + ox - 2, y0 + oy + 1)], fill=lighten(base + (255,), 0.18)[:3])
+    n = fbm(W, W, 8, 4, seed=72)
+    arr = np.array(im, float) * (0.85 + 0.3 * n[..., None])
+    Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB").save(f"{OUT_TEX}/klinker.png")
+    print("tex klinker")
+
+
+@job
+def tw_pedestal():
+    s = Sprite(90, 80)
+    m = s.shape("rrect", (8, 22, 82, 74), hexc("a8503a"), hexc("5a2418"), outline=2.5, r=10, direction="h")
+    for y in (34, 46, 58):
+        s.shape("line", [(10, y), (80, y)], hexc("e8d8c8"), width=1.2)
+    for row, y in enumerate((22, 34, 46, 58)):
+        for x in range(14 + (row % 2) * 9, 80, 18):
+            s.shape("line", [(x, y), (x, y + 12)], hexc("e8d8c8"), width=1.2)
+    s.shadow_inside(m, (6, 0), alpha=90, blur=5)
+    s.shape("ellipse", (6, 8, 84, 38), hexc("c8c0b8"), hexc("8a8078"), outline=2.5)  # stone cap
+    s.shape("ellipse", (16, 12, 74, 32), hexc("a8a098"), hexc("d8d0c8"))
+    s.highlight("rrect", (14, 40, 22, 70), alpha=70, r=3)
+    s.save("tw_pedestal")
+
+
+@job
+def tw_mill():
+    """A Dutch windmill body (the sails are drawn by the game so they can turn)."""
+    s = Sprite(110, 170)
+    s.shape("poly", [(10, 168), (100, 168), (96, 150), (14, 150)], hexc("6a6a72"), hexc("3a3a42"), outline=2)  # stone base
+    m = s.shape("poly", [(18, 152), (92, 152), (76, 40), (34, 40)], hexc("5a6a5a"), hexc("2a3a2a"), outline=2.5, direction="h")
+    for y in range(52, 150, 10):
+        w = 21 + (y - 40) * 0.15
+        s.shape("line", [(55 - w, y), (55 + w, y)], hexc("3a4a3a"), width=1.2)
+    s.shadow_inside(m, (10, 0), alpha=90, blur=6)
+    s.shape("rrect", (6, 104, 104, 112), hexc("7a5030"), hexc("4a2a14"), outline=2, r=2)  # stage (gallery)
+    for x in range(10, 104, 10):
+        s.shape("line", [(x, 112), (x, 122)], hexc("4a2a14"), width=1.5)
+    s.shape("rrect", (44, 128, 66, 152), hexc("2a5a3a"), hexc("123a20"), outline=1.5, r=8)  # door
+    s.shape("rrect", (46, 70, 62, 86), hexc("f4ecd8"), outline=1.5, r=2)  # window
+    s.shape("line", [(54, 70), (54, 86)], OUTLINE, width=1)
+    s.shape("poly", [(28, 42), (82, 42), (74, 18), (55, 6), (36, 18)], hexc("3a3a42"), hexc("1a1a22"), outline=2.5)  # cap
+    s.highlight("poly", [(40, 20), (55, 10), (52, 22), (38, 36)], alpha=90)
+    s.shape("ellipse", (46, 20, 64, 38), hexc("6a4a2a"), hexc("3a2410"), outline=2)  # axle
+    s.save("tw_mill")
+
+
+@job
+def farm():
+    s = Sprite(220, 190)
+    s.shape("rrect", (16, 92, 204, 186), hexc("a8503a"), hexc("6a2a1a"), outline=2.5, r=4)  # brick walls
+    for y in range(100, 186, 9):
+        s.shape("line", [(18, y), (202, y)], hexc("c88a72"), width=1)
+    for x, w in ((34, 30), (156, 30)):  # windows with green shutters
+        s.shape("rrect", (x, 118, x + w, 150), hexc("f4f0e8"), outline=2, r=2)
+        s.shape("rrect", (x + 3, 121, x + w - 3, 147), hexc("6a9ad8"), hexc("2a4a7a"), r=1)
+        s.shape("line", [(x + w / 2, 121), (x + w / 2, 147)], hexc("f4f0e8"), width=2)
+        s.shape("rrect", (x - 10, 118, x - 1, 150), hexc("2a7a4a"), outline=1.5, r=1)
+        s.shape("rrect", (x + w + 1, 118, x + w + 10, 150), hexc("2a7a4a"), outline=1.5, r=1)
+    s.shape("rrect", (86, 120, 134, 186), hexc("2a7a4a"), hexc("124a2a"), outline=2, r=20)  # big barn door
+    s.shape("line", [(110, 124), (110, 186)], hexc("124a2a"), width=2)
+    m = s.shape("poly", [(2, 100), (110, 8), (218, 100)], hexc("c8a050"), hexc("7a5a24"), outline=3)  # thatched roof
+    rnd = random.Random(9)
+    for _ in range(140):
+        x = rnd.uniform(14, 206)
+        top = 100 - (106 - abs(x - 110)) * 0.85
+        y = rnd.uniform(max(top, 14), 98)
+        s.shape("line", [(x, y), (x + rnd.uniform(-2, 2), y + 7)], hexc("a8803a"), width=1)
+    s.shadow_inside(m, (0, 8), alpha=80, blur=6)
+    s.shape("poly", [(96, 20), (110, 8), (124, 20), (124, 30), (96, 30)], hexc("8a3a2a"), outline=2)  # ridge
+    s.shape("ellipse", (98, 44, 122, 68), hexc("f4ecd8"), outline=2)  # round loft window
+    s.shape("line", [(110, 44), (110, 68)], OUTLINE, width=1)
+    s.save("farm")
+
+
 if __name__ == "__main__":
     only = sys.argv[1:]
     for f in JOBS:

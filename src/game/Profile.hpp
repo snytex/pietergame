@@ -59,6 +59,11 @@ struct Stats {
     int fotoBest = 0;      // Natuurfotograaf: best route score
     int fotoRoute = 1;     // Natuurfotograaf: routes unlocked (1..3)
     int fotoSpecies = 0;   // Natuurfotograaf: bitmask of species photographed
+    int roofDone = 0;      // Dakkenloper: bitmask of levels finished
+    int roofBoba = 0;      // Dakkenloper: bitmask of golden bobas found (3 bits per level)
+    std::array<float, 5> roofTime{};  // Dakkenloper: best time per level (s), 0 = none
+    int pannenDay = 0;     // Pannenkoekenhuis: furthest day survived
+    int pannenBest = 0;    // Pannenkoekenhuis: best takings in one shift
 };
 
 struct BeatsBest {  // Pieter Beats personal best for one song + difficulty

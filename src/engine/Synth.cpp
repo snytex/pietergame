@@ -1084,6 +1084,50 @@ Patch design(Sfx s, Rng& r) {
             }
             p.out(0.4f).verb(0.25f, 0.7f).asBed();
             break;
+        // ---- Dakkenloper
+        case Sfx::Steam:  // a chimney vent puffing hot steam
+            p.add(L(0, 0.9f, O::Noise).hp(r.jit(2200, 0.1f), 4000).env(0.03f, 0.4f).dec(0.35f, 0.2f).vol(0.6f))
+             .add(L(0, 0.9f, O::Noise).bp(900, 600, 1.2f).env(0.05f, 0.4f).dec(0.4f).vol(0.3f))
+             .add(L(0, 0.08f, O::Sine, 160, 80).dec(0.03f).vol(0.3f))
+             .out(0.4f).verb(0.12f, 0.4f);
+            break;
+        case Sfx::Boing:  // a striped awning used as a trampoline
+            p.add(L(0, 0.45f, O::Sine, r.jit(180, 0.05f), 520).glide(0.5f).vib(1.2f, 14).dec(0.18f).vol(0.7f))
+             .add(L(0, 0.3f, O::Tri, 360, 1040).glide(0.5f).dec(0.1f).vol(0.25f))
+             .add(L(0, 0.05f, O::Noise).lp(1200).dec(0.015f).vol(0.3f))
+             .out(0.45f).verb(0.1f, 0.3f);
+            break;
+        case Sfx::Coo:  // a pigeon: "roo-coo"
+            for (int k = 0; k < 2; k++) {
+                float at = k * 0.24f, f = r.jit(420, 0.05f) * (k ? 1.12f : 1.0f);
+                p.add(L(at, 0.22f, O::Sine, f, f * 0.82f).vib(0.6f, 22).env(0.03f, 0.08f).vol(0.5f))
+                 .add(L(at, 0.22f, O::Pink).bp(f * 1.5f, -1, 4).env(0.03f, 0.08f).vol(0.15f));
+            }
+            p.out(0.35f).verb(0.15f, 0.4f);
+            break;
+        // ---- Pannenkoekenhuis
+        case Sfx::Sizzle:  // bed: butter and batter on a hot pan
+            p.add(L(0, 6, O::Noise).hp(2500).bp(5200, -1, 0.8f).trem(0.25f, 7).env(1.0f, 1.0f).curve(0).vol(0.45f))
+             .add(L(0, 6, O::Pink).bp(1400, -1, 1.2f).trem(0.4f, 3.3f).env(1.0f, 1.0f).curve(0).vol(0.2f));
+            for (int i = 0; i < 160; i++) {  // fat popping
+                float at = r.range(0.2f, 5.6f);
+                p.add(L(at, 0.012f, O::Noise).hp(r.range(2500, 7000)).curve(2).pan(r.bi() * 0.6f).vol(r.range(0.1f, 0.45f)));
+            }
+            p.out(0.4f).verb(0.05f, 0.2f).asBed();
+            break;
+        case Sfx::Pour:  // a ladle of batter hitting the pan: a wet slap, then a hiss
+            p.add(L(0, 0.12f, O::Noise).lp(1500, 400).dec(0.04f).vol(0.7f))
+             .add(L(0, 0.1f, O::Sine, r.jit(220, 0.06f), 110).dec(0.03f).vol(0.4f))
+             .add(L(0.05f, 0.7f, O::Noise).hp(3000).env(0.05f, 0.3f).dec(0.3f).vol(0.4f))
+             .out(0.45f).verb(0.06f, 0.2f);
+            break;
+        case Sfx::Register:  // ka-ching
+            p.add(L(0, 0.05f, O::Noise).bp(2500, -1, 2).dec(0.015f).vol(0.6f))
+             .add(L(0.04f, 0.06f, O::Square, 180, 120).pw(0.3f).dec(0.02f).vol(0.25f));
+            for (float f : {2093.0f, 2637.0f, 3136.0f})
+                p.add(L(0.09f, 0.8f, O::Sine, f * r.jit(1, 0.005f)).fm(3.5f, 1.2f, 0.1f).dec(0.25f).vol(0.25f));
+            p.out(0.45f).verb(0.15f, 0.4f);
+            break;
         case Sfx::Count: break;
     }
     if (p.layers.empty()) p.add(L(0, 0.01f, O::Sine).vol(0));
@@ -1102,7 +1146,7 @@ const char* name(Sfx s) {
                                   "putt", "cup", "splash", "swap", "match", "gull", "hammer", "cannon", "zap", "laser", "horn", "shutter", "whistle",
                                   "dreadlow", "dreadhigh", "hum", "clocktick", "rattle", "thud", "stepfar", "flee", "snort", "squeak", "phonebuzz",
                                   "birds", "alarm", "roar", "shriek", "horsescream", "lowbatt", "glitch", "impact", "swell", "choir",
-                                  "flap", "splat", "surf"};
+                                  "flap", "splat", "surf", "steam", "boing", "coo", "sizzle", "pour", "register"};
     static_assert(sizeof(names) / sizeof(names[0]) == (size_t)Sfx::Count);
     return names[(int)s];
 }

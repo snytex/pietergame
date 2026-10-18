@@ -30,6 +30,9 @@ namespace {
 //   PG_BEATS_TEST=1                      analyze every song for Pieter Beats, print tempo + note counts, quit
 //   PG_FNAP_SIM=200                      Five Nights at Pieter's: a bot plays every night N times, print win rates, quit
 //   PG_MEEUW=120 PG_MEEUW_BOT=1          Meeuwen!: start playing at that many seconds into the day (and let a bot fly)
+//   PG_POLDER=10 PG_POLDER_BOT=1         Polder Defense: start at wave 10 with matching money (and let a bot build)
+//   PG_ROOF=3 PG_ROOF_X=40               Dakkenloper: play level 3, starting at tile column 40
+//   PG_PANNEN=4                          Pannenkoekenhuis: start the shift of day 4
 //   PG_DUMP_SFX=dir                      write every synthesized sound effect to dir/*.wav and quit
 std::unique_ptr<pg::Scene> firstScene() {
     using namespace pg;
@@ -37,7 +40,7 @@ std::unique_ptr<pg::Scene> firstScene() {
         {"menu", makeMenu},         {"classic", makeClassic}, {"room", makePieterRoom}, {"horses", makeHorses},
         {"stroop", makeStroopwafel}, {"casino", makeCasino},  {"roulette", makeRoulette}, {"blackjack", makeBlackjack},
         {"mines", makeMines},       {"slots", makeSlots}, {"tower", makeDragonTower}, {"crash", makeCrash}, {"plinko", makePlinko}, {"job", makeJob}, {"fiets", makeFiets}, {"kart", makeKart}, {"dungeon", makeDungeon},     {"shop", makeShop},        {"inventory", makeInventory},
-        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab}, {"tulpen", makeTulpen}, {"golf", makeGolf}, {"cheats", makeCheats}, {"photo", makePhoto}, {"meeuw", makeMeeuw},
+        {"settings", makeSettings}, {"admin", makeAdmin},  {"beats", makeBeats}, {"fnap", makeFnap}, {"artlab", makeArtLab}, {"tulpen", makeTulpen}, {"golf", makeGolf}, {"cheats", makeCheats}, {"photo", makePhoto}, {"meeuw", makeMeeuw}, {"polder", makePolder}, {"roof", makeRoof}, {"pannen", makePannen},
     };
     if (const char* s = std::getenv("PG_SCENE")) {
         if (std::string(s) == "intro") return makeIntroVideo();

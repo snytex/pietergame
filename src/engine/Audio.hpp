@@ -69,7 +69,7 @@ enum class Sfx {
     Putt, Cup, Splash, Swap, Match, Gull, Hammer, Cannon, Zap, Laser, Horn, Shutter, Whistle,
     DreadLow, DreadHigh, Hum, ClockTick, Rattle, Thud, StepFar, Flee, Snort, Squeak, PhoneBuzz, Birds, Alarm,
     Roar, Shriek, HorseScream, LowBatt, Glitch, Impact, Swell, Choir,
-    Flap, Splat, Surf,
+    Flap, Splat, Surf, Steam, Boing, Coo, Sizzle, Pour, Register,
     Count
 };
 
