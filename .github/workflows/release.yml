@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install pyinstaller==6.16.0
+      - run: python -m pip install pyinstaller==6.16.0 certifi==2025.8.3
       - run: python -m unittest discover -s tests -v
       - run: python -m PyInstaller --onefile --windowed --name PieterGame3 --distpath launcher-dist tools/launcher.py
       - uses: actions/upload-artifact@v4

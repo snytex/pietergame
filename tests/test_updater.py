@@ -149,5 +149,20 @@ class Updates(unittest.TestCase):
         self.assertEqual((self.root / "current.json").read_text(), previous)
 
 
+    def test_tls_falls_back_to_a_system_ca_bundle(self):
+        # The frozen launcher's OpenSSL can come up with no CA certificates at all
+        # (built on Ubuntu, run on Arch): it must find the distro's bundle itself.
+        import ssl
+        certs = ssl.create_default_context().get_ca_certs(binary_form=True)
+        if not certs:
+            self.skipTest("no CA certificates on this machine")
+        bundle = self.root / "ca.pem"
+        bundle.write_text("".join(ssl.DER_cert_to_PEM_cert(c) for c in certs))
+        empty = lambda: ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        with patch.object(updater.ssl, "create_default_context", side_effect=empty), patch.dict(sys.modules, {"certifi": None}):
+            context = updater.tls_context(bundles=(str(self.root / "missing.pem"), str(bundle)))
+        self.assertGreater(context.cert_store_stats()["x509_ca"], 0)
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+
 if __name__ == "__main__":
     unittest.main()

@@ -5,6 +5,7 @@ import os
 from pathlib import Path, PurePosixPath
 import platform
 import re
+import ssl
 import stat
 import subprocess
 import sys
@@ -49,10 +50,42 @@ def atomic_text(path, value):
         Path(temporary).unlink(missing_ok=True)
 
 
+# Where Linux distros keep their trusted CA certificates. The frozen launcher's
+# OpenSSL only looks where the build machine (Ubuntu) keeps them, so on Arch,
+# Fedora, openSUSE... it would trust nothing and every HTTPS request would fail.
+CA_BUNDLES = (
+    "/etc/ssl/certs/ca-certificates.crt",                 # Debian, Ubuntu, Arch, Gentoo
+    "/etc/pki/tls/certs/ca-bundle.crt",                   # Fedora, RHEL
+    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",  # Fedora, RHEL (newer)
+    "/etc/ssl/ca-bundle.pem",                             # openSUSE
+    "/etc/ssl/cert.pem",                                  # Arch, Alpine, macOS
+)
+
+
+def tls_context(bundles=CA_BUNDLES):
+    """A verifying TLS context that actually has CA certificates in it."""
+    context = ssl.create_default_context()
+    if context.cert_store_stats().get("x509_ca", 0):
+        return context
+    try:  # bundled into the frozen launcher by the release workflow
+        import certifi
+        context.load_verify_locations(cafile=certifi.where())
+        return context
+    except (ImportError, OSError, ssl.SSLError):
+        pass
+    for bundle in bundles:
+        try:
+            context.load_verify_locations(cafile=bundle)
+            return context
+        except (OSError, ssl.SSLError):
+            continue
+    return context  # still verifying: it just fails, and the game keeps running
+
+
 def request(url):
     return urllib.request.urlopen(urllib.request.Request(url, headers={
         "User-Agent": "PieterGame3-Updater", "Accept": "application/vnd.github+json"
-    }), timeout=20)
+    }), timeout=20, context=tls_context())
 
 
 def release_asset(release, current, target):
